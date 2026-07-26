@@ -1,0 +1,45 @@
+{
+  "name": "Proof Sheet",
+  "blurb": "Plain, dense, high-contrast. For checking your data rather than hanging on a wall.",
+  "laser": "poor",
+  "canvas": {
+    "width_mm": 841,
+    "height_mm": 1189,
+    "margin_mm": 14,
+    "background": "#FFFFFF"
+  },
+  "layout": {
+    "engine": "dendrogram",
+    "horizontal": true
+  },
+  "cells": {
+    "shape": "none"
+  },
+  "connectors": {
+    "style": "orthogonal",
+    "width_mm": 0.2,
+    "colour": "#666666",
+    "corner_radius_mm": 0.6
+  },
+  "type": {
+    "family": "'Atkinson Hyperlegible',system-ui,sans-serif",
+    "size_mm": 2.6,
+    "min_size_mm": 2.4,
+    "colour": "#000000"
+  },
+  "labels": {
+    "template": "{given} {surname} {lifespan}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#CC0000",
+    "stroke_width_mm": 0.9
+  },
+  "ornament": {
+    "border": false
+  },
+  "colour": {
+    "mode": "confidence"
+  },
+  "id": "proofsheet"
+}

@@ -1,0 +1,60 @@
+{
+  "id": "panel1m",
+  "extends": "rings",
+  "name": "One Metre Panel",
+  "blurb": "Concentric rings sized for a 1000 x 1000 mm wooden panel, rings an inch apart.",
+  "laser": "excellent",
+  "canvas": {
+    "width_mm": 1000,
+    "height_mm": 1000,
+    "margin_mm": 40,
+    "background": "#FBF8F2"
+  },
+  "layout": {
+    "engine": "radial_rings",
+    "inner_radius_mm": 110,
+    "min_ring_pitch_mm": 25.4,
+    "ring_pad_mm": 7.0,
+    "min_entry_gap_mm": 0,
+    "sibling_gap_frac": 0.0,
+    "max_subrows": 3,
+    "stagger": "auto"
+  },
+  "type": {
+    "size_mm": 3.4,
+    "min_size_mm": 2.6
+  },
+  "connectors": {
+    "width_mm": 0.6
+  },
+  "nodes": {
+    "branch_mm": 5.0
+  },
+  "labels": {
+    "by_ring": {
+      "0-1": [
+        "{given} {surname}",
+        "{lifespan}",
+        "{birth_place}"
+      ]
+    },
+    "orientation": "radial",
+    "flip_bottom": true,
+    "lines": [
+      "{given_first} {surname}",
+      "{lifespan}"
+    ],
+    "line_scale": [
+      1.0,
+      0.76,
+      0.7
+    ],
+    "max_width_mm": 46
+  },
+  "thread": {
+    "stroke_width_mm": 1.8
+  },
+  "production": {
+    "material": "birch_ply_3mm"
+  }
+}

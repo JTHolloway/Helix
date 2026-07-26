@@ -1,0 +1,68 @@
+{
+  "id": "rings",
+  "name": "Concentric Rings",
+  "blurb": "One ring per generation, staggered rows where crowded, names aligned at the end of each branch.",
+  "laser": "excellent",
+  "canvas": {
+    "margin_mm": 26,
+    "background": "#FBF8F2"
+  },
+  "layout": {
+    "engine": "radial_rings",
+    "inner_radius_mm": 62,
+    "start_angle_deg": -90,
+    "sweep_deg": 360,
+    "ring_pad_mm": 6.0,
+    "label_gap_mm": 1.5,
+    "weight_mode": "leaves",
+    "min_ring_pitch_mm": 25.4,
+    "min_entry_gap_mm": 0,
+    "sibling_gap_frac": 0.0,
+    "max_subrows": 3,
+    "stagger": "auto"
+  },
+  "cells": {
+    "shape": "none"
+  },
+  "connectors": {
+    "width_mm": 0.42,
+    "colour": "#2A2622"
+  },
+  "nodes": {
+    "branch_mm": 4.0
+  },
+  "type": {
+    "family": "'Iowan Old Style',Georgia,serif",
+    "size_mm": 2.8,
+    "min_size_mm": 2.4,
+    "colour": "#2A2622"
+  },
+  "labels": {
+    "min_gap_mm": 0.5,
+    "orientation": "radial",
+    "flip_bottom": true,
+    "lines": [
+      "{given_first} {surname}"
+    ],
+    "line_scale": [
+      1.0,
+      0.76,
+      0.7
+    ],
+    "max_width_mm": 46
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#9B3A2E",
+    "stroke_width_mm": 1.2,
+    "layer": "ENGRAVE_DEEP"
+  },
+  "ornament": {
+    "time_rings": true,
+    "time_ring_colour": "#DAD2C2",
+    "border": false
+  },
+  "colour": {
+    "mode": "none"
+  }
+}

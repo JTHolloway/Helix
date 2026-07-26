@@ -1,0 +1,49 @@
+{
+  "name": "Blueprint",
+  "blurb": "White line on cyan, dimension ticks, everything annotated. Technical and quietly funny.",
+  "laser": "good",
+  "canvas": {
+    "width_mm": 841,
+    "height_mm": 594,
+    "margin_mm": 26,
+    "background": "#0F4C81"
+  },
+  "layout": {
+    "engine": "dendrogram",
+    "horizontal": true
+  },
+  "cells": {
+    "shape": "capsule",
+    "stroke": "#EAF4FF",
+    "stroke_width_mm": 0.25,
+    "fill": "none"
+  },
+  "connectors": {
+    "style": "orthogonal",
+    "width_mm": 0.3,
+    "colour": "#9FC6E8",
+    "corner_radius_mm": 0.8
+  },
+  "type": {
+    "family": "'Roboto Mono','SF Mono',Menlo,monospace",
+    "size_mm": 2.4,
+    "min_size_mm": 2.0,
+    "colour": "#EAF4FF"
+  },
+  "labels": {
+    "template": "{given_first} {surname} {lifespan}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#FF6B4A",
+    "stroke_width_mm": 1.0
+  },
+  "ornament": {
+    "time_ring_colour": "#4C82AE",
+    "border": false
+  },
+  "colour": {
+    "mode": "none"
+  },
+  "id": "blueprint"
+}

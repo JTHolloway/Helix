@@ -1,0 +1,164 @@
+/* Helix interface.
+   Warm paper ground, one accent, generous spacing. Atkinson Hyperlegible is
+   the default UI face: it was drawn for low vision and it costs nothing to
+   use, so everyone gets the benefit. The ARTWORK uses whatever typeface the
+   style specifies -- this file only dresses the tool. */
+:root{
+  --paper:#FAF7F0; --ink:#26241F; --muted:#7A7367; --rule:#DED7C9;
+  --accent:#9B3A2E; --accent-soft:#F0DED9; --panel:#FFFDF8; --shadow:0 1px 3px #26241f14;
+  --r:8px; --gap:14px;
+  font-family:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-size:15px;line-height:1.55;
+     display:flex;flex-direction:column;overflow:hidden}
+
+/* ---------------------------------------------------------------- header */
+.bar{display:flex;align-items:center;gap:10px;padding:10px 16px;
+     border-bottom:1px solid var(--rule);background:var(--panel);position:relative;z-index:20}
+.brand{font-weight:700;letter-spacing:.02em}
+.brand span{font-weight:400;color:var(--muted);margin-left:10px}
+.grow{flex:1}
+#search{width:240px;padding:7px 11px;border:1px solid var(--rule);border-radius:var(--r);
+        background:var(--paper);color:var(--ink);font:inherit;font-size:14px}
+#search:focus{outline:2px solid var(--accent);outline-offset:1px}
+.results{position:absolute;top:52px;right:190px;width:320px;max-height:60vh;overflow:auto;
+         background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+         box-shadow:0 8px 24px #26241f22;z-index:40}
+.results button{display:block;width:100%;text-align:left;padding:8px 12px;border:0;
+                background:none;font:inherit;cursor:pointer;color:var(--ink)}
+.results button:hover,.results button:focus{background:var(--accent-soft);outline:none}
+.results small{color:var(--muted);margin-left:8px}
+
+button{font:inherit;cursor:pointer;border-radius:var(--r);padding:7px 14px;
+       border:1px solid var(--rule);background:var(--panel);color:var(--ink)}
+button:hover{border-color:var(--ink)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.primary:hover{filter:brightness(1.08);border-color:var(--accent)}
+.ghost{background:transparent}
+.wide{width:100%;margin-top:6px}
+
+/* ----------------------------------------------------------------- layout */
+main{flex:1;display:grid;grid-template-columns:320px 1fr 0;min-height:0}
+main:has(#right:not([hidden])){grid-template-columns:320px 1fr 330px}
+aside{overflow:auto;background:var(--panel);border-right:1px solid var(--rule);padding:4px 0 40px}
+#right{border-right:0;border-left:1px solid var(--rule);position:relative;padding:16px}
+.close{position:absolute;right:10px;top:10px;border:0;background:none;font-size:22px;
+       line-height:1;padding:2px 8px;color:var(--muted)}
+
+.panel{border-bottom:1px solid var(--rule);padding:14px 16px}
+.panel h2{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;
+          color:var(--muted);font-weight:700}
+body[data-mode="simple"] .panel.adv{display:none}
+.panel label{display:block;margin:9px 0;font-size:14px}
+.panel label.check{display:flex;gap:8px;align-items:flex-start;line-height:1.4}
+.panel select,.panel input[type=number]{width:100%;margin-top:4px;padding:7px 9px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--paper);font:inherit;color:var(--ink)}
+.panel input[type=range]{width:100%;margin-top:6px;accent-color:var(--accent)}
+.panel input[type=checkbox]{accent-color:var(--accent);width:17px;height:17px;margin-top:2px}
+.panel output{display:block;font-size:12px;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+/* ---------------------------------------------------------------- gallery */
+.gallery{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gallery button{padding:0;overflow:hidden;border-radius:6px;position:relative;
+                aspect-ratio:1.25;display:grid;place-items:center;background:var(--paper)}
+.gallery button svg{width:100%;height:100%}
+.gallery button span{position:absolute;left:0;right:0;bottom:0;background:#26241fD0;color:#fff;
+     font-size:11px;padding:3px 5px;text-align:center;line-height:1.25}
+.gallery button[aria-pressed=true]{outline:2.5px solid var(--accent);outline-offset:-2px}
+
+/* ----------------------------------------------------------------- canvas */
+#stage{position:relative;overflow:hidden;background:
+   repeating-conic-gradient(#F2EDE3 0% 25%, #EDE7DA 0% 50%) 50%/22px 22px}
+#canvasWrap{position:absolute;inset:0;cursor:grab}
+#canvasWrap.drag{cursor:grabbing}
+#canvas{position:absolute;left:0;top:0;transform-origin:0 0;
+        filter:drop-shadow(0 4px 18px #26241f26)}
+#canvas svg{display:block}
+#canvas [data-p]{cursor:pointer}
+#canvas .dim{opacity:.09;transition:opacity .35s}
+#canvas .lit{opacity:1}
+#canvas .sel{stroke-width:2px !important}
+@media (prefers-reduced-motion:reduce){#canvas .dim{transition:none}}
+
+.loading{position:absolute;inset:auto 0 0 0;text-align:center;padding:8px;
+  background:#26241fD8;color:#fff;font-size:13px}
+.readout{position:absolute;left:12px;bottom:12px;background:#FFFDF8E8;
+  border:1px solid var(--rule);border-radius:var(--r);padding:6px 11px;font-size:12.5px;
+  color:var(--muted);box-shadow:var(--shadow);max-width:60%}
+.readout b{color:var(--ink)}
+.readout .warn{color:var(--accent)}
+.zoomers{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:5px}
+.zoomers button{width:36px;height:36px;padding:0;font-size:17px;box-shadow:var(--shadow)}
+
+.whatif{position:absolute;left:50%;top:16px;transform:translateX(-50%);
+  background:var(--ink);color:#FAF7F0;border-radius:var(--r);padding:12px 18px;
+  box-shadow:0 8px 28px #26241f44;max-width:min(520px,80%);text-align:center}
+.whatif b{color:#F0B7AC;font-size:1.15em}
+.whatif small{display:block;color:#BDB5A6;margin-top:4px}
+
+/* -------------------------------------------------------------- inspector */
+#inspector h3{margin:4px 0 2px;font-size:19px;line-height:1.25}
+#inspector .life{color:var(--muted);margin:0 0 12px}
+#inspector .rel{display:inline-block;background:var(--accent-soft);color:#6E2A20;
+  border-radius:20px;padding:2px 11px;font-size:12.5px;margin-bottom:12px}
+#inspector h4{margin:16px 0 6px;font-size:12px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted)}
+#inspector table{width:100%;border-collapse:collapse;font-size:13.5px}
+#inspector td{padding:4px 0;vertical-align:top;border-bottom:1px solid var(--rule)}
+#inspector td:first-child{color:var(--muted);width:34%;text-transform:capitalize}
+#inspector .kin button{display:block;width:100%;text-align:left;padding:5px 8px;
+  border:0;background:none;border-radius:5px;font:inherit;font-size:13.5px}
+#inspector .kin button:hover{background:var(--accent-soft)}
+#inspector .conf{display:inline-block;width:8px;height:8px;border-radius:50%;
+  margin-right:6px;background:var(--muted)}
+#inspector .c0{background:#C9C0B0}.c1{background:#D8A15C}.c2{background:#6E8B74}.c3{background:#2F6B3E}
+#inspector .field{width:100%;padding:6px 8px;border:1px solid var(--rule);
+  border-radius:6px;background:var(--paper);font:inherit;font-size:14px;margin-bottom:6px}
+
+/* ----------------------------------------------------------------- dialog */
+dialog{border:1px solid var(--rule);border-radius:12px;padding:24px;max-width:520px;
+  background:var(--panel);color:var(--ink);box-shadow:0 20px 60px #26241f40}
+dialog::backdrop{background:#26241f66}
+dialog h2{margin:0 0 4px;font-size:19px}
+.exports{display:grid;gap:8px;margin:16px 0}
+.exports button{text-align:left;padding:11px 14px}
+#listBody{max-height:55vh;overflow:auto;margin:12px 0}
+#listBody button{display:block;width:100%;text-align:left;border:0;background:none;
+  padding:7px 10px;border-radius:6px;font:inherit}
+#listBody button:hover{background:var(--accent-soft)}
+#listBody b{display:inline-block;min-width:52px;color:var(--accent)}
+.report{font-size:13px;margin-top:10px}
+.report div{padding:4px 0;border-bottom:1px solid var(--rule)}
+.report .pass::before{content:"✓ ";color:#2F6B3E}
+.report .warn::before{content:"! ";color:#C07A2A}
+.report .fail::before{content:"✕ ";color:var(--accent)}
+
+@media (max-width:900px){
+  main{grid-template-columns:1fr}
+  #left{position:absolute;inset:0 auto 0 0;width:300px;z-index:15;
+        box-shadow:8px 0 24px #26241f22}
+  body[data-panels=closed] #left{display:none}
+}
+
+/* Fit indicator. The whole point of the live preview is answering one
+   question -- will this fit on the panel I have bought? -- so answer it
+   plainly and in millimetres. */
+.fit{margin-top:12px;padding:9px 11px;border-radius:var(--r);font-size:13px;
+     border:1px solid var(--rule);background:var(--paper);line-height:1.45}
+.fit b{display:block;font-size:14px;margin-bottom:2px}
+.fit.ok{border-color:#7FA07F;background:#F0F5EE}
+.fit.ok b{color:#3B6B3B}
+.fit.over{border-color:#C88C7E;background:#FBEFEC}
+.fit.over b{color:#9B3A2E}
+.fit small{color:var(--muted);display:block;margin-top:3px}
+.readout .ok{color:#3B6B3B}
+
+/* "Saved" is a statement of fact, not a button. SQLite commits on every
+   edit, so there is nothing to press and nothing to lose. */
+.saved{font-size:12.5px;color:#3B6B3B;background:#EEF4EC;border:1px solid #CBDCC6;
+       border-radius:20px;padding:3px 11px;white-space:nowrap}
+.saved.warn{color:#9B3A2E;background:#FBEFEC;border-color:#E2C4BC}

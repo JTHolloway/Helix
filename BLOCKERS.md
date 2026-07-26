@@ -1,0 +1,112 @@
+# What must be built before this is a usable product
+
+## Before all of these: `docs/KNOWN_ISSUE_LAYOUT.md`
+
+The radial layout does not read properly on real data. Sibling arcs sweep
+across unrelated people and spouses are cluttered; both are measured in that
+document, with the algorithm that should replace the current allocation.
+**Fix it first.** The three blockers below make the program usable; that one
+makes its output worth having.
+
+---
+
+Three gaps stop Helix being usable on a real family. Everything else is
+polish. **Build these in order and do not skip ahead.** Each has acceptance
+criteria that can be checked by running a command.
+
+---
+
+## Blocker 1 — You cannot enter your family in the app
+
+**Files:** `helix/server.py`, `helix/web/js/inspector.js`,
+`helix/web/js/main.js`, plus a new `helix/web/js/edit.js`
+
+**Full specification: `docs/DATA_ENTRY_UI.md`.** Build it from that document.
+It gives the screens, the button-to-database mapping, every endpoint with its
+payload, the navigation, and a ten-step acceptance sequence.
+
+Today the person panel **edits existing records only**. There is no way to
+add a person, add a partner, or attach a child, so the app can explore the
+sample and nothing else. This is the single thing standing between Helix and
+being usable.
+
+The model in one line: **you are always standing on somebody, and you add the
+next person relative to them.** Add father / Add mother / Add partner / Add
+child / Add brother or sister. The word "union" must never reach the screen.
+
+**Done when** the ten-step sequence at the end of `docs/DATA_ENTRY_UI.md`
+can be completed entirely in the browser, and survives a restart.
+
+**Persistence is already built** — see `docs/KEEPING_YOUR_WORK.md`. Every
+write commits immediately, daily backups are automatic, migrations run on
+open, and `helix archive` writes a portable zip. You are adding the create
+and delete endpoints on top of a save model that already works, so do not
+build a Save button, an autosave timer, or a document-dirty flag. There is
+no unsaved state.
+
+---
+
+## Blocker 2 — Laser output needs a manual step
+
+**Files:** `helix/fab/textpath.py`, then `islands.py`, `kerf.py`
+
+`--production` does not yet convert text to outlines, so the operator must do
+it in LightBurn or Inkscape and hope nothing reflows.
+
+**Done when:**
+```bash
+helix render my.helix --production -o cut.svg
+```
+produces a file with **no `<text>` elements**, an island report, and a
+pre-flight that passes. Prefer Hershey single-line fonts for the ENGRAVE
+layer — three to five times faster on the machine and legible far smaller.
+
+---
+
+## Blocker 3 — No way in or out for anyone else's data
+
+**Files:** `helix/io/gedcom/`, `helix/io/csv_import.py`
+
+Lower priority than it looks, and deliberately ranked third. If you are
+entering your own family by hand (Blocker 1), you never need to import
+anything. It matters for three narrower reasons:
+
+- **Backup and portability.** A GEDCOM export means your work is not trapped
+  in one program. This alone justifies building the *writer* early.
+- **A cousin sends you their tree.** Import saves weeks of retyping.
+- **Ancestry, MyHeritage and FamilySearch** all export GEDCOM, so anyone
+  arriving with an existing tree needs it.
+
+Build the **writer first** — it is far simpler, and it makes the file format
+honest. The reader can follow.
+
+The module docstrings list the traps: ANSEL encoding, CONT/CONC continuation,
+custom `_TAGS`, `John /Smith/` name slashes, `@#DJULIAN@` escapes, families
+with no HUSB, children listed twice, cyclic pedigrees.
+
+**Done when:**
+```bash
+helix export my.helix out.ged        # opens in Ancestry without complaint
+helix import family.ged new.helix    # 500+ people, no invented errors
+```
+Anything not modelled goes into `person.notes` prefixed `[GEDCOM]`. Never
+discard silently.
+
+---
+
+## After the blockers
+
+`BUILD_INSTRUCTIONS.md` has the full phase list. In short: clock fitting,
+research-gap ranking, DNA, and the eight designs specified in
+`docs/DESIGN_CATALOGUE.md` but not yet built.
+
+## What must not regress
+
+```bash
+python3 -m pytest tests -q       # 126 tests, all green
+python3 bootstrap.py             # must still print "Ready"
+```
+
+The tests encode decisions that were arrived at the hard way — interval date
+comparison, per-union sibling arcs, polar label collision, half-sibling
+naming. If one starts failing, read it before changing it.

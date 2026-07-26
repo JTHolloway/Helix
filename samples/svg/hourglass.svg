@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="841mm" height="1189mm" viewBox="0 0 841 1189">
+<!-- helix | engine=hourglass style=default people=9 hash=a65bb32838f7 -->
+<rect x="0" y="0" width="841" height="1189" fill="#FBF8F2"/>
+<g id="GUIDE" inkscape:groupmode="layer" inkscape:label="GUIDE">
+<path d="M26,939.2L815,939.2" fill="none" stroke="#C9C0B0" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+</g>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<path d="M420.5,939.2L420.5,826.3A2,2 0 0,0 418.5,824.3L225.25,824.3A2,2 0 0,1 223.25,822.3L223.25,709.4" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M420.5,939.2L420.5,826.3A2,2 0 0,1 422.5,824.3L615.75,824.3A2,2 0 0,0 617.75,822.3L617.75,709.4" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M223.25,709.4L223.25,596.5A2,2 0 0,0 221.25,594.5L126.625,594.5A2,2 0 0,1 124.625,592.5L124.625,479.6" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M223.25,709.4L223.25,596.5A2,2 0 0,1 225.25,594.5L319.875,594.5A2,2 0 0,0 321.875,592.5L321.875,479.6" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M124.625,479.6L124.625,366.7A2,2 0 0,0 122.625,364.7L77.3125,364.7A2,2 0 0,1 75.3125,362.7L75.3125,249.8" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M124.625,479.6L124.625,366.7A2,2 0 0,1 126.625,364.7L171.9375,364.7A2,2 0 0,0 173.9375,362.7L173.9375,249.8" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M75.3125,249.8L75.3125,136.9A2,2 0 0,0 73.3125,134.9L52.6562,134.9A2,2 0 0,1 50.6562,132.9L50.6562,20" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M75.3125,249.8L75.3125,136.9A2,2 0 0,1 77.3125,134.9L97.9688,134.9A2,2 0 0,0 99.9688,132.9L99.9688,20" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="420.5" cy="939.2" r="2.88" fill="#A3392B" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="223.25" cy="709.4" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="617.75" cy="709.4" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="124.625" cy="479.6" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="321.875" cy="479.6" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="75.3125" cy="249.8" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="173.9375" cy="249.8" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="50.6562" cy="20" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="99.9688" cy="20" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="420.5" y="934.7" font-family="Georgia, 'Iowan Old Style', serif" font-size="3.75" fill="#22201D" text-anchor="middle" dominant-baseline="central">Beatrice Pargeter</text>
+<text x="223.25" y="704.9" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Samuel Pargeter</text>
+<text x="617.75" y="704.9" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Hannah Cadogan</text>
+<text x="124.625" y="475.1" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Frederick Pargeter</text>
+<text x="321.875" y="475.1" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Sarah Boyce</text>
+<text x="75.3125" y="245.3" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Joseph Pargeter</text>
+<text x="173.9375" y="245.3" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Florence Cadogan</text>
+<text x="50.6562" y="15.5" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Arthur Pargeter</text>
+<text x="99.9688" y="15.5" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Lydia Brayfield</text>
+<text x="420.5" y="24" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+</svg>

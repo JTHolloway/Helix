@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-mode="simple">
+
+<header class="bar">
+  <div class="brand">Helix<span id="proj"></span></div>
+  <div class="grow"></div>
+  <input id="search" type="search" placeholder="Find a person…" autocomplete="off">
+  <div id="results" class="results" hidden></div>
+  <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
+  <span id="saved" class="saved" title="Every change is written to your family file the moment you make it">Saved</span>
+  <button id="exportBtn" class="primary">Export</button>
+</header>
+
+<main>
+  <!-- ─────────────────────────── LEFT ─────────────────────────── -->
+  <aside id="left">
+    <section class="panel open" data-panel="design">
+      <h2>1 · Choose a look</h2>
+      <div id="gallery" class="gallery"></div>
+      <p class="hint" id="designBlurb"></p>
+    </section>
+
+    <section class="panel open" data-panel="show">
+      <h2>2 · What to show</h2>
+      <label>Who to include
+        <select id="focus">
+          <option value="bloodline" selected>Everyone I'm related to by blood</option>
+          <option value="thread_siblings">My line, plus brothers and sisters</option>
+          <option value="thread">My direct line only</option>
+          <option value="subtree">My line, siblings and cousins</option>
+          <option value="all">Everyone in the file</option>
+        </select>
+      </label>
+      <label>Generations
+        <select id="gens">
+          <option value="">All of them</option>
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5" selected>5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option>
+        </select>
+      </label>
+      <label>On each person
+        <select id="tpl">
+          <option value="{given_first} {surname}">Name</option>
+          <option value="{given} {surname}">Full name</option>
+          <option value="{given_first} {surname}|{lifespan}">Name · dates underneath</option>
+          <option value="{given} {surname}|{lifespan}">Full name · dates underneath</option>
+          <option value="{given_first} {surname}|{lifespan}|{occupation}">Name · dates · occupation</option>
+          <option value="{given_first} {surname}|{birth_place}">Name · birthplace</option>
+          <option value="{surname}">Surname only</option>
+          <option value="{initials}">Initials</option>
+          <option value="">Nothing (shape only)</option>
+        </select>
+      </label>
+      <label>Text direction
+        <select id="orient">
+          <option value="radial" selected>Along the branch (fits the most)</option>
+          <option value="tangential">Around the ring (easiest to read)</option>
+          <option value="auto">Whichever fits</option>
+        </select>
+      </label>
+      <label>Colour by
+        <select id="cmode">
+          <option value="none">Nothing — one colour</option>
+          <option value="lineage">Family line</option>
+          <option value="generation">Generation</option>
+          <option value="lifespan">How long they lived</option>
+          <option value="sex">Sex</option>
+          <option value="geography">Where they were born</option>
+          <option value="occupation">Occupation</option>
+          <option value="confidence">How well proven</option>
+          <option value="criticality">How many descend from them</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="marr" checked> Join married couples with a tie</label>
+      <label class="check"><input type="checkbox" id="redact"> Hide details of living people</label>
+    </section>
+
+    <section class="panel open" data-panel="thread">
+      <h2>3 · Your bloodline</h2>
+      <p class="hint">The people you are directly descended from — everyone
+        without whom you would not exist.</p>
+      <label class="check"><input type="checkbox" id="threadOn" checked> Highlight it</label>
+      <label class="check"><input type="checkbox" id="whatif"> <b>What-if mode</b> — hover anyone to see who vanishes without them</label>
+      <button id="criticalBtn" class="ghost wide">Show the 20 most important ancestors</button>
+    </section>
+
+    <section class="panel open" data-panel="size">
+      <h2>4 · The finished piece</h2>
+      <label>Panel
+        <select id="preset">
+          <option value="1000x1000" selected>1000 × 1000 mm — 1 m square</option>
+          <option value="1200x1200">1200 × 1200 mm</option>
+          <option value="800x800">800 × 800 mm</option>
+          <option value="600x600">600 × 600 mm</option>
+          <option value="600x400">600 × 400 mm — common laser bed</option>
+          <option value="1189x841">1189 × 841 mm — A0</option>
+          <option value="841x594">841 × 594 mm — A1</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <label>Width <input type="number" id="w" value="1000" step="10"> mm</label>
+      <label>Height <input type="number" id="h" value="1000" step="10"> mm</label>
+      <label>Gap between rings <input type="range" id="pitch" min="10" max="90" value="25"><output id="pitchV">25 mm (1.0")</output></label>
+      <label>Space between people <input type="range" id="entrygap" min="0" max="30" value="0"><output id="entrygapV">as tight as the text allows</output></label>
+      <label>Keep families together <input type="range" id="cluster" min="0" max="50" value="0"><output id="clusterV">off</output></label>
+      <div id="fit" class="fit"></div>
+    </section>
+
+    <section class="panel adv" data-panel="size2">
+      <h2>Fine adjustment</h2>
+      <label>Hole in the middle <input type="range" id="inner" min="0" max="250" value="95"><output id="innerV">95 mm</output></label>
+      <label>Time squeeze <input type="range" id="gamma" min="30" max="100" value="50"><output id="gammaV">equal area</output></label>
+      <label class="check"><input type="checkbox" id="timeScale" checked> Rings are years, not generations</label>
+      <label class="check"><input type="checkbox" id="rings" checked> Draw year rings</label>
+    </section>
+
+    <section class="panel adv" data-panel="type">
+      <h2>Lines &amp; type</h2>
+      <label>Text size <input type="range" id="fsize" min="15" max="60" value="29"><output id="fsizeV">2.9 mm</output></label>
+      <label>Line weight <input type="range" id="lw" min="10" max="200" value="40"><output id="lwV">0.40 mm</output></label>
+      <label>Connector style
+        <select id="conn">
+          <option value="orthogonal">Right angles</option>
+          <option value="organic">Flowing curves</option>
+          <option value="straight">Straight</option>
+          <option value="circuit">Chamfered</option>
+          <option value="none">None</option>
+        </select>
+      </label>
+      <label>Start angle <input type="range" id="start" min="-180" max="180" value="-90"><output id="startV">12 o'clock</output></label>
+      <label>Sweep <input type="range" id="sweep" min="90" max="360" value="360"><output id="sweepV">full circle</output></label>
+    </section>
+
+    <section class="panel adv" data-panel="fab">
+      <h2>Making it</h2>
+      <label>Material
+        <select id="material">
+          <option value="birch_ply_3mm">3 mm birch ply</option>
+          <option value="mdf_5mm">5 mm MDF</option>
+          <option value="acrylic_3mm_cast">3 mm cast acrylic</option>
+          <option value="walnut_veneer_ply_4mm">4 mm walnut veneer ply</option>
+          <option value="card_1mm">1 mm card (prototype)</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="clock"> Leave a hole for a clock movement</label>
+      <button id="preflightBtn" class="ghost wide">Check it will cut cleanly</button>
+      <div id="preflight" class="report"></div>
+    </section>
+  </aside>
+
+  <!-- ─────────────────────────── CANVAS ─────────────────────────── -->
+  <section id="stage">
+    <div id="canvasWrap"><div id="canvas"></div></div>
+    <div id="loading" class="loading" hidden>Drawing…</div>
+    <div id="readout" class="readout"></div>
+    <div id="whatifCard" class="whatif" hidden></div>
+    <div class="zoomers">
+      <button data-z="in" title="Zoom in">+</button>
+      <button data-z="out" title="Zoom out">−</button>
+      <button data-z="fit" title="Fit to window">⤢</button>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── RIGHT ─────────────────────────── -->
+  <aside id="right" hidden>
+    <button id="closeInsp" class="close" title="Close">×</button>
+    <div id="inspector"></div>
+  </aside>
+</main>
+
+<dialog id="exportDlg">
+  <h2>Export</h2>
+  <p class="hint">The picture on screen is the file you get — same geometry, same size.</p>
+  <div class="exports">
+    <button data-x="archive">Archive — everything, zipped, to keep elsewhere</button>
+    <button data-x="backup">Back up now</button>
+    <button data-x="svg">SVG — for printing or the laser</button>
+    <button data-x="svgprod">SVG — cut layers only (red = cut, black = engrave)</button>
+    <button data-x="png">PNG — for sharing</button>
+    <button data-x="json">Plan JSON — for scripting</button>
+  </div>
+  <p class="hint" id="exportSize"></p>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<dialog id="listDlg"><h2 id="listTitle"></h2><div id="listBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form></dialog>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

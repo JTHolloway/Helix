@@ -1,0 +1,35 @@
+{
+  "name": "Nested Families",
+  "blurb": "Families inside families. No dates, pure shape.",
+  "laser": "good",
+  "canvas": {
+    "width_mm": 700,
+    "height_mm": 700,
+    "margin_mm": 20,
+    "background": "#F7F4EE"
+  },
+  "layout": {
+    "engine": "circle_pack"
+  },
+  "cells": {
+    "stroke_width_mm": 0.4,
+    "fill": "none"
+  },
+  "type": {
+    "family": "'Avenir Next',system-ui,sans-serif",
+    "size_mm": 2.6,
+    "min_size_mm": 2.2
+  },
+  "labels": {
+    "template": "{given_first} {surname}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#A3392B",
+    "stroke_width_mm": 0.8
+  },
+  "colour": {
+    "mode": "generation"
+  },
+  "id": "nested"
+}

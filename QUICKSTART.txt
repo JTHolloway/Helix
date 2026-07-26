@@ -1,0 +1,64 @@
+HELIX — QUICK START
+===================
+
+  1.  Unzip this folder somewhere sensible.
+
+  2.  Open a terminal in it and run ONE command:
+
+          python3 bootstrap.py
+
+      (On Windows you can double-click run.bat instead.)
+
+      That is it. Nothing is installed, nothing is downloaded. In about six
+      seconds you will have a sample family, every design rendered to both
+      SVG and PDF, and a web page showing them side by side.
+
+  3.  Look at the results:
+
+          samples/index.html      every design, side by side
+          samples/pdf/            print-ready, at true physical size
+          samples/svg/            for the laser cutter
+
+  4.  Open the actual app:
+
+          python3 -m helix.cli serve sample-family.helix
+
+      Your browser opens. Pick a design from the gallery on the left.
+
+  5.  IF A CHART LOOKS TOO BUSY
+
+      It is showing too many people, not drawing them badly. Try:
+
+          --focus bloodline         everyone you're related to (~170)
+          --focus thread_siblings   your line plus siblings    (~45)
+          --focus thread            your direct line only      (~20)
+          --focus all               every person in the file   (400+)
+          --max-generations 4       fewer rings
+
+      Helix always tells you how many names would not fit.
+
+  6.  When you want your own family instead of the sample:
+
+          python3 -m helix.cli init my-family.helix --title "The Whitcombes"
+          python3 -m helix.cli serve my-family.helix
+
+
+NO INTERNET IS USED. NOTHING LEAVES YOUR COMPUTER.
+
+
+WHERE TO READ NEXT
+------------------
+  START_HERE.md                 if you are handing this to an AI assistant
+  BLOCKERS.md                   what still has to be built, and in what order
+  PROMPTS.md                    prompts to give the build chat
+  README.md                     what this is
+  BUILD_INSTRUCTIONS.md         for whoever finishes the code
+  docs/DESIGN_CATALOGUE.md      all 19 designs, and which to choose
+  docs/OPTIONS.md               every customisation option
+  docs/KEEPING_YOUR_WORK.md     how your work is saved and kept safe
+  docs/RESEARCH_HANDBOOK.md     how to actually find your ancestors
+  docs/DATA_ENTRY_RULES.md      read before entering your second person
+  docs/LASER_CHECKLIST.md       read before cutting anything you care about
+  docs/UX_GUIDE.md              the rules that keep this easy to use
+  docs/ARCHITECTURE.md          how the pieces fit together
+  docs/ROADMAP.md               25 further ideas, ranked
