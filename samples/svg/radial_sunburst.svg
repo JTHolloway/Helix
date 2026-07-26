@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="600mm" height="600mm" viewBox="0 0 600 600">
-<!-- helix | engine=radial_sunburst style=labyrinth people=31 hash=27c217162701 -->
+<!-- helix | engine=radial_sunburst style=labyrinth people=31 hash=caa9765a237c -->
 <rect x="0" y="0" width="600" height="600" fill="#F4F0E6"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
 <path d="M189.7445,300A110.2555,110.2555 0 1,0 410.2555,300A110.2555,110.2555 0 1,0 189.7445,300Z" fill="none" stroke="#C7BCA6" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -115,14 +115,14 @@
 <text x="300" y="300" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="6.38" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
 </g>
 <g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
+<circle cx="300" cy="560.7925" r="1.35" fill="#9B3A2E"/>
 <circle cx="342.8024" cy="515.1824" r="1.35" fill="#9B3A2E"/>
 <circle cx="257.0087" cy="516.1317" r="1.35" fill="#9B3A2E"/>
 <circle cx="336.89" cy="485.4584" r="1.35" fill="#9B3A2E"/>
-<circle cx="269.9736" cy="450.9528" r="1.35" fill="#9B3A2E"/>
-<circle cx="328.3969" cy="442.7611" r="1.35" fill="#9B3A2E"/>
-<circle cx="279.3448" cy="403.8406" r="1.35" fill="#9B3A2E"/>
-<circle cx="319.4115" cy="397.5881" r="1.35" fill="#9B3A2E"/>
-<circle cx="300" cy="560.7925" r="1.35" fill="#9B3A2E"/>
 <circle cx="262.0236" cy="490.9201" r="1.35" fill="#9B3A2E"/>
+<circle cx="328.3969" cy="442.7611" r="1.35" fill="#9B3A2E"/>
+<circle cx="269.9736" cy="450.9528" r="1.35" fill="#9B3A2E"/>
+<circle cx="319.4115" cy="397.5881" r="1.35" fill="#9B3A2E"/>
+<circle cx="279.3448" cy="403.8406" r="1.35" fill="#9B3A2E"/>
 </g>
 </svg>

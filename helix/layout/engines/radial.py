@@ -182,6 +182,24 @@ def _labels_radial(plan, graph, g, style, cx, cy, pos, depth, sweep):
             f"with a companion list.")
 
 
+def _thread_in_grid_order(g, pos, thr) -> list[str]:
+    """Thread members that have a position, in stable grid order.
+
+    The Thread is a set of uuid strings, and iterating it directly gives a
+    different order in every process. The geometry was identical but the SVG
+    was not, so two identical runs produced different files and different
+    plan hashes. Everything else in this module walks the grid and tests
+    membership; these are the two places that did not.
+    """
+    seen: set[str] = set()
+    out: list[str] = []
+    for sl in g:
+        if sl.pid in thr and sl.pid in pos and sl.pid not in seen:
+            seen.add(sl.pid)
+            out.append(sl.pid)
+    return out
+
+
 def _thread_overlay(plan, graph, g, style, cx, cy, pos, thr, depth):
     if not thr:
         return
@@ -201,9 +219,10 @@ def _thread_overlay(plan, graph, g, style, cx, cy, pos, thr, depth):
         plan.add(Element(kind="path", layer=layer, d=d, stroke=col,
                          stroke_width=w, fill="none", person_id=sl.pid,
                          role="thread", z=80))
-    for pid in thr:
-        if pid not in pos:
-            continue
+    # Walk the grid, not `thr`: a set of uuid strings iterates in a different
+    # order in every process, which made the SVG differ byte-for-byte between
+    # two identical runs. Same geometry, shuffled emission order.
+    for pid in _thread_in_grid_order(g, pos, thr):
         tc, r = pos[pid]
         x, y = G.polar(cx, cy, r + depth / 2, tc)
         plan.add(Element(kind="circle", layer=layer, x=x, y=y, r=w * 0.9,
@@ -798,9 +817,7 @@ def _thread_marks(plan, graph, g, style, cx, cy, pos, thr):
         return
     col = style.get("thread.colour", "#A3392B")
     w = style.get("thread.stroke_width_mm", 0.8)
-    for pid in thr:
-        if pid not in pos:
-            continue
+    for pid in _thread_in_grid_order(g, pos, thr):
         t, r = pos[pid][0], pos[pid][1]
         x, y = G.polar(cx, cy, r, t)
         plan.add(Element(kind="circle",
