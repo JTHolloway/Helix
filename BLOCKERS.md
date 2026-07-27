@@ -1,12 +1,12 @@
 # What must be built before this is a usable product
 
-## Before all of these: `docs/KNOWN_ISSUE_LAYOUT.md`
+## Done, ahead of these: the layout
 
-The radial layout does not read properly on real data. Sibling arcs sweep
-across unrelated people and spouses are cluttered; both are measured in that
-document, with the algorithm that should replace the current allocation.
-**Fix it first.** The three blockers below make the program usable; that one
-makes its output worth having.
+The radial layout used to sweep sibling arcs across unrelated people and put
+people on identical angles. That is fixed — `helix/layout/subject_grid.py`
+now uses a single-pass tidy tree and all four numbers in
+`tools/diagnose_layout.py` read zero. See `docs/KNOWN_ISSUE_LAYOUT.md` for
+what it still deliberately cannot do. **Start at Blocker 1 below.**
 
 ---
 

@@ -5,16 +5,18 @@ Python 3.11+, **zero required dependencies**, 193 tests.
 
 ## Read this before anything else
 
-**`docs/KNOWN_ISSUE_LAYOUT.md` — the radial layout is not good enough yet.**
-The owner has looked at real output and it does not read properly: sibling
-arcs sweep across unrelated people, and spouses are cluttered. It was
-iterated on several times and improved each time without becoming right.
+**The radial layout has been fixed.** `helix/layout/subject_grid.py` now
+allocates angle with a single-pass tidy tree (Reingold–Tilford adapted to
+polar coordinates) instead of four competing heuristics. All four numbers in
+`python3 tools/diagnose_layout.py <file>` read zero, on every focus mode.
 
-It needs a **stronger model than the one that wrote it**, and it needs a
-proper tidy-tree algorithm rather than another patch. Measure with
-`python3 tools/diagnose_layout.py <file>` before and after — all four numbers
-must reach zero. Fix this before the blockers; a chart nobody can read makes
-the rest pointless.
+`docs/KNOWN_ISSUE_LAYOUT.md` is still worth reading before you touch that
+file: it records the three things the layout deliberately cannot do — a
+sibling's own spouse under their arc, the Thread sweeping, and cousin
+marriages splitting a couple — each with the reason the obvious fix is worse.
+Re-measure before and after any change there.
+
+**Next up is `BLOCKERS.md`, in order.**
 
 ## Do this first, before anything else
 

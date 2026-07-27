@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1000mm" height="1000mm" viewBox="0 0 1000 1000">
-<!-- helix | engine=radial_rings style=panel1m people=31 hash=406ca92cdd53 -->
+<!-- helix | engine=radial_rings style=panel1m people=31 hash=3f547268dbd4 -->
 <rect x="0" y="0" width="1000" height="1000" fill="#FBF8F2"/>
 <g id="GUIDE" inkscape:groupmode="layer" inkscape:label="GUIDE">
 <path d="M315.4032,500A184.5968,184.5968 0 1,0 684.5968,500A184.5968,184.5968 0 1,0 315.4032,500Z" fill="none" stroke="#DAD2C2" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1,2.5"/>
@@ -9,137 +9,137 @@
 <path d="M103.9888,500A396.0112,396.0112 0 1,0 896.0112,500A396.0112,396.0112 0 1,0 103.9888,500Z" fill="none" stroke="#DAD2C2" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1,2.5"/>
 </g>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
-<path d="M500,615L500,684.5968" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M500,689.5968L500,764.4976" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M500,769.4976L500,830.2544" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M500,835.2544L500,896.0112" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M653.4866,397.4435A184.5968,184.5968 0 0,1 369.4704,630.5296" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M719.9217,646.947A264.4976,264.4976 0 0,1 312.972,687.028" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M823.9087,564.4294A330.2544,330.2544 0 0,1 266.4749,733.5251" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M780.0222,219.9778A396.0112,396.0112 0 0,1 500,896.0112" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M602.5565,653.4866L605.3343,657.644" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M670.5452,570.6421L675.1646,572.5556" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M681.0498,463.987L685.9538,463.0115" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M653.4866,397.4435L657.644,394.6657" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M369.4704,630.5296L365.9348,634.0652" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M536.013,681.0498L536.9885,685.9538" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M646.947,719.9217L649.7248,724.0791" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M719.9217,646.947L724.0791,649.7248" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M551.6009,759.4154L552.5764,764.3193" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M312.972,687.028L309.4364,690.5636" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M733.5251,733.5251L737.0607,737.0607" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M823.9087,564.4294L828.8126,565.4049" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M564.4294,823.9087L565.4049,828.8126" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M266.4749,733.5251L262.9393,737.0607" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M651.5469,865.8666L653.4603,870.486" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M780.0222,780.0222L783.5577,783.5577" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M865.8666,651.5469L870.486,653.4603" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M896.0112,500L901.0112,500" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M865.8666,348.4531L870.486,346.5397" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M780.0222,219.9778L783.5577,216.4423" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
-<path d="M500,896.0112L500,901.0112" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M435.1804,825.8702L434.5951,828.8126" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M659.4928,791.4705L660.9329,794.1022" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M208.5295,659.4928L205.8978,660.9329" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M448.0089,761.3769L447.4236,764.3193" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M266.2147,627.9274L263.583,629.3675" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M463.5968,683.0114L463.0115,685.9538" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M645.3965,616.954L647.7341,618.8343" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M336.3078,589.5725L333.676,591.0126" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M521.8501,609.848L522.4354,612.7903" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M478.1499,609.848L477.5646,612.7903" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M436.5522,824.6119A330.7544,330.7544 0 0,1 434.3945,824.1827" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M659.7368,789.625A330.7544,330.7544 0 0,1 657.8069,790.681" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M210.375,659.7368A330.7544,330.7544 0 0,1 209.319,657.8069" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M449.3808,760.1181A264.9976,264.9976 0 0,1 447.2231,759.6889" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M268.0607,628.1712A264.9976,264.9976 0 0,1 267.0046,626.2413" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M464.9689,681.7516A185.0968,185.0968 0 0,1 462.8112,681.3224" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M644.9146,615.1547A185.0968,185.0968 0 0,1 643.5357,616.8689" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M338.1546,589.8158A185.0968,185.0968 0 0,1 337.0985,587.8859" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M522.6353,608.1568A110.5,110.5 0 0,1 520.4776,608.586" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.6,1.2"/>
-<path d="M479.5224,608.586A110.5,110.5 0 0,1 477.3647,608.1568" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.6,1.2"/>
-<path d="M521.4599,607.8864L522.4354,612.7903" fill="none" stroke="#2A2622" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M478.5401,607.8864L477.5646,612.7903" fill="none" stroke="#2A2622" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M522.2013,611.6134A113.8,113.8 0 0,1 477.7987,611.6134" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M674.0559,572.0963A188.3968,188.3968 0 0,1 646.799,618.0822" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M536.7544,684.7768A188.3968,188.3968 0 0,1 463.2456,684.7768" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M366.7833,633.2167A188.3968,188.3968 0 0,1 334.7287,590.4365" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M310.2849,689.7151A268.2976,268.2976 0 0,1 264.6357,628.7915" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M552.3423,763.1423A268.2976,268.2976 0 0,1 447.6577,763.1423" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M736.2121,736.2121A334.0544,334.0544 0 0,1 660.3568,793.0495" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M565.1708,827.6356A334.0544,334.0544 0 0,1 434.8292,827.6356" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M263.7879,736.2121A334.0544,334.0544 0 0,1 206.9505,660.3568" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="525.6781" y="613.6349" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(77.2667,525.6781,613.6349)">Arthur William Pargeter</text>
-<text x="522.2728" y="614.3511" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(78.9782,522.2728,614.3511)">1692–1747</text>
-<text x="519.3053" y="614.8893" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(80.4615,519.3053,614.8893)">Trowbridge</text>
-<text x="474.3219" y="613.6349" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(282.7333,474.3219,613.6349)">Lydia Brayfield</text>
-<text x="477.7272" y="614.3511" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(281.0218,477.7272,614.3511)">1695–1796</text>
-<text x="480.6947" y="614.8893" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(279.5385,480.6947,614.8893)">Bathwick</text>
-<text x="538.759" y="687.1249" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(78.2979,538.759,687.1249)">Joseph Pargeter</text>
-<text x="535.3451" y="687.7997" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(79.3413,535.3451,687.7997)">1796</text>
-<text x="459.7656" y="686.8132" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(282.1543,459.7656,686.8132)">Florence Cadogan</text>
-<text x="463.1741" y="687.5149" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(281.1109,463.1741,687.5149)">1724–1801</text>
-<text x="466.138" y="688.0727" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(280.2066,466.138,688.0727)">Walcot</text>
-<text x="608.6621" y="657.1959" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(55.3457,608.6621,657.1959)">Susannah Winifred Pargeter</text>
-<text x="605.7816" y="659.1485" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(56.3891,605.7816,659.1485)">1715–1759</text>
-<text x="603.2567" y="660.7981" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(57.2934,603.2567,660.7981)">Chippenham</text>
-<text x="677.6826" y="570.3342" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(21.5957,677.6826,570.3342)">Nathaniel Pargeter</text>
-<text x="676.3723" y="573.558" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(22.6391,676.3723,573.558)">1718–1766</text>
-<text x="675.1895" y="576.3324" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(23.5434,675.1895,576.3324)">Bathwick</text>
-<text x="650.7746" y="617.4096" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(37.9082,650.7746,617.4096)">Alice Dunmore</text>
-<text x="648.6116" y="620.1357" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(38.9516,648.6116,620.1357)">1719–1803</text>
-<text x="646.6971" y="622.4661" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(39.8559,646.6971,622.4661)">Trowbridge</text>
-<text x="686.8132" y="459.7656" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(347.8457,686.8132,459.7656)">Reuben Pargeter</text>
-<text x="687.5149" y="463.1741" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(348.8891,687.5149,463.1741)">1723–1728</text>
-<text x="688.0727" y="466.138" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(349.7934,688.0727,466.138)">Keynsham</text>
-<text x="657.1959" y="391.3379" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(325.3457,657.1959,391.3379)">Winifred Pargeter</text>
-<text x="659.1485" y="394.2184" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(326.3891,659.1485,394.2184)">1724–1795</text>
-<text x="660.7981" y="396.7433" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(327.2934,660.7981,396.7433)">Bristol</text>
-<text x="362.7584" y="632.9765" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(315.9043,362.7584,632.9765)">Frederick Pargeter</text>
-<text x="365.2027" y="635.4535" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(314.8609,365.2027,635.4535)">1730–1823</text>
-<text x="367.3572" y="637.564" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(313.9566,367.3572,637.564)">Bradford-on-Avon</text>
-<text x="331.6415" y="590.4069" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(331.7646,331.6415,590.4069)">Edith Brayfield</text>
-<text x="333.3157" y="593.4576" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(330.7212,333.3157,593.4576)">1823</text>
-<text x="554.3472" y="765.4921" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(78.4312,554.3472,765.4921)">Frederick Pargeter</text>
-<text x="550.9335" y="766.1681" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(79.1669,550.9335,766.1681)">1752–1806</text>
-<text x="445.6528" y="765.4921" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(281.5688,445.6528,765.4921)">Sarah Boyce</text>
-<text x="449.0665" y="766.1681" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(280.8331,449.0665,766.1681)">1757–1834</text>
-<text x="651.8097" y="724.485" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(55.9312,651.8097,724.485)">Mary Pargeter</text>
-<text x="648.9146" y="726.4159" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(56.6669,648.9146,726.4159)">1747–1810</text>
-<text x="726.1606" y="649.302" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(33.4312,726.1606,649.302)">William Pargeter</text>
-<text x="724.2247" y="652.1939" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(34.1669,724.2247,652.1939)">1748–1795</text>
-<text x="307.3124" y="690.555" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(315.3188,307.3124,690.555)">Albert Pargeter</text>
-<text x="309.7752" y="693.0136" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(314.5831,309.7752,693.0136)">1835</text>
-<text x="261.5469" y="628.7627" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(331.6313,261.5469,628.7627)">Sarah Rennick</text>
-<text x="263.22" y="631.814" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(330.8956,263.22,631.814)">1748–1748</text>
-<text x="567.1759" y="829.9863" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(78.4934,567.1759,829.9863)">Samuel Pargeter</text>
-<text x="563.7623" y="830.6628" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(79.0855,563.7623,830.6628)">1781–1874</text>
-<text x="432.8241" y="829.9863" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(281.5066,432.8241,829.9863)">Hannah Cadogan</text>
-<text x="436.2377" y="830.6628" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(280.9145,436.2377,830.6628)">1834</text>
-<text x="739.1852" y="737.0526" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(44.7434,739.1852,737.0526)">Walter Pargeter</text>
-<text x="736.7228" y="739.5116" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(45.3355,736.7228,739.5116)">1779–1832</text>
-<text x="662.9742" y="794.6913" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(61.0559,662.9742,794.6913)">Hannah Threlfall</text>
-<text x="659.9202" y="796.3597" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(61.648,659.9202,796.3597)">1783–1832</text>
-<text x="830.5746" y="564.2178" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(10.9934,830.5746,564.2178)">Frederick Pargeter</text>
-<text x="829.8934" y="567.6305" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(11.5855,829.8934,567.6305)">1781–1841</text>
-<text x="260.8148" y="737.0526" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(315.2566,260.8148,737.0526)">Ann Pargeter</text>
-<text x="263.2772" y="739.5116" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(314.6645,263.2772,739.5116)">1782–1786</text>
-<text x="203.861" y="660.3284" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(331.5691,203.861,660.3284)">Joseph Kentish</text>
-<text x="205.5336" y="663.3801" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(330.977,205.5336,663.3801)">1784–1853</text>
-<text x="501.508" y="902.5084" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(89.7853,501.508,902.5084)">Beatrice Pargeter</text>
-<text x="498.028" y="902.5064" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(270.2807,498.028,902.5064)">1828–1896</text>
-<text x="655.4265" y="871.2922" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(67.2853,655.4265,871.2922)">Thomas Pargeter</text>
-<text x="652.2106" y="872.622" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(67.7807,652.2106,872.622)">1810–1870</text>
-<text x="785.6827" y="783.5501" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(44.7853,785.6827,783.5501)">Sarah Pargeter</text>
-<text x="783.2206" y="786.0094" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(45.2807,783.2206,786.0094)">1811–1862</text>
-<text x="872.4463" y="652.6401" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(22.2853,872.4463,652.6401)">Clara Pargeter</text>
-<text x="871.1127" y="655.8544" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(22.7807,871.1127,655.8544)">1815–1855</text>
-<text x="902.5084" y="498.492" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(359.7853,902.5084,498.492)">Clara Pargeter</text>
-<text x="902.5064" y="501.972" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(0.2807,902.5064,501.972)">1816–1818</text>
-<text x="871.2922" y="344.5735" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(337.2853,871.2922,344.5735)">Alice Pargeter</text>
-<text x="872.622" y="347.7894" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(337.7807,872.622,347.7894)">1819–1821</text>
-<text x="783.5501" y="214.3173" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(314.7853,783.5501,214.3173)">Percy Pargeter</text>
-<text x="786.0094" y="216.7794" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(315.2807,786.0094,216.7794)">1822–1827</text>
+<path d="M611.0815,529.7642L678.3068,547.7772" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M316.8636,549.0713L244.5149,568.457" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M443.9683,763.6084L431.3362,823.0375" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M347.7977,798.7139L320.2147,852.8486" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M683.0175,524.0947A184.5968,184.5968 0 0,1 329.4548,570.6421" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M762.2348,534.5239A264.4976,264.4976 0 0,1 479.2478,763.6822" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M805.1153,626.3829A330.2544,330.2544 0 0,1 389.7588,811.3115" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M892.6233,551.6898A396.0112,396.0112 0 0,1 151.9786,688.9602" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M683.0175,524.0947L687.9748,524.7473" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M627.0681,633.9018L630.5098,637.5287" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M561.6197,674.0086L563.2887,678.7218" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M485.5167,684.0277L485.1244,689.0123" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M411.918,662.2268L409.5322,666.6209" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M329.4548,570.6421L324.8354,572.5556" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M762.2348,534.5239L767.192,535.1765" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M725.5213,638.1996L729.7845,640.8121" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M479.2478,763.6822L478.8555,768.6668" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M649.8131,717.9794L652.6451,722.1" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M805.1153,626.3829L809.7347,628.2963" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M727.3321,739.5581L730.7739,743.1849" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M389.7588,811.3115L388.0898,816.0247" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M610.2412,811.3115L611.9102,816.0247" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M892.6233,551.6898L897.5805,552.3425" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M837.6551,706.9153L841.9183,709.5278" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M724.3032,826.3632L727.1352,830.4838" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M572.1673,889.38L573.0785,894.2962" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M407.553,885.0694L406.3858,889.9312" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M258.9237,814.1768L255.8798,818.1436" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M151.9786,688.9602L147.5845,691.346" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M611.0418,514.6189L614.0162,515.0105" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M829.4119,543.3679L832.3863,543.7595" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M603.4745,542.8605L606.2461,544.0086" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M659.0999,597.4966L661.6578,599.0641" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M588.9587,751.2117L589.9601,754.0396" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M526.0684,831.2302L526.3038,834.2209" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M411.0413,751.2117L410.0399,754.0396" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M311.809,773.8196L310.1098,776.2919" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M371.5552,635.3525L369.4902,637.5287" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M314.9996,524.3558L312.0252,524.7473" fill="none" stroke="#22201D" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M609.6928,513.3319A110.5,110.5 0 0,1 609.4057,515.513" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.6,1.2"/>
+<path d="M828.0665,542.0813A330.7544,330.7544 0 0,1 827.7794,544.2625" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M602.5046,541.2682A110.5,110.5 0 0,1 601.6627,543.3007" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.6,1.2"/>
+<path d="M658.3929,595.7732A185.0968,185.0968 0 0,1 657.2434,597.649" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M589.4942,749.4284A264.9976,264.9976 0 0,1 587.4204,750.1628" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M527.0472,829.6467A330.7544,330.7544 0 0,1 524.8539,829.8193" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M412.5796,750.1628A264.9976,264.9976 0 0,1 410.5058,749.4284" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M313.5662,773.2049A330.7544,330.7544 0 0,1 311.7531,771.9588" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M373.3879,635.0193A185.0968,185.0968 0 0,1 371.7921,633.5049" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M316.6335,525.2501A185.0968,185.0968 0 0,1 316.3464,523.069" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M609.0589,514.3579L614.0162,515.0105" fill="none" stroke="#2A2622" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M601.6267,542.0952L606.2461,544.0086" fill="none" stroke="#2A2622" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M612.8264,514.8539A113.8,113.8 0 0,1 605.1375,543.5494" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M660.6347,598.4371A188.3968,188.3968 0 0,1 629.6838,636.6582" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M325.9441,572.0963A188.3968,188.3968 0 0,1 313.215,524.5907" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M410.1048,665.5663A188.3968,188.3968 0 0,1 370.3162,636.6582" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M651.9654,721.1111A268.2976,268.2976 0 0,1 589.5596,752.9084" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M478.9496,767.4705A268.2976,268.2976 0 0,1 410.4404,752.9084" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M831.1965,543.6028A334.0544,334.0544 0 0,1 808.626,627.8371" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M388.4903,814.8935A334.0544,334.0544 0 0,1 310.7895,775.303" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M611.5097,814.8935A334.0544,334.0544 0 0,1 526.2096,833.0246" fill="none" stroke="#2A2622" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="615.8582" y="512.2113" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(6.0167,615.8582,512.2113)">Arthur William Pargeter</text>
+<text x="615.4418" y="515.6662" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.7282,615.4418,515.6662)">1692–1747</text>
+<text x="614.9976" y="518.6492" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(9.2115,614.9976,518.6492)">Trowbridge</text>
+<text x="608.7499" y="541.7816" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(21.0167,608.7499,541.7816)">Lydia Brayfield</text>
+<text x="607.4535" y="545.0109" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(22.7282,607.4535,545.0109)">1695–1796</text>
+<text x="606.2524" y="547.7774" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(24.2115,606.2524,547.7774)">Bathwick</text>
+<text x="689.832" y="521.95" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(6.5957,689.832,521.95)">Susannah Winifred Pargeter</text>
+<text x="689.4008" y="525.4031" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.6391,689.4008,525.4031)">1715–1759</text>
+<text x="688.9763" y="528.389" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(8.5434,688.9763,528.389)">Chippenham</text>
+<text x="664.4923" y="597.2639" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(30.5957,664.4923,597.2639)">Alice Dunmore</text>
+<text x="662.6939" y="600.2431" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(31.6391,662.6939,600.2431)">1719–1803</text>
+<text x="661.0916" y="602.7983" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(32.5434,661.0916,602.7983)">Trowbridge</text>
+<text x="633.7136" y="636.5235" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(45.5957,633.7136,636.5235)">Nathaniel Pargeter</text>
+<text x="631.2054" y="638.9357" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(46.6391,631.2054,638.9357)">1718–1766</text>
+<text x="628.9964" y="640.9891" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(47.5434,628.9964,640.9891)">Bathwick</text>
+<text x="566.6244" y="679.1066" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(69.5957,566.6244,679.1066)">Reuben Pargeter</text>
+<text x="563.3518" y="680.2901" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(70.6391,563.3518,680.2901)">1723–1728</text>
+<text x="560.4986" y="681.2675" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(71.5434,560.4986,681.2675)">Keynsham</text>
+<text x="482.002" y="690.2474" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(275.4043,482.002,690.2474)">Winifred Pargeter</text>
+<text x="485.4693" y="690.5436" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(274.3609,485.4693,690.5436)">1724–1795</text>
+<text x="488.4783" y="690.7491" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(273.4566,488.4783,690.7491)">Bristol</text>
+<text x="406.1774" y="666.4792" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(299.4043,406.1774,666.4792)">Frederick Pargeter</text>
+<text x="409.2245" y="668.16" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(298.3609,409.2245,668.16)">1730–1823</text>
+<text x="411.8897" y="669.5717" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(297.4566,411.8897,669.5717)">Bradford-on-Avon</text>
+<text x="367.3679" y="637.5744" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(313.9521,367.3679,637.5744)">Edith Brayfield</text>
+<text x="369.8951" y="639.9668" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(312.9087,369.8951,639.9668)">1823</text>
+<text x="322.878" y="571.7341" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(337.9521,322.878,571.7341)">Joseph Pargeter</text>
+<text x="324.2136" y="574.9475" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(336.9087,324.2136,574.9475)">1796</text>
+<text x="310.168" y="521.95" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(353.4043,310.168,521.95)">Florence Cadogan</text>
+<text x="310.5992" y="525.4031" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(352.3609,310.5992,525.4031)">1724–1801</text>
+<text x="311.0237" y="528.389" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(351.4566,311.0237,528.389)">Walcot</text>
+<text x="768.8719" y="533.8766" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.1812,768.8719,533.8766)">Mary Pargeter</text>
+<text x="768.4147" y="537.3265" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.9169,768.4147,537.3265)">1747–1810</text>
+<text x="731.8478" y="640.3079" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(31.1812,731.8478,640.3079)">William Pargeter</text>
+<text x="730.027" y="643.2735" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(31.9169,730.027,643.2735)">1748–1795</text>
+<text x="654.7351" y="722.4786" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(55.1812,654.7351,722.4786)">Albert Pargeter</text>
+<text x="651.8655" y="724.4472" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(55.9169,651.8655,724.4472)">1835</text>
+<text x="591.881" y="754.9462" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(70.1812,591.881,754.9462)">Sarah Rennick</text>
+<text x="588.5996" y="756.1051" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(70.9169,588.5996,756.1051)">1748–1748</text>
+<text x="477.2348" y="770.0397" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(274.8188,477.2348,770.0397)">Frederick Pargeter</text>
+<text x="480.7042" y="770.3098" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(274.0831,480.7042,770.3098)">1752–1806</text>
+<text x="408.119" y="754.9462" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(289.8188,408.119,754.9462)">Sarah Boyce</text>
+<text x="411.4004" y="756.1051" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(289.0831,411.4004,756.1051)">1757–1834</text>
+<text x="834.0669" y="542.4597" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.2434,834.0669,542.4597)">Hannah Threlfall</text>
+<text x="833.6103" y="545.9096" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.8355,833.6103,545.9096)">1783–1832</text>
+<text x="811.6945" y="627.4758" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(22.2434,811.6945,627.4758)">Walter Pargeter</text>
+<text x="810.3605" y="630.69" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(22.8355,810.3605,630.69)">1779–1832</text>
+<text x="732.898" y="743.2325" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(46.2434,732.898,743.2325)">Frederick Pargeter</text>
+<text x="730.372" y="745.6263" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(46.8355,730.372,745.6263)">1781–1841</text>
+<text x="613.8313" y="816.9321" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(70.2434,613.8313,816.9321)">Ann Pargeter</text>
+<text x="610.5501" y="818.0915" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(70.8355,610.5501,818.0915)">1782–1786</text>
+<text x="527.9245" y="835.5946" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(85.2434,527.9245,835.5946)">Joseph Kentish</text>
+<text x="524.4551" y="835.8653" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(85.8355,524.4551,835.8653)">1784–1853</text>
+<text x="386.1687" y="816.9321" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(289.7566,386.1687,816.9321)">Samuel Pargeter</text>
+<text x="389.4499" y="818.0915" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(289.1645,389.4499,818.0915)">1781–1874</text>
+<text x="308.0193" y="776.6712" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(304.7566,308.0193,776.6712)">Hannah Cadogan</text>
+<text x="310.8886" y="778.6403" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(304.1645,310.8886,778.6403)">1834</text>
+<text x="899.2617" y="551.0428" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.2853,899.2617,551.0428)">Thomas Pargeter</text>
+<text x="898.8055" y="554.4927" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(7.7807,898.8055,554.4927)">1810–1870</text>
+<text x="843.9827" y="709.0243" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(31.2853,843.9827,709.0243)">Sarah Pargeter</text>
+<text x="842.1627" y="711.9904" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(31.7807,842.1627,711.9904)">1811–1862</text>
+<text x="729.226" y="830.8636" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(55.2853,729.226,830.8636)">Clara Pargeter</text>
+<text x="726.3569" y="832.833" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(55.7807,726.3569,832.833)">1815–1855</text>
+<text x="574.8341" y="895.4935" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(79.2853,574.8341,895.4935)">Clara Pargeter</text>
+<text x="571.412" y="896.1257" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="start" dominant-baseline="central" transform="rotate(79.7807,571.412,896.1257)">1816–1818</text>
+<text x="404.57" y="891.035" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(283.7147,404.57,891.035)">Alice Pargeter</text>
+<text x="407.9543" y="891.8454" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(283.2193,407.9543,891.8454)">1819–1821</text>
+<text x="253.7721" y="818.4134" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(307.7147,253.7721,818.4134)">Percy Pargeter</text>
+<text x="256.5341" y="820.5302" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(307.2193,256.5341,820.5302)">1822–1827</text>
+<text x="145.5492" y="690.7351" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(331.7147,145.5492,690.7351)">Beatrice Pargeter</text>
+<text x="147.2115" y="693.7925" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#2A2622" text-anchor="end" dominant-baseline="central" transform="rotate(331.2193,147.2115,693.7925)">1828–1896</text>
 <path d="M40,915.392L49,915.392" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="52" y="915.392" font-family="'Iowan Old Style',Georgia,serif" font-size="2.788" fill="#2A2622" text-anchor="start" dominant-baseline="central">Descent, and a recorded marriage</text>
 <path d="M40,920.968L49,920.968" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.6,1.4"/>
@@ -155,5 +155,11 @@
 <path d="M40,948.848L49,948.848" fill="none" stroke="#2A2622" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4"/>
 <text x="52" y="948.848" font-family="'Iowan Old Style',Georgia,serif" font-size="2.788" fill="#2A2622" text-anchor="start" dominant-baseline="central">Uncertain — not yet proved</text>
 <text x="500" y="500" font-family="'Iowan Old Style',Georgia,serif" font-size="7.48" fill="#2A2622" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+<g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
+<path d="M324.8354,572.5556L255.6361,601.2188L257.7476,606.1733L259.9596,611.0837L262.2711,615.9481L264.6812,620.7644L267.1888,625.5307L269.793,630.2448L272.4926,634.905L275.2865,639.5093L278.1736,644.0557L281.1527,648.5424L284.2225,652.9675L287.3818,657.3292L290.6292,661.6257L293.9634,665.8551L297.3831,670.0158L300.8867,674.106L304.4729,678.124L308.1402,682.0681L311.887,685.9368L315.7119,689.7284L319.6131,693.4413L323.5891,697.074L327.6382,700.625L331.7588,704.0929L335.9492,707.4761L340.2076,710.7733L344.5322,713.9831L348.9213,717.1041L353.373,720.1352L357.8855,723.075L362.457,725.9223L367.0854,728.676L371.769,731.3348L376.5058,733.8977L381.2937,736.3637L386.1308,738.7316L391.0152,741.0006L395.9448,743.1697L400.9175,745.2379L405.9312,747.2045L410.984,749.0685L416.0737,750.8293L421.1982,752.4861L426.3553,754.0383L431.543,755.4851L436.759,756.8259L442.0013,758.0603L447.2677,759.1877L452.5559,760.2077L457.8637,761.1197L463.189,761.9235L468.5296,762.6187L473.8833,763.205L479.2478,763.6822L478.8555,768.6668" fill="none" stroke="#9B3A2E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M478.8555,768.6668L474.0885,829.2363L467.4639,828.6478L460.8525,827.926L454.257,827.0712L447.68,826.0837L441.1243,824.964L434.5924,823.7126L428.0871,822.3298L421.6109,820.8163L415.1665,819.1727L408.7565,817.3997L402.3835,815.498L396.0501,813.4683L389.7588,811.3115L388.0898,816.0247" fill="none" stroke="#9B3A2E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M388.0898,816.0247L367.8087,873.2966L360.2355,870.5277L352.7203,867.6052L345.2661,864.5302L337.8761,861.3042L330.5532,857.9283L323.3007,854.404L316.1214,850.7328L309.0183,846.9162L301.9944,842.9558L295.0526,838.8531L288.1958,834.61L281.4268,830.2281L274.7484,825.7093L268.1634,821.0555L261.6745,816.2686L255.2844,811.3506L248.9958,806.3034L242.8113,801.1293L236.7334,795.8303L230.7646,790.4087L224.9075,784.8666L219.1644,779.2065L213.5378,773.4306L208.0299,767.5413L202.6431,761.5411L197.3796,755.4325L192.2415,749.2179L187.231,742.9001L182.3502,736.4815L177.6011,729.9649L172.9857,723.3529L168.5059,716.6484L164.1635,709.854L159.9603,702.9726L155.8981,696.007L151.9786,688.9602L147.5845,691.346" fill="none" stroke="#9B3A2E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M614.0162,515.0105L683.0175,524.0947L682.4952,527.7753L681.8989,531.4446L681.2288,535.1011L680.4853,538.7434L679.6685,542.37L678.7788,545.9794L677.8167,549.5701L676.7825,553.1408L675.6765,556.6899L674.4993,560.216L673.2514,563.7177L671.9331,567.1935L670.5452,570.6421L669.0881,574.0621L667.5624,577.452L665.9688,580.8105L664.3078,584.1363L662.5803,587.4279L660.7868,590.684L658.9281,593.9034L657.0049,597.0847L655.0181,600.2266L652.9684,603.3279L650.8566,606.3873L648.6837,609.4035L646.4505,612.3754L644.1579,615.3017L641.8068,618.1812L639.3982,621.0128L636.9331,623.7954L634.4125,626.5277L631.8373,629.2087L629.2087,631.8373L626.5277,634.4125L623.7954,636.9331L621.0128,639.3982L618.1812,641.8068L615.3017,644.1579L612.3754,646.4505L609.4035,648.6837L606.3873,650.8566L603.3279,652.9684L600.2266,655.0181L597.0847,657.0049L593.9034,658.9281L590.684,660.7868L587.4279,662.5803L584.1363,664.3078L580.8105,665.9688L577.452,667.5624L574.0621,669.0881L570.6421,670.5452L567.1935,671.9331L563.7177,673.2514L560.216,674.4993L556.6899,675.6765L553.1408,676.7825L549.5701,677.8167L545.9794,678.7788L542.37,679.6685L538.7434,680.4853L535.1011,681.2288L531.4446,681.8989L527.7753,682.4952L524.0947,683.0175L520.4044,683.4656L516.7058,683.8393L513.0004,684.1384L509.2898,684.3629L505.5754,684.5126L501.8587,684.5874L498.1413,684.5874L494.4246,684.5126L490.7102,684.3629L486.9996,684.1384L483.2942,683.8393L479.5956,683.4656L475.9053,683.0175L472.2247,682.4952L468.5554,681.8989L464.8989,681.2288L461.2566,680.4853L457.63,679.6685L454.0206,678.7788L450.4299,677.8167L446.8592,676.7825L443.3101,675.6765L439.784,674.4993L436.2823,673.2514L432.8065,671.9331L429.3579,670.5452L425.9379,669.0881L422.548,667.5624L419.1895,665.9688L415.8637,664.3078L412.5721,662.5803L409.316,660.7868L406.0966,658.9281L402.9153,657.0049L399.7734,655.0181L396.6721,652.9684L393.6127,650.8566L390.5965,648.6837L387.6246,646.4505L384.6983,644.1579L381.8188,641.8068L378.9872,639.3982L376.2046,636.9331L373.4723,634.4125L370.7913,631.8373L368.1627,629.2087L365.5875,626.5277L363.0669,623.7954L360.6018,621.0128L358.1932,618.1812L355.8421,615.3017L353.5495,612.3754L351.3163,609.4035L349.1434,606.3873L347.0316,603.3279L344.9819,600.2266L342.9951,597.0847L341.0719,593.9034L339.2132,590.684L337.4197,587.4279L335.6922,584.1363L334.0312,580.8105L332.4376,577.452L330.9119,574.0621L329.4548,570.6421L324.8354,572.5556" fill="none" stroke="#9B3A2E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>

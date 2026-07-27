@@ -1,98 +1,117 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="650mm" height="650mm" viewBox="0 0 650 650">
-<!-- helix | engine=radial_organic style=botanical people=31 hash=c659be4133fc -->
+<!-- helix | engine=radial_organic style=botanical people=31 hash=11e1e3359fd1 -->
 <rect x="0" y="0" width="650" height="650" fill="#F6F3EA"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
-<path d="M224.8358,325A100.1642,100.1642 0 1,0 425.1642,325A100.1642,100.1642 0 1,0 224.8358,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M177.714,325A147.286,147.286 0 1,0 472.286,325A147.286,147.286 0 1,0 177.714,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
-<path d="M145.3527,325A179.6473,179.6473 0 1,0 504.6473,325A179.6473,179.6473 0 1,0 145.3527,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
-<path d="M118.7769,325A206.2231,206.2231 0 1,0 531.2231,325A206.2231,206.2231 0 1,0 118.7769,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
-<path d="M95.5764,325A229.4236,229.4236 0 1,0 554.4236,325A229.4236,229.4236 0 1,0 95.5764,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
-<path d="M74.6672,325A250.3328,250.3328 0 1,0 575.3328,325A250.3328,250.3328 0 1,0 74.6672,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M55.4487,325A269.5513,269.5513 0 1,0 594.5513,325A269.5513,269.5513 0 1,0 55.4487,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
-<path d="M37.5465,325A287.4535,287.4535 0 1,0 612.4535,325A287.4535,287.4535 0 1,0 37.5465,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
-<text x="325" y="223.2358" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1700</text>
-<text x="325" y="176.114" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1720</text>
-<text x="325" y="143.7527" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1740</text>
-<text x="325" y="117.1769" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1760</text>
-<text x="325" y="93.9764" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1780</text>
-<text x="325" y="73.0672" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1800</text>
-<text x="325" y="53.8487" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1820</text>
-<text x="325" y="35.9465" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1840</text>
+<path d="M219.9647,325A105.0353,105.0353 0 1,0 430.0353,325A105.0353,105.0353 0 1,0 219.9647,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M167.7607,325A157.2393,157.2393 0 1,0 482.2393,325A157.2393,157.2393 0 1,0 167.7607,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M131.909,325A193.091,193.091 0 1,0 518.091,325A193.091,193.091 0 1,0 131.909,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M102.467,325A222.533,222.533 0 1,0 547.533,325A222.533,222.533 0 1,0 102.467,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M76.7643,325A248.2357,248.2357 0 1,0 573.2357,325A248.2357,248.2357 0 1,0 76.7643,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M53.5999,325A271.4001,271.4001 0 1,0 596.4001,325A271.4001,271.4001 0 1,0 53.5999,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M32.3087,325A292.6913,292.6913 0 1,0 617.6913,325A292.6913,292.6913 0 1,0 32.3087,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<text x="325" y="218.3647" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1700</text>
+<text x="325" y="166.1607" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1720</text>
+<text x="325" y="130.309" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1740</text>
+<text x="325" y="100.867" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1760</text>
+<text x="325" y="75.1643" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1780</text>
+<text x="325" y="51.9999" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1800</text>
+<text x="325" y="30.7087" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1820</text>
 <path d="M18,325A307,307 0 1,0 632,325A307,307 0 1,0 18,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="325" cy="602.0511" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="424.7289" cy="565.767" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="509.9514" cy="509.9514" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="570.1525" cy="426.5455" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="591.2901" cy="325" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="573.6035" cy="222.025" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="517.2294" cy="132.7706" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="370.0779" cy="551.6217" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="279.7107" cy="552.6847" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="486.6096" cy="486.6096" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="436.9556" cy="529.597" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="551.6202" cy="370.0776" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="160.8485" cy="489.1515" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="119.602" cy="437.3939" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="363.3815" cy="517.9567" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="285.3744" cy="524.2116" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="429.8999" cy="481.9937" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="484.1911" cy="431.3681" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="112.1609" cy="537.8391" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="157.4208" cy="416.6994" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="353.2027" cy="466.7845" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="294.7504" cy="477.0751" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="401.5193" cy="439.5192" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="458.4815" cy="380.2898" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="438.3593" cy="416.184" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="475.6177" cy="295.0403" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="454.1333" cy="238.7159" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="208.1518" cy="441.8482" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="82.1297" cy="457.8988" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="335.73" cy="378.9432" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="308.9484" cy="405.6967" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="335.73" y="378.9432" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(348.75,335.73,378.9432)">Arthur Pargeter</text>
-<text x="308.9484" y="405.6967" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(371.25,308.9484,405.6967)">Lydia Brayfield</text>
-<text x="353.2027" y="466.7845" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(348.75,353.2027,466.7845)">Joseph Pargeter</text>
-<text x="294.7504" y="477.0751" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(371.25,294.7504,477.0751)">Florence Cadogan</text>
-<text x="401.5193" y="439.5192" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(326.25,401.5193,439.5192)">Susannah Pargeter</text>
-<text x="458.4815" y="380.2898" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(292.5,458.4815,380.2898)">Nathaniel Pargeter</text>
-<text x="438.3593" y="416.184" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(308.8125,438.3593,416.184)">Alice Dunmore</text>
-<text x="475.6177" y="295.0403" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(78.75,475.6177,295.0403)">Reuben Pargeter</text>
-<text x="454.1333" y="238.7159" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(56.25,454.1333,238.7159)">Winifred Pargeter</text>
-<text x="208.1518" y="441.8482" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(405,208.1518,441.8482)">Frederick Pargeter</text>
-<text x="82.1297" y="457.8988" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(421.3125,82.1297,457.8988)">Edith Brayfield</text>
-<text x="363.3815" y="517.9567" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(348.75,363.3815,517.9567)">Frederick Pargeter</text>
-<text x="285.3744" y="524.2116" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(371.25,285.3744,524.2116)">Sarah Boyce</text>
-<text x="429.8999" y="481.9937" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(326.25,429.8999,481.9937)">Mary Pargeter</text>
-<text x="484.1911" y="431.3681" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(303.75,484.1911,431.3681)">William Pargeter</text>
-<text x="112.1609" y="537.8391" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(405,112.1609,537.8391)">Albert Pargeter</text>
-<text x="157.4208" y="416.6994" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(421.3125,157.4208,416.6994)">Sarah Rennick</text>
-<text x="370.0779" y="551.6217" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(348.75,370.0779,551.6217)">Samuel Pargeter</text>
-<text x="279.7107" y="552.6847" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(371.25,279.7107,552.6847)">Hannah Cadogan</text>
-<text x="486.6096" y="486.6096" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(315,486.6096,486.6096)">Walter Pargeter</text>
-<text x="436.9556" y="529.597" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(331.3125,436.9556,529.597)">Hannah Threlfall</text>
-<text x="551.6202" y="370.0776" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(281.25,551.6202,370.0776)">Frederick Pargeter</text>
-<text x="160.8485" y="489.1515" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(405,160.8485,489.1515)">Ann Pargeter</text>
-<text x="119.602" y="437.3939" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(421.3125,119.602,437.3939)">Joseph Kentish</text>
-<text x="325" y="602.0511" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(360,325,602.0511)">Beatrice Pargeter</text>
-<text x="424.7289" y="565.767" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(337.5,424.7289,565.767)">Thomas Pargeter</text>
-<text x="509.9514" y="509.9514" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(315,509.9514,509.9514)">Sarah Pargeter</text>
-<text x="570.1525" y="426.5455" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(292.5,570.1525,426.5455)">Clara Pargeter</text>
-<text x="591.2901" y="325" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(90,591.2901,325)">Clara Pargeter</text>
-<text x="573.6035" y="222.025" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(67.5,573.6035,222.025)">Alice Pargeter</text>
-<text x="517.2294" y="132.7706" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(45,517.2294,132.7706)">Percy Pargeter</text>
+<path d="M379.5295,332.1789C434.0513,339.3569 434.0513,339.3569 470.3992,344.1422" fill="none" stroke="#67504C" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M180.6385,384.7965C154.5899,395.5862 507.8726,349.0756 526.5083,351.5291" fill="none" stroke="#575A5A" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M241.5315,560.7078C234.9764,579.2189 592.3805,360.2013 605.3602,361.9101" fill="none" stroke="#5A5857" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M308.3648,536.3701C306.7056,557.4518 540.4216,414.2305 553.4464,419.6256" fill="none" stroke="#605553" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M180.6385,384.7965C152.9669,396.2584 483.7678,422.293 500.793,432.7261" fill="none" stroke="#65524E" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M241.5315,560.7078C234.7641,579.8182 555.4887,466.2437 567.0126,473.3055" fill="none" stroke="#625451" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M379.5295,332.1789C438.4986,339.9424 403.8014,408.0394 431.0961,436.8019" fill="none" stroke="#64524F" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M308.3648,536.3701C306.5748,559.1147 486.6523,495.346 497.1221,506.3789" fill="none" stroke="#5A5857" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M180.6385,384.7965C153.7746,395.9239 429.9738,477.7378 440.9535,493.7134" fill="none" stroke="#B8B0A4" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M241.5315,560.7078C233.9231,582.1932 479.54,549.8571 488.1467,562.3799" fill="none" stroke="#6B4E49" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M379.5295,332.1789C444.4886,340.731 365.2303,438.6068 379.8109,479.7812" fill="none" stroke="#873C31" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M308.3648,536.3701C306.5182,559.8339 403.6316,547.0487 408.8693,561.8396" fill="none" stroke="#883C30" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M241.5315,560.7078C233.7148,582.7815 374.8354,593.8879 377.6804,609.2378" fill="none" stroke="#8A3B2F" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M180.6385,384.7965C149.7248,397.6014 310.115,514.1317 308.3648,536.3701" fill="none" stroke="#5F5553" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M379.5295,332.1789C445.6345,340.8818 315.4535,446.3003 311.9659,490.6136" fill="none" stroke="#515E5F" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M241.5315,560.7078C233.0943,584.5337 260.7264,592.7187 256.7928,609.1036" fill="none" stroke="#8A3B2F" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M308.3648,536.3701C306.5747,559.1157 246.6089,546.3696 241.5315,560.7078" fill="none" stroke="#3F696E" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M379.5295,332.1789C452.1859,341.7443 263.7884,437.7377 240.4766,480.6728" fill="none" stroke="#3F696E" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M241.5315,560.7078C232.4804,586.2674 156.2725,544.8899 145.2682,559.231" fill="none" stroke="#873C31" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M241.5315,560.7078C231.3271,589.5242 78.3862,458.9003 60.476,468.6248" fill="none" stroke="#535D5D" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M379.5295,332.1789C439.7632,340.1089 218.0577,369.2969 180.6385,384.7965" fill="none" stroke="#B8B0A4" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="379.5295" cy="332.1789" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="470.3992" cy="344.1422" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="526.5083" cy="351.5291" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="575.2876" cy="357.951" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="605.3602" cy="361.9101" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="403.7327" cy="357.6122" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="553.4464" cy="419.6256" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="457.364" cy="406.1128" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="500.793" cy="432.7261" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="567.0126" cy="473.3055" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="431.0961" cy="436.8019" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="497.1221" cy="506.3789" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="440.9535" cy="493.7134" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="488.1467" cy="562.3799" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="379.8109" cy="479.7812" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="393.6636" cy="518.9001" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="408.8693" cy="561.8396" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="377.6804" cy="609.2378" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="344.8862" cy="577.6776" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="308.3648" cy="536.3701" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="311.9659" cy="490.6136" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="256.7928" cy="609.1036" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="241.5315" cy="560.7078" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="251.8666" cy="531.5224" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="240.4766" cy="480.6728" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.6899" cy="532.0625" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="145.2682" cy="559.231" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="117.9556" cy="543.1792" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="60.476" cy="468.6248" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="180.6385" cy="384.7965" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="160.5732" cy="346.6472" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="379.5295" y="332.1789" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(7.5,379.5295,332.1789)">Arthur Pargeter</text>
+<text x="403.7327" y="357.6122" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(292.5,403.7327,357.6122)">Lydia Brayfield</text>
+<text x="470.3992" y="344.1422" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,470.3992,344.1422)">Susannah Pargeter</text>
+<text x="457.364" y="406.1128" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,457.364,406.1128)">Alice Dunmore</text>
+<text x="431.0961" y="436.8019" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(316.5,431.0961,436.8019)">Nathaniel Pargeter</text>
+<text x="379.8109" y="479.7812" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(340.5,379.8109,479.7812)">Reuben Pargeter</text>
+<text x="311.9659" y="490.6136" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(364.5,311.9659,490.6136)">Winifred Pargeter</text>
+<text x="240.4766" y="480.6728" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(388.5,240.4766,480.6728)">Frederick Pargeter</text>
+<text x="117.9556" y="543.1792" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(403.5,117.9556,543.1792)">Edith Brayfield</text>
+<text x="180.6385" y="384.7965" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(427.5,180.6385,384.7965)">Joseph Pargeter</text>
+<text x="160.5732" y="346.6472" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(442.5,160.5732,346.6472)">Florence Cadogan</text>
+<text x="526.5083" y="351.5291" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,526.5083,351.5291)">Mary Pargeter</text>
+<text x="500.793" y="432.7261" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,500.793,432.7261)">William Pargeter</text>
+<text x="440.9535" y="493.7134" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(325.5,440.9535,493.7134)">Albert Pargeter</text>
+<text x="393.6636" y="518.9001" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(340.5,393.6636,518.9001)">Sarah Rennick</text>
+<text x="308.3648" y="536.3701" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(364.5,308.3648,536.3701)">Frederick Pargeter</text>
+<text x="251.8666" y="531.5224" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(379.5,251.8666,531.5224)">Sarah Boyce</text>
+<text x="575.2876" y="357.951" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,575.2876,357.951)">Hannah Threlfall</text>
+<text x="553.4464" y="419.6256" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(292.5,553.4464,419.6256)">Walter Pargeter</text>
+<text x="497.1221" y="506.3789" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(316.5,497.1221,506.3789)">Frederick Pargeter</text>
+<text x="408.8693" y="561.8396" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(340.5,408.8693,561.8396)">Ann Pargeter</text>
+<text x="344.8862" y="577.6776" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(355.5,344.8862,577.6776)">Joseph Kentish</text>
+<text x="241.5315" y="560.7078" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(379.5,241.5315,560.7078)">Samuel Pargeter</text>
+<text x="182.6899" y="532.0625" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(394.5,182.6899,532.0625)">Hannah Cadogan</text>
+<text x="605.3602" y="361.9101" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,605.3602,361.9101)">Thomas Pargeter</text>
+<text x="567.0126" y="473.3055" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,567.0126,473.3055)">Sarah Pargeter</text>
+<text x="488.1467" y="562.3799" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(325.5,488.1467,562.3799)">Clara Pargeter</text>
+<text x="377.6804" y="609.2378" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(349.5,377.6804,609.2378)">Clara Pargeter</text>
+<text x="256.7928" y="609.1036" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(373.5,256.7928,609.1036)">Alice Pargeter</text>
+<text x="145.2682" y="559.231" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(397.5,145.2682,559.231)">Percy Pargeter</text>
+<text x="60.476" y="468.6248" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(421.5,60.476,468.6248)">Beatrice Pargeter</text>
 <text x="325" y="325" font-family="'Cormorant Garamond',Georgia,serif" font-size="5.72" fill="#3A3025" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
 </g>
 <g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
-<circle cx="325" cy="602.0511" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="370.0779" cy="551.6217" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="279.7107" cy="552.6847" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="363.3815" cy="517.9567" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="285.3744" cy="524.2116" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="353.2027" cy="466.7845" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="294.7504" cy="477.0751" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="335.73" cy="378.9432" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="308.9484" cy="405.6967" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="379.5295" cy="332.1789" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="403.7327" cy="357.6122" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="308.3648" cy="536.3701" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="241.5315" cy="560.7078" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="251.8666" cy="531.5224" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="182.6899" cy="532.0625" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="60.476" cy="468.6248" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="180.6385" cy="384.7965" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="160.5732" cy="346.6472" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>

@@ -71,3 +71,109 @@ def test_unknown_design_names_the_alternatives():
     with pytest.raises(KeyError) as e:
         registry.get("does_not_exist")
     assert "radial_sunburst" in str(e.value)
+
+
+# ---------------------------------------------------------------------------
+# The tidy-tree allocation in subject_grid.py. These four encode
+# docs/KNOWN_ISSUE_LAYOUT.md: the chart it describes had 77 sibling arcs
+# sweeping over strangers and 10 pairs of people at an identical angle, and
+# every one of them survived a passing test suite. Read the failure before
+# changing any of these.
+# ---------------------------------------------------------------------------
+FOCUSES = ["thread", "thread_siblings", "bloodline", "all"]
+
+
+def _subject_grid(graph, focus):
+    return build_grid(graph, LayoutSettings(engine="radial_rings",
+                                            subject_id=graph.subject_id,
+                                            focus=focus))
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_no_two_people_share_an_angle(graph, focus):
+    """A minimum neighbour gap of zero means two names printed on top of
+    each other. The old allocator handed out angle in four unrelated
+    places, which is how it happened."""
+    g = _subject_grid(graph, focus)
+    for gen, people in g.by_gen.items():
+        order = sorted(people, key=lambda p: g.slots[p].tc)
+        for a, b in zip(order, order[1:]):
+            gap = (g.slots[b].tc - g.slots[a].tc) * 360
+            assert gap > 0.4, (
+                f"{focus}: ring {gen} has two people {gap:.2f} deg apart")
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_sibling_groups_are_contiguous(graph, focus):
+    """The arc over a sibling group must not cover anyone outside that
+    family. Two exceptions, both structural rather than sloppiness:
+
+    A married-in partner of one of those siblings is allowed and
+    unavoidable -- they sit on their partner's ring by definition.
+
+    Only PRIMARY children count. An adopted child belongs to two unions and
+    is laid out with the family that raised them, so the union they were
+    born into cannot have them contiguous. `store/schema.sql` says that edge
+    is drawn as a chord instead.
+    """
+    g = _subject_grid(graph, focus)
+    for uid, u in graph.unions.items():
+        kids = [c for c in u.children
+                if c in g.slots and graph.people[c].child_of == uid]
+        if len(kids) < 2:
+            continue
+        kidset = set(kids)
+        lo = min(g.slots[c].tc for c in kids)
+        hi = max(g.slots[c].tc for c in kids)
+        for pid in g.by_gen.get(g.slots[kids[0]].gen, []):
+            if pid in kidset or not (lo <= g.slots[pid].tc <= hi):
+                continue
+            assert any(x in kidset for x in graph.partners(pid)), (
+                f"{focus}: {graph.people[pid].full_name} is under a sibling "
+                f"arc they have nothing to do with")
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_couples_are_placed_side_by_side(graph, focus):
+    """A married-in spouse gets a person-sized slot beside their partner,
+    never a share of their partner's lineage. Getting this wrong put
+    couples 160 degrees apart."""
+    g = _subject_grid(graph, focus)
+    for pid, sl in g.slots.items():
+        if not sl.partner_of or sl.partner_of not in g.slots:
+            continue
+        apart = abs(sl.tc - g.slots[sl.partner_of].tc) * 360
+        assert apart <= 20, (
+            f"{focus}: {graph.people[pid].full_name} is {apart:.0f} deg from "
+            f"the person they married")
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_everyone_in_scope_is_placed_exactly_once(graph, focus):
+    """The old fallback pass attached stragglers beside whoever was nearest
+    and was the source of most collisions. Nothing should need it."""
+    from helix.layout.subject_grid import _scope
+    g = _subject_grid(graph, focus)
+    scope = _scope(graph, LayoutSettings(engine="radial_rings",
+                                         subject_id=graph.subject_id,
+                                         focus=focus), graph.subject_id)
+    assert set(g.slots) == scope, "someone in scope was left off the chart"
+    assert len(g.order) == len(set(g.order)), "a person was placed twice"
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_siblings_share_a_ring(graph, focus):
+    """Where the tree folds back on itself the walk out from the subject can
+    reach two children of one union by paths of different length. Left alone,
+    one of them sits a ring out from the rest of their family and their
+    sibling arc spans two rings, where contiguity means nothing."""
+    g = _subject_grid(graph, focus)
+    for uid, u in graph.unions.items():
+        kids = [c for c in u.children
+                if c in g.slots and graph.people[c].child_of == uid]
+        if len(kids) < 2:
+            continue
+        rings = {g.slots[c].gen for c in kids}
+        assert len(rings) == 1, (
+            f"{focus}: children of one union are spread over rings "
+            f"{sorted(rings)}")

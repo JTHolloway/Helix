@@ -76,26 +76,55 @@ def main() -> None:
         print(f"     {name[p]:<26} ring {S[p].gen}, should be {mode - truth[p]}")
 
     # 2 --------------------------------------------------------- arc sweeps
-    sweeps, worst = 0, []
+    #
+    # Two different things used to be counted together here, and only one of
+    # them is a defect.
+    #
+    # A STRANGER under a sibling arc is the bug this file was written to
+    # catch: the arc runs over people who have nothing to do with that
+    # family, and they read as siblings of it. This must be zero.
+    #
+    # A sibling's OWN SPOUSE under the arc is unavoidable. A married-in
+    # partner sits on their partner's ring -- that is what a ring means --
+    # so in any sibling group whose middle children are married, their
+    # partners lie between the outermost siblings. The only way to clear
+    # them out is to exile every spouse beyond the group, which separates
+    # the couples. In this file's sample that would mean breaking up seven
+    # marriages to tidy one arc. It is counted, and kept separate.
+    #
+    # Only a union's PRIMARY children are checked. A person may be a child of
+    # several unions -- adopted, fostered, or parentage in doubt -- and
+    # `store/schema.sql` is explicit that the layout follows the one marked
+    # primary and that the others are drawn as a chord across the disc. An
+    # adopted son sits with the family that raised him, so the union he was
+    # born into cannot also have him contiguous, and should not be asked to.
+    strangers, spouses, worst = 0, 0, []
     for uid, u in g.unions.items():
-        kids = [c for c in u.children if c in S]
+        kids = [c for c in u.children
+                if c in S and g.people[c].child_of == uid]
         if len(kids) < 2:
             continue
+        kidset = set(kids)
         angs = sorted(S[c].tc for c in kids)
         intr = [p for p in grid.by_gen.get(S[kids[0]].gen, [])
-                if p not in kids and angs[0] <= S[p].tc <= angs[-1]]
-        sweeps += len(intr)
-        if intr:
-            worst.append(((angs[-1] - angs[0]) * 360, len(intr),
+                if p not in kidset and angs[0] <= S[p].tc <= angs[-1]]
+        odd = [p for p in intr if not any(x in kidset for x in g.partners(p))]
+        strangers += len(odd)
+        spouses += len(intr) - len(odd)
+        if odd:
+            worst.append(((angs[-1] - angs[0]) * 360, len(odd),
                           [name[c] for c in kids[:3]],
-                          [name[i] for i in intr[:4]]))
+                          [name[i] for i in odd[:4]]))
     worst.sort(reverse=True)
-    print(f"\n2. ARC SWEEPS PAST OTHERS  {sweeps}   "
-          f"(a sibling arc covering people who are not siblings)")
+    print(f"\n2. ARC SWEEPS PAST OTHERS  {strangers}   "
+          f"(a sibling arc covering people unrelated to that family)")
     for span, n, kids, intr in worst[:5]:
         print(f"     {span:5.0f}deg arc over {n} outsiders")
         print(f"       siblings   {kids}")
         print(f"       swept past {intr}")
+    print(f"   ({spouses} of the people under an arc are a sibling's own "
+          f"husband or wife.\n    Not a defect -- see the note in this file. "
+          f"Not counted above.)")
 
     # 3 ------------------------------------------------------------ couples
     far = []

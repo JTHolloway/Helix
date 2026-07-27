@@ -37,8 +37,8 @@ open samples/index.html             # every design, side by side
 
 | File | Why |
 |---|---|
-| `docs/KNOWN_ISSUE_LAYOUT.md` | **Read first.** The radial layout does not read properly yet. Measurements, cause, and the algorithm that should replace it. |
-| `BLOCKERS.md` | **Read second.** The three gaps that stop this being usable, with acceptance criteria. Build them in order. |
+| `BLOCKERS.md` | **Read first.** The three gaps that stop this being usable, with acceptance criteria. Build them in order. |
+| `docs/KNOWN_ISSUE_LAYOUT.md` | The radial layout, since fixed. Read before touching `subject_grid.py` — it records the three limits that are deliberate, not bugs. |
 | `PROMPTS.md` | Ready-made prompts for each build stage. |
 | `BUILD_INSTRUCTIONS.md` | **Read before writing any code.** States exactly what is finished, what is stubbed, the build order, and eight rules that must not be broken. |
 | `docs/ARCHITECTURE.md` | How the pieces fit and which direction dependencies flow. |

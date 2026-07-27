@@ -1,99 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1189mm" height="841mm" viewBox="0 0 1189 841">
-<!-- helix | engine=metro_map style=tubemap people=31 hash=aabb39023673 -->
+<!-- helix | engine=metro_map style=tubemap people=31 hash=864961c149bc -->
 <rect x="0" y="0" width="1189" height="841" fill="#FFFFFF"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
-<path d="M105.8461,44L105.8461,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M233.43,44L233.43,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M361.0138,44L361.0138,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M488.5976,44L488.5976,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M616.1814,44L616.1814,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M743.7653,44L743.7653,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M871.3491,44L871.3491,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<path d="M998.9329,44L998.9329,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
-<text x="105.8461" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1700</text>
-<text x="233.43" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1720</text>
-<text x="361.0138" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1740</text>
-<text x="488.5976" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1760</text>
-<text x="616.1814" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1780</text>
-<text x="743.7653" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1800</text>
-<text x="871.3491" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1820</text>
-<text x="998.9329" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1840</text>
-<path d="M59.2728,394.7272L171.8957,507.4875A5.5,5.5 0 0,0 181.2824,511.3711L300.4005,511.2" fill="none" stroke="#DC241F" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M77.1288,441L118.2398,399.8891A5.5,5.5 0 0,1 127.6288,396L218.6297,396L229.6297,396L435.2515,396L446.2515,396L620.248,396A5.5,5.5 0 0,0 629.6371,392.1109L639.859,381.8891A5.5,5.5 0 0,1 649.248,378L810.7359,378" fill="none" stroke="#0019A8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="58" cy="396" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="77.1288" cy="441" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="224.1297" cy="396" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="261.1997" cy="441" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M201.8134,348.76L201.8134,353.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="223.8502" cy="288" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="227.2429" cy="315" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M255.7462,213.76L255.7462,218.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M262.1341,168.76L262.1341,173.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="300.4005" cy="513" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="922.3826" cy="540" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="440.7515" cy="396" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="472.6387" cy="441" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M402.7471,348.76L402.7471,353.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M415.226,303.76L415.226,308.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="1101" cy="513" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="413.1826" cy="540" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="625.748" cy="396" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="632.1185" cy="441" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="611.1121" cy="333" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="638.4977" cy="360" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M625.7393,258.76L625.7393,263.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="632.1185" cy="513" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="643.9163" cy="540" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M923.7799,420.76L923.7799,425.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M810.7359,375.76L810.7359,380.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M817.1151,330.76L817.1151,335.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M842.6318,285.76L842.6318,290.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M849.011,240.76L849.011,245.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M868.1486,195.76L868.1486,200.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M887.2862,150.76L887.2862,155.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="62.16" y="392.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Arthur Pargeter  1692–1747</text>
-<text x="81.2888" y="437.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Lydia Brayfield  1695–1796</text>
-<text x="228.2897" y="392.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Joseph Pargeter  1796</text>
-<text x="265.3597" y="437.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Florence Cadogan  1724–1801</text>
-<text x="205.9734" y="347.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Susannah Pargeter  1715–1759</text>
-<text x="228.0102" y="284.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Nathaniel Pargeter  1718–1766</text>
-<text x="231.4029" y="311.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Alice Dunmore  1719–1803</text>
-<text x="259.9062" y="212.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Reuben Pargeter  1723–1728</text>
-<text x="266.2941" y="167.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Winifred Pargeter  1724–1795</text>
-<text x="304.5605" y="509.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Frederick Pargeter  1730–1823</text>
-<text x="926.5426" y="536.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Edith Brayfield  1823</text>
-<text x="444.9115" y="392.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Frederick Pargeter</text>
-<text x="476.7987" y="437.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Sarah Boyce</text>
-<text x="406.9071" y="347.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Mary Pargeter</text>
-<text x="419.386" y="302.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">William Pargeter</text>
-<text x="1105.16" y="509.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Albert Pargeter</text>
-<text x="417.3426" y="536.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Sarah Rennick</text>
-<text x="629.908" y="392.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Samuel Pargeter</text>
-<text x="636.2785" y="437.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Hannah Cadogan</text>
-<text x="615.2721" y="329.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Walter Pargeter</text>
-<text x="642.6577" y="356.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Hannah Threlfall</text>
-<text x="629.8993" y="257.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Frederick Pargeter</text>
-<text x="636.2785" y="509.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Ann Pargeter</text>
-<text x="648.0763" y="536.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Joseph Kentish</text>
-<text x="927.9399" y="419.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Beatrice Pargeter</text>
-<text x="814.8959" y="374.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Thomas Pargeter</text>
-<text x="821.2751" y="329.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Sarah Pargeter</text>
-<text x="846.7918" y="284.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Clara Pargeter</text>
-<text x="853.171" y="239.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Clara Pargeter</text>
-<text x="872.3086" y="194.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Alice Pargeter</text>
-<text x="891.4462" y="149.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Percy Pargeter</text>
+<path d="M115.6399,44L115.6399,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<path d="M269.3394,44L269.3394,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<path d="M423.039,44L423.039,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<path d="M576.7385,44L576.7385,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<path d="M730.438,44L730.438,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<path d="M884.1375,44L884.1375,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<path d="M1037.837,44L1037.837,791" fill="none" stroke="#D7D3CC" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+<text x="115.6399" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1700</text>
+<text x="269.3394" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1720</text>
+<text x="423.039" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1740</text>
+<text x="576.7385" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1760</text>
+<text x="730.438" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1780</text>
+<text x="884.1375" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1800</text>
+<text x="1037.837" y="41" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.175" fill="#D7D3CC" text-anchor="middle" dominant-baseline="central" font-weight="500">1820</text>
+<path d="M58,252L231.2512,252" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M265.6574,558L469.4257,354.2317A5.5,5.5 0 0,0 473.3148,344.8426L473.3148,252" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M519.0985,432L659.2094,291.8891A5.5,5.5 0 0,1 668.5985,288L724.331,288" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M265.6574,558L484.459,339.1984A5.5,5.5 0 0,0 488.3481,329.8093L488.3481,306" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9628,459L891.0737,309.8891A5.5,5.5 0 0,1 900.4628,306L972.5015,306" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M58,252L135.1109,329.1109A5.5,5.5 0 0,0 144.5,333L257.7988,333" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M519.0985,432L614.2094,336.8891A5.5,5.5 0 0,1 623.5985,333L741.9523,333" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M265.6574,558L469.7656,353.8918A4.0897,4.0897 0 0,1 476.747,351L480.8367,351" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9628,459L846.0737,354.8891A5.5,5.5 0 0,1 855.4628,351L1003.2414,351" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M58,252L180.1109,374.1109A5.5,5.5 0 0,0 189.5,378L296.2237,378" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M519.0985,432L569.2094,381.8891A5.5,5.5 0 0,1 578.5985,378L749.6373,378" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9628,459L801.0737,399.8891A5.5,5.5 0 0,1 810.4628,396L1010.9264,396" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M58,252L234.1109,428.1109A5.5,5.5 0 0,0 243.5,432L303.9192,432" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9628,459L747.0737,453.8891A5.5,5.5 0 0,1 756.4628,450L1033.9813,450" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9628,459L774.0737,491.1109A5.5,5.5 0 0,0 783.4628,495L1057.0363,495" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9628,459L819.0737,536.1109A5.5,5.5 0 0,0 828.4628,540L1101,540" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M58,252L261.7683,455.7683A5.5,5.5 0 0,1 265.6574,465.1574L265.6574,558" fill="none" stroke="#DC241F" stroke-width="1.76" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M59.2728,250.7272L280.2097,471.6849A5.5,5.5 0 0,0 289.5985,475.5429L350.0185,475.2" fill="none" stroke="#DC241F" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M81.0444,288L261.7683,468.7239A5.5,5.5 0 0,1 265.6574,478.113L265.6574,552.5A5.5,5.5 0 0,0 269.5465,554.1109L387.7683,435.8891A5.5,5.5 0 0,1 397.1574,432L513.5985,432A5.5,5.5 0 0,1 522.9876,435.8891L542.2094,455.1109A5.5,5.5 0 0,0 551.5985,459L736.4628,459A5.5,5.5 0 0,0 745.8519,455.1109L945.0737,255.8891A5.5,5.5 0 0,1 954.4628,252L964.8166,252" fill="none" stroke="#0019A8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M748.3645,487.2728L754.5613,493.0491A5.5,5.5 0 0,0 764.0846,496.7992L1057.0363,496.8" fill="none" stroke="#FFD329" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="58" cy="252" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="81.0444" cy="288" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M231.2512,249.76L231.2512,254.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="261.8859" cy="306" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="257.7988" cy="333" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M296.2237,375.76L296.2237,380.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M303.9192,429.76L303.9192,434.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350.0185" cy="477" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1099.3168" cy="504" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="265.6574" cy="558" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="302.7936" cy="585" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M473.3148,249.76L473.3148,254.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M488.3481,303.76L488.3481,308.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="480.8367" cy="351" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="485.8864" cy="378" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="519.0985" cy="432" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="557.5129" cy="459" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="757.3222" cy="252" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="724.331" cy="288" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M741.9523,330.76L741.9523,335.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="749.6373" cy="378" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="763.85" cy="414" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="741.9628" cy="459" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="749.6373" cy="486" r="2.4" fill="#FFFFFF" stroke="#17171A" stroke-width="0.96" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M964.8166,249.76L964.8166,254.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M972.5015,303.76L972.5015,308.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1003.2414,348.76L1003.2414,353.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1010.9264,393.76L1010.9264,398.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1033.9813,447.76L1033.9813,452.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1057.0363,492.76L1057.0363,497.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M1101,537.76L1101,542.24" fill="none" stroke="#17171A" stroke-width="1.024" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="62.16" y="248.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Arthur Pargeter  1692–1747</text>
+<text x="85.2044" y="284.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Lydia Brayfield  1695–1796</text>
+<text x="235.4112" y="248.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Susannah Pargeter  1715–1759</text>
+<text x="266.0459" y="302.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Alice Dunmore  1719–1803</text>
+<text x="261.9588" y="329.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Nathaniel Pargeter  1718–1766</text>
+<text x="300.3837" y="374.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Reuben Pargeter  1723–1728</text>
+<text x="308.0792" y="428.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Winifred Pargeter  1724–1795</text>
+<text x="354.1785" y="473.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Frederick Pargeter  1730–1823</text>
+<text x="1103.4768" y="500.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Edith Brayfield  1823</text>
+<text x="269.8174" y="554.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Joseph Pargeter  1796</text>
+<text x="306.9536" y="581.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Florence Cadogan  1724–1801</text>
+<text x="477.4748" y="248.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Mary Pargeter</text>
+<text x="492.5081" y="302.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">William Pargeter</text>
+<text x="484.9967" y="347.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Albert Pargeter</text>
+<text x="490.0464" y="374.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Sarah Rennick</text>
+<text x="523.2585" y="428.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Frederick Pargeter</text>
+<text x="561.6729" y="455.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Sarah Boyce</text>
+<text x="761.4822" y="248.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Hannah Threlfall</text>
+<text x="728.491" y="284.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Walter Pargeter</text>
+<text x="746.1123" y="329.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Frederick Pargeter</text>
+<text x="753.7973" y="374.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Ann Pargeter</text>
+<text x="768.01" y="410.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Joseph Kentish</text>
+<text x="746.1228" y="455.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Samuel Pargeter</text>
+<text x="753.7973" y="482.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Hannah Cadogan</text>
+<text x="968.9766" y="248.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Thomas Pargeter</text>
+<text x="976.6615" y="302.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Sarah Pargeter</text>
+<text x="1007.4014" y="347.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Clara Pargeter</text>
+<text x="1015.0864" y="392.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Clara Pargeter</text>
+<text x="1038.1413" y="446.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Alice Pargeter</text>
+<text x="1061.1963" y="491.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Percy Pargeter</text>
+<text x="1105.16" y="536.32" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="2.9" fill="#17171A" text-anchor="start" dominant-baseline="central" font-weight="500">Beatrice Pargeter</text>
 <text x="594.5" y="36" font-family="'Helvetica Neue',Helvetica,Arial,sans-serif" font-size="6.38" fill="#17171A" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
 </g>
 <g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
-<circle cx="58" cy="396" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="77.1288" cy="441" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="224.1297" cy="396" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="261.1997" cy="441" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="440.7515" cy="396" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="472.6387" cy="441" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="625.748" cy="396" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="632.1185" cy="441" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="923.7799" cy="423" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="58" cy="252" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="81.0444" cy="288" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="265.6574" cy="558" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="302.7936" cy="585" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="519.0985" cy="432" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="557.5129" cy="459" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="741.9628" cy="459" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="749.6373" cy="486" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="1101" cy="540" r="4.32" fill="none" stroke="#17171A" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>

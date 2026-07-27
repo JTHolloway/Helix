@@ -14,19 +14,105 @@ different apex on the other side of the disc. So a married couple came out
 two rings apart and most of a circle away from each other, and the chart
 said nothing true about the family.
 
-WHAT THIS DOES INSTEAD.
+WHAT THIS DOES INSTEAD. Two independent decisions, in this order.
 
-    Generation is measured FROM THE SUBJECT. Your parents are one ring in,
-    your grandparents two, your children one out. A spouse is always the
-    same generation as their partner, a sibling always the same as you.
+RING comes from a breadth-first walk out from the subject: your parents are
+one ring in, your grandparents two, your children one out. A spouse is
+always the same ring as their partner, a sibling always the same as you.
 
-    Angle comes from the pedigree. Your father's side takes one half of the
-    disc and your mother's the other, recursively, so every couple meets at
-    the boundary between the two blocks they created. Siblings, their
-    families and married-in partners share the angular span of the person
-    they attach to -- they sit on different rings, so there is no conflict.
+ANGLE comes from a tidy tree (Reingold-Tilford), run once over the whole
+chart. Nothing else allocates angle. See below for why that mattered.
 
-The result: couples adjacent, families whole, both sides converging on you.
+THE BUG THIS FILE WAS REWRITTEN TO FIX
+--------------------------------------
+Angle used to be handed out in four places -- an `ascend` pass, a `descend`
+pass, a sibling flanking loop and a fallback attach pass -- each with its own
+heuristic and none aware of the others. On a real 142-person tree that gave
+77 sibling arcs sweeping across unrelated people and 10 pairs sitting at
+exactly the same angle. `docs/KNOWN_ISSUE_LAYOUT.md` has the measurements.
+
+The cure is structural, not another heuristic: build ONE tree of blocks,
+then separate sibling blocks using contours, which is the only step the old
+code had no equivalent of and the reason things collided.
+
+THE TREE
+--------
+A node is a COUPLE, which is the right unit -- it is what keeps a husband
+beside his wife through every later step. A node owns a run of adjacent
+slots on its own ring, one per member, and a list of child BLOCKS laid out
+left to right around them:
+
+    [ his parents ][ his siblings ][ HIM | HER ][ her siblings ][ her parents ]
+
+Read that ordering carefully, because three of the four guarantees come out
+of it and nothing else:
+
+  * Him beside her, because the couple's slots are one run. A couple never
+    gets separated by anything.
+  * His siblings contiguous with him, because they sit immediately to his
+    left and his own block ends at his slot. The sibling arc over that
+    union therefore spans its own group and stops.
+  * His parents' block entirely outside that group, so the cousins inside it
+    can never land between two siblings.
+
+Descendants hang below, and a collateral relative's block centres its couple
+over their children in the ordinary tidy-tree way.
+
+WHERE THIS DEPARTS FROM TEXTBOOK REINGOLD-TILFORD, AND WHY
+----------------------------------------------------------
+Two adaptations, both forced by the shape of a family chart.
+
+1. Contours are indexed by RING, not by tree depth. In a family a block's
+   depth and its ring come apart -- a cousin's block reaches back out to
+   your own ring -- so separating by depth would let two people share an
+   angle. Indexing the contour by the ring a person actually sits on is
+   what makes "no two people overlap" true rather than approximately true.
+
+2. A node is not centred over its children. In a drawn tree the parent is a
+   separate mark above its children; here the couple occupies its own ring
+   and is simply one more item in the left-to-right sequence. Centring it
+   would pull each ancestor away from the edge of their own sibling group,
+   which is exactly the adjacency the ordering above exists to create.
+
+The contour merge itself -- push the right-hand block clear of everything to
+its left, at every ring they share -- is unchanged, and that is where the
+non-overlap guarantee comes from.
+
+WHAT THIS STILL CANNOT DO
+-------------------------
+Two limits, both proved rather than assumed. Do not spend a session
+rediscovering them.
+
+1. A married-in spouse sits on their partner's ring, because that is what
+   ring means. So in a sibling group whose middle children are married,
+   their partners are inevitably between the outermost siblings. Nothing
+   can place them elsewhere except exiling every spouse outside the group,
+   which breaks up the couples this file exists to keep together. In the
+   shipped sample that would mean separating seven marriages to tidy one
+   arc. `tools/diagnose_layout.py` counts those separately from a genuine
+   stranger under an arc, which is the thing that must stay at zero.
+
+2. The Thread sweeps. A direct-line ancestor is adjacent to their parent
+   and to their own brothers and sisters, which uses both sides of them;
+   their child then sits beyond that sibling group, roughly a sibling
+   group's width away. Ordinary parent-to-child links are unaffected --
+   the median across the whole chart is about 6 degrees -- but the
+   subject's own line can span a hundred and more.
+
+   It is worth being precise about why, because the obvious fix is worse.
+   A person on the line needs to touch three things: their parent, their
+   siblings, and their child. A slot has two sides. Ordering the couple
+   first instead, so the line runs radially, pushes each ancestor's
+   sibling arc across the entire outward tree -- which is exactly the
+   defect this file was written to remove, traded for a cosmetic gain on
+   one highlighted path. Tight sibling arcs win.
+
+3. Cousin marriage. When BOTH partners were born into the chart, neither
+   of them married in, so each belongs in their own family's block and the
+   two blocks are nowhere near each other. On the shipped sample that is 2
+   couples out of 230, and only at `--focus all`. Merging the two blocks
+   is the non-planar case the README already rules out; those marriages
+   are meant to be drawn as a chord across the disc.
 """
 from __future__ import annotations
 
@@ -35,7 +121,128 @@ from typing import Optional
 
 from .base import Grid, LayoutSettings, Slot
 
+# Blank slots left between two adjacent blocks. Below about half a slot two
+# families read as one.
+GAP = 0.6
+# Blank slots at the 0/360 seam, so the first and last block do not fuse into
+# each other on a disc.
+SEAM = 2.0
+# Fewest slots the disc is ever divided into. Without a floor, a nine-person
+# direct-line chart gives every person a quadrant to themselves: the couples
+# are still adjacent, but "adjacent" is 90 degrees and they no longer read as
+# married. A sparse chart is drawn compact and centred instead.
+MIN_SLOTS = 24.0
 
+
+# ============================================================ the block tree ==
+@dataclass
+class _Node:
+    """One couple, their slots, and the blocks arranged around them."""
+
+    members: list[tuple[str, int]] = field(default_factory=list)   # (pid, ring)
+    kids: list["_Node"] = field(default_factory=list)
+    # False: the members sit at a fixed point in the sequence (`mem_index`),
+    # which is what puts a direct-line ancestor on the edge of their own
+    # sibling group. True: the members centre over their children, the
+    # ordinary tidy-tree placement, used for everyone off the direct line.
+    centre_members: bool = True
+    mem_index: int = 0
+    rel: float = 0.0            # x of this block inside its parent
+    mem_rel: float = 0.0        # x of the members' run inside this block
+    contour: dict[int, tuple[float, float]] = field(default_factory=dict)
+
+
+def _mem_contour(node: _Node) -> dict[int, tuple[float, float]]:
+    """The members' own footprint, one slot each, at their own rings."""
+    out: dict[int, tuple[float, float]] = {}
+    for i, (_pid, ring) in enumerate(node.members):
+        lo, hi = float(i), float(i + 1)
+        if ring in out:
+            out[ring] = (min(out[ring][0], lo), max(out[ring][1], hi))
+        else:
+            out[ring] = (lo, hi)
+    return out
+
+
+def _merge(acc: dict, other: dict, dx: float) -> None:
+    for ring, (lo, hi) in other.items():
+        lo, hi = lo + dx, hi + dx
+        if ring in acc:
+            acc[ring] = (min(acc[ring][0], lo), max(acc[ring][1], hi))
+        else:
+            acc[ring] = (lo, hi)
+
+
+def _clear(acc: dict, other: dict) -> float:
+    """How far right `other` must move to clear `acc` on every shared ring.
+
+    This one function is the whole non-overlap guarantee. Blocks that share
+    no ring may nest into each other, which is the point of a tidy tree --
+    a deep narrow family tucks in beside a shallow wide one instead of
+    reserving a column it does not use.
+    """
+    need = 0.0
+    for ring, (lo, _hi) in other.items():
+        if ring in acc:
+            need = max(need, acc[ring][1] + GAP - lo)
+    return max(0.0, need)
+
+
+def _tidy(node: _Node) -> None:
+    """Pass one, bottom-up: give every block a position inside its parent."""
+    for k in node.kids:
+        _tidy(k)
+
+    acc: dict[int, tuple[float, float]] = {}
+    mem = _mem_contour(node)
+
+    seq: list[Optional[_Node]] = list(node.kids)
+    if not node.centre_members:
+        seq.insert(min(node.mem_index, len(seq)), None)   # None == the members
+
+    for item in seq:
+        shape = mem if item is None else item.contour
+        if not shape:
+            continue
+        dx = _clear(acc, shape)
+        if item is None:
+            node.mem_rel = dx
+        else:
+            item.rel = dx
+        _merge(acc, shape, dx)
+
+    if node.centre_members and mem:
+        if not acc:
+            node.mem_rel = 0.0
+        elif any(r in acc for r in mem):
+            # A child of this couple sits on the SAME ring as the couple.
+            # Real data does this: with pedigree collapse, the walk out from
+            # the subject can reach a woman as somebody's sister before it
+            # reaches her as somebody's mother, and the shorter path wins.
+            # Centring would then drop the parents into the middle of their
+            # own children's arc, and they would read as two more siblings.
+            # Stand them outside it instead.
+            node.mem_rel = (min(v[0] for v in acc.values())
+                            - len(node.members) - GAP)
+        else:
+            lo = min(v[0] for v in acc.values())
+            hi = max(v[1] for v in acc.values())
+            node.mem_rel = (lo + hi) / 2 - len(node.members) / 2
+        _merge(acc, mem, node.mem_rel)
+
+    node.contour = acc
+
+
+def _assign(node: _Node, x0: float, out: dict[str, float]) -> None:
+    """Pass two, top-down: accumulate the shifts into absolute positions."""
+    base = x0 + node.mem_rel
+    for i, (pid, _ring) in enumerate(node.members):
+        out[pid] = base + i
+    for k in node.kids:
+        _assign(k, x0 + k.rel, out)
+
+
+# ================================================================== building ==
 def build_subject_grid(graph, s: LayoutSettings) -> Grid:
     subj = s.subject_id
     g = Grid()
@@ -44,211 +251,216 @@ def build_subject_grid(graph, s: LayoutSettings) -> Grid:
         return g
 
     scope = _scope(graph, s, subj)
-    demand = _Demand(graph, scope)
-    # One person's worth of angle. Without this a person's own slot scales
-    # with the size of their block, so the subject's father -- who owns half
-    # the disc -- got a slot 40% of a semicircle wide and his wife landed
-    # 74 degrees away from him.
-    # One person's worth of angle. Sized against the busiest generation as
-    # well as the pedigree depth: a wide family needs finer units than a
-    # deep one, and using only the pedigree left the outer rings overlapping.
-    widest = 1
-    for pid in scope:
-        widest = max(widest, len([c for c in graph.children(pid) if c in scope]))
-    demand.unit = 1.0 / max(16.0, demand.above(subj), len(scope) / 3.0)
-    counter = [0]
+    ring_of = _rings_from_subject(graph, scope, subj)
+    _settle_sibling_rings(graph, scope, ring_of)
 
-    def place(pid: str, t0: float, t1: float, gen: int,
-              parent: Optional[str], partner_of: Optional[str] = None):
-        if pid in g.slots:
-            return
+    used: set[str] = set()
+    partner_of: dict[str, str] = {}
+    placed_ring: dict[str, int] = {}
+    # Birth order, with the id as a tiebreak. The tiebreak is not cosmetic:
+    # two siblings with the same year -- or with no year at all, which is
+    # most of a half-researched tree -- would otherwise be ordered by
+    # whatever `set` iteration handed over, and that differs in every
+    # process. The chart came out subtly different on every run.
+    def born(p: str) -> tuple[float, str]:
+        return (graph.people[p].birth.sort_value or 9e9, p)
+
+    def kids_of(pid: str) -> list[str]:
+        """Children, deduplicated but kept in a stable order."""
+        return sorted(dict.fromkeys(graph.children(pid)), key=born)
+
+    def ring(pid: str, fallback: int) -> int:
+        """The ring this person sits on.
+
+        Prefer the walk out from the subject. Someone with no path to the
+        subject at all -- a whole unconnected family, which `--focus all`
+        is full of -- falls back to their position in their own block.
+
+        Record it: the contour separates blocks by the ring used HERE, so
+        anything that later disagrees about which ring a person is on puts
+        two people at one angle. That is what it did.
+        """
+        r = ring_of.get(pid, fallback)
+        placed_ring[pid] = r
+        return r
+
+    def married_in(pid: str) -> bool:
+        """True if this person joined the family rather than being born into
+        it. Someone with parents on the chart belongs in their own sibling
+        group; claiming them as a spouse instead drags them across the disc
+        and stretches their brothers' and sisters' arc over everyone in
+        between. That is what produced a 193 degree sibling arc."""
+        return not any(x in scope for x in graph.parents(pid, primary_only=False))
+
+    def take_spouses(pid: str) -> list[str]:
+        """Partners who married in: they get a person-sized slot beside their
+        partner, never a share of their partner's lineage."""
+        out = []
+        for x in graph.partners(pid):
+            if x in scope and x not in used and married_in(x):
+                used.add(x)
+                partner_of[x] = pid
+                out.append(x)
+        return out
+
+    def siblings_of(pid: str) -> list[str]:
+        """Brothers and sisters through either parent, so half-siblings are
+        siblings here rather than a special case."""
+        out, seen = [], set()
+        for par in graph.parents(pid, primary_only=False):
+            for c in graph.children(par):
+                if c != pid and c in scope and c not in used and c not in seen:
+                    seen.add(c)
+                    out.append(c)
+        return sorted(out, key=born)
+
+    def descend(pid: str, fallback: int,
+                spouse_first: bool = False) -> Optional[_Node]:
+        """Someone off the direct line, their partners, and everyone below.
+
+        `spouse_first` puts the married-in partner on the far side of this
+        person, away from the middle of their sibling group. It costs
+        nothing and it pulls the brothers and sisters a little closer
+        together, so the arc over them is as tight as the family allows.
+        """
+        if pid in used or pid not in scope:
+            return None
+        used.add(pid)
+        r = ring(pid, fallback)
+        sps = [(sp, ring(sp, r)) for sp in take_spouses(pid)]
+        run = (list(reversed(sps)) + [(pid, r)] if spouse_first
+               else [(pid, r)] + sps)
+        node = _Node(members=run, centre_members=True)
+        node.kids = row(kids_of(pid), r - 1)
+        return node
+
+    def row(people: list[str], fallback: int) -> list[_Node]:
+        """A group of brothers and sisters, left to right, each with their own
+        family below them and their spouse facing outward."""
+        n = len(people)
+        out = []
+        for i, p in enumerate(people):
+            k = descend(p, fallback, spouse_first=(i * 2 < n))
+            if k:
+                out.append(k)
+        return out
+
+    def ancestors_of(child: str, r: int) -> Optional[_Node]:
+        """The couple who are `child`'s parents, everything behind them, and
+        their brothers and sisters flanking on their own side."""
+        if s.max_generations is not None and r > s.max_generations:
+            return None
+        # The primary union only. Pooling every parent-union and taking the
+        # first two can pair a father from one union with a mother from
+        # another, i.e. two people who were never a couple.
+        pars = [x for x in graph.parents(child, primary_only=True)
+                if x in scope and x not in used][:2]
+        if not pars:
+            pars = [x for x in graph.parents(child, primary_only=False)
+                    if x in scope and x not in used][:1]
+        if not pars:
+            return None
+        a = pars[0]
+        b = pars[1] if len(pars) > 1 else None
+        used.add(a)
+        if b:
+            used.add(b)
+            partner_of[b] = a
+
+        a_sp = take_spouses(a)          # `b` is already taken, so never here
+        b_sp = take_spouses(b) if b else []
+
+        run = [x for x in reversed(a_sp)] + [a]
+        if b:
+            run += [b] + b_sp
+        node = _Node(members=[(x, ring(x, r)) for x in run],
+                     centre_members=False)
+
+        kids: list[_Node] = []
+        up_a = ancestors_of(a, r + 1)
+        if up_a:
+            kids.append(up_a)
+        # `a` closes the run, so their brothers and sisters butt up against
+        # them and the arc over that union covers nobody standing outside it.
+        kids += row(siblings_of(a), r)
+        node.mem_index = len(kids)
+        if b:
+            kids += row(siblings_of(b), r)
+            up_b = ancestors_of(b, r + 1)
+            if up_b:
+                kids.append(up_b)
+        node.kids = kids
+        return node
+
+    # ---- the subject's own block: parents inward, siblings and children out
+    used.add(subj)
+    root = _Node(members=[(subj, ring(subj, 0))], centre_members=False)
+    for sp in take_spouses(subj):
+        root.members.append((sp, ring(sp, 0)))
+    kids: list[_Node] = []
+    up = ancestors_of(subj, 1)
+    if up:
+        kids.append(up)
+    kids += row(siblings_of(subj), 0)
+    root.mem_index = len(kids)
+    kids += row(kids_of(subj), -1)
+    root.kids = kids
+
+    # ---- anyone in scope the walk did not reach gets their own block, laid
+    #      out by the same pass. There is no second allocator: the old
+    #      "attach beside the nearest relative" fallback is what put two
+    #      people on one angle.
+    blocks = [root]
+    for pid in sorted(scope, key=lambda p: (-ring_of.get(p, 0), born(p))):
+        if pid in used:
+            continue
+        top = pid
+        for _ in range(40):                     # climb to the head of the line
+            nxt = next((x for x in graph.parents(top, primary_only=False)
+                        if x in scope and x not in used and x != top), None)
+            if not nxt:
+                break
+            top = nxt
+        blk = descend(top, ring_of.get(top, 0))
+        if blk:
+            blocks.append(blk)
+
+    forest = _Node(members=[], kids=blocks, centre_members=True)
+    _tidy(forest)
+    xs: dict[str, float] = {}
+    _assign(forest, 0.0, xs)
+
+    # ---- units -> the 0..1 spread axis -----------------------------------
+    if not xs:
+        g.warnings.append("Nobody could be placed on this chart.")
+        return g
+    lo = min(xs.values())
+    raw = max(xs.values()) + 1.0 - lo
+    width = max(raw + SEAM, MIN_SLOTS)
+    pad = (width - raw) / 2          # centre a chart too sparse to fill the disc
+    for pid, x in sorted(xs.items(), key=lambda kv: kv[1]):
+        r = placed_ring.get(pid, ring_of.get(pid, 0))
         p = graph.people[pid]
-        g.slots[pid] = Slot(pid=pid, gen=gen, t0=t0, t1=t1, order=counter[0],
-                            lineage=subj, parent=parent, partner_of=partner_of,
+        t0 = (x - lo + pad) / width
+        g.slots[pid] = Slot(pid=pid, gen=r, t0=t0, t1=t0 + 1.0 / width,
+                            order=len(g.order), lineage=subj,
+                            parent=None, partner_of=partner_of.get(pid),
                             year=p.birth.sort_value,
                             death_year=p.death.sort_value)
-        counter[0] += 1
         g.order.append(pid)
-        g.by_gen.setdefault(gen, []).append(pid)
-        g.max_gen = max(g.max_gen, gen)
 
-    def spouses_of(pid: str) -> list[str]:
-        return [x for x in graph.partners(pid)
-                if x in scope and x not in g.slots]
-
-    def descend(pid: str, t0: float, t1: float, gen: int,
-                parent: Optional[str]):
-        """A person and everything below them, on rings further out."""
-        kids = [c for c in graph.children(pid) if c in scope]
-        span = t1 - t0
-        mid = (t0 + t1) / 2
-        own = min(span * 0.9, demand.unit)
-        place(pid, mid - own / 2, mid + own / 2, gen, parent)
-        cur = mid + own / 2
-        for sp in spouses_of(pid):
-            w = min(demand.unit, max(1e-5, (t1 - cur) * 0.9))
-            place(sp, cur, cur + w, gen, None, partner_of=pid)
-            cur += w
-        if not kids:
-            return
-        tot = sum(demand.below(k) for k in kids) or 1
-        cur = t0
-        for k in sorted(kids, key=lambda c: (graph.people[c].birth.sort_value
-                                             or 9e9)):
-            w = span * demand.below(k) / tot
-            descend(k, cur, cur + w, gen - 1, pid)
-            cur += w
-
-    def ascend(members: list[str], t0: float, t1: float, gen: int):
-        """A COUPLE and everything behind them.
-
-        The unit of a pedigree is not a person, it is a couple. They sit
-        together at the centre of their block, and the block then splits in
-        two: his parents behind him, hers behind her. Recursing on couples
-        rather than individuals is what keeps every husband beside his wife
-        while each of them still sits in front of their own family.
-
-        Laying out individuals instead put David at 217 degrees and his own
-        parents at 30, because his block's centre was nowhere near him.
-        """
-        members = [m for m in members if m in scope and m not in g.slots]
-        if not members:
-            return
-        mid = (t0 + t1) / 2
-        width = min(demand.unit, (t1 - t0) / max(1, len(members)) * 0.9)
-        start = mid - width * len(members) / 2
-        for i, m in enumerate(members):
-            place(m, start + i * width, start + (i + 1) * width, gen,
-                  None, partner_of=members[0] if i else None)
-
-        # any further partner sits immediately alongside
-        cur = start + width * len(members)
-        for m in list(members):
-            for sp in spouses_of(m):
-                w = min(demand.unit, max(1e-5, (t1 - cur) * 0.9))
-                place(sp, cur, cur + w, gen, None, partner_of=m)
-                cur += w
-
-        # --- brothers and sisters, flanking, with their own families -------
-        for m in members:
-            sibs = [x for x in graph.siblings(m) if x in scope
-                    and x not in g.slots]
-            sibs.sort(key=lambda x: (graph.people[x].birth.sort_value or 9e9))
-            me = graph.people[m].birth.sort_value or 9e9
-            lo = start
-            hi = cur
-            for x in sibs:
-                w = min(demand.below(x) * demand.unit, demand.unit * 8)
-                if (graph.people[x].birth.sort_value or 9e9) <= me and lo - w > t0:
-                    descend(x, lo - w, lo, gen, None)
-                    lo -= w
-                elif hi + w < t1:
-                    descend(x, hi, hi + w, gen, None)
-                    hi += w
-
-        # --- inner rings: one block per partner's parents ------------------
-        if s.max_generations is not None and gen >= s.max_generations:
-            return
-        blocks = []
-        for m in members:
-            pars = [p for p in graph.parents(m, primary_only=False)
-                    if p in scope][:2]
-            if pars:
-                blocks.append(pars)
-        if not blocks:
-            return
-        tot = sum(max(demand.above(p) for p in blk) for blk in blocks) or 1
-        cur2 = t0
-        for blk in blocks:
-            w = (t1 - t0) * max(demand.above(p) for p in blk) / tot
-            ascend(blk, cur2, cur2 + w, gen + 1)
-            cur2 += w
-
-    ascend([subj], 0.0, 1.0, 0)
-
-    # descendants of the subject go outward from the subject's own span
-    sl = g.slots.get(subj)
-    if sl:
-        kids = [c for c in graph.children(subj) if c in scope]
-        if kids:
-            tot = sum(demand.below(k) for k in kids) or 1
-            cur, span = sl.t0, max(sl.span, demand.unit * len(kids))
-            for k in sorted(kids, key=lambda c: (graph.people[c].birth.sort_value or 9e9)):
-                w = span * demand.below(k) / tot
-                descend(k, cur, cur + w, -1, subj)
-                cur += w
-
-    # Anyone in scope the recursion did not reach -- a cousin's spouse, an
-    # uncle's grandchild -- is attached beside the nearest relative who WAS
-    # placed. Repeated until nothing more can be attached, because each pass
-    # gives the next one something to hang on to.
-    used: dict[str, int] = {}          # how many have already hung off each
-
-    def beside(anchor_slot, gen, parent, partner_of, key):
-        """Attach next to an anchor, stepping along so that two people never
-        land on the same angle. Stacking them made their sibling arc
-        collapse to nothing and the pair looked unrelated."""
-        n = used.get(key, 0)
-        used[key] = n + 1
-        w = demand.unit * 0.9
-        t0 = anchor_slot.t1 + n * w
-        return t0, t0 + w, gen, parent, partner_of
-
-    for _ in range(12):
-        added = 0
-        for pid in list(scope):
-            if pid in g.slots:
-                continue
-            partner = next((x for x in graph.partners(pid) if x in g.slots), None)
-            parent = next((x for x in graph.parents(pid, primary_only=False)
-                           if x in g.slots), None)
-            child = next((x for x in graph.children(pid) if x in g.slots), None)
-            sib = next((x for x in graph.siblings(pid) if x in g.slots), None)
-            if partner:
-                a = g.slots[partner]
-                place(pid, *beside(a, a.gen, None, partner, f"p{partner}"))
-            elif parent:
-                a = g.slots[parent]
-                place(pid, *beside(a, a.gen - 1, parent, None, f"c{parent}"))
-            elif sib:
-                a = g.slots[sib]
-                place(pid, *beside(a, a.gen, a.parent, None, f"s{a.parent}{a.gen}"))
-            elif child:
-                a = g.slots[child]
-                place(pid, *beside(a, a.gen + 1, None, None, f"u{child}"))
-            else:
-                continue
-            added += 1
-        if not added:
-            break
-
-    # Families with no connection to the subject at all. They cannot be
-    # anchored on a pedigree that does not include them, so they are given
-    # their own sector after the main tree rather than dropped.
-    stranded = [p for p in scope if p not in g.slots]
-    if stranded:
-        lo = min((sl.t0 for sl in g.slots.values()), default=0.0)
-        seen: set[str] = set()
-        cur = lo - demand.unit
-        for pid in stranded:
-            if pid in seen or pid in g.slots:
-                continue
-            comp = _component(graph, pid, scope, g.slots)
-            seen |= comp
-            base = min((graph.people[x].birth.sort_value or 9e9) for x in comp)
-            for x in sorted(comp, key=lambda y: (graph.people[y].birth.sort_value
-                                                 or 9e9)):
-                gen_x = int(round(((graph.people[x].birth.sort_value or base)
-                                   - base) / 28.0))
-                place(x, cur, cur + demand.unit * 0.9, -gen_x, None)
-                cur -= demand.unit
+    for pid, sl in g.slots.items():
+        sl.parent = next((x for x in graph.parents(pid, primary_only=True)
+                          if x in g.slots), None)
+        if sl.parent is None:
+            sl.parent = next((x for x in graph.parents(pid, primary_only=False)
+                              if x in g.slots), None)
 
     # rings are numbered from the earliest generation outward, so the oldest
     # ancestors sit innermost and the youngest people at the rim
     top = max((sl.gen for sl in g.slots.values()), default=0)
     for sl in g.slots.values():
         sl.gen = top - sl.gen
-    g.by_gen = {}
     for sl in g.slots.values():
         g.by_gen.setdefault(sl.gen, []).append(sl.pid)
     g.max_gen = max(g.by_gen) if g.by_gen else 0
@@ -271,19 +483,66 @@ def build_subject_grid(graph, s: LayoutSettings) -> Grid:
     return g
 
 
-def _component(graph, start: str, scope: set[str], placed) -> set[str]:
-    """Everyone reachable from `start` who has not been placed."""
-    out, stack = set(), [start]
-    while stack:
-        x = stack.pop()
-        if x in out or x in placed or x not in scope:
-            continue
-        out.add(x)
-        stack.extend(graph.parents(x, primary_only=False))
-        stack.extend(graph.children(x))
-        stack.extend(graph.partners(x))
-        stack.extend(graph.siblings(x))
+def _rings_from_subject(graph, scope: set[str], subj: str) -> dict[str, int]:
+    """Ring relative to the subject: parent +1, child -1, spouse and sibling 0.
+
+    Breadth-first, so everyone lands on the ring their SHORTEST relationship
+    to the subject implies. Depth below some apex ancestor is the wrong
+    measure and is what put a married couple two rings apart.
+    """
+    out = {subj: 0}
+    frontier = [subj]
+    while frontier:
+        nxt = []
+        for x in frontier:
+            for p in graph.parents(x, primary_only=False):
+                if p in scope and p not in out:
+                    out[p] = out[x] + 1
+                    nxt.append(p)
+            for c in graph.children(x):
+                if c in scope and c not in out:
+                    out[c] = out[x] - 1
+                    nxt.append(c)
+            for y in graph.partners(x) + graph.siblings(x):
+                if y in scope and y not in out:
+                    out[y] = out[x]
+                    nxt.append(y)
+        frontier = nxt
     return out
+
+
+def _settle_sibling_rings(graph, scope: set[str], ring_of: dict[str, int]) -> None:
+    """Brothers and sisters share a ring.
+
+    The walk out from the subject measures each person by their shortest
+    relationship to them, and where the tree folds back on itself -- cousins
+    marrying, a line documented twice -- two children of one union can be
+    reached by paths of different length. One of them then sits a ring out
+    from the rest of their family, which is wrong on its face and leaves
+    their sibling arc spanning two rings, where "contiguous" means nothing.
+
+    Rare: none in the shipped sample, one group in a few hundred elsewhere.
+    Cheap enough to settle anyway. Only primary children are moved; an
+    adopted child is laid out with the family that raised them.
+    """
+    for _ in range(4):
+        moved = False
+        for uid, u in graph.unions.items():
+            kids = [c for c in u.children if c in scope and c in ring_of
+                    and graph.people[c].child_of == uid]
+            if len(kids) < 2:
+                continue
+            rings = [ring_of[c] for c in kids]
+            if len(set(rings)) == 1:
+                continue
+            # the ring most of them already agree on; ties go inward
+            best = min(set(rings), key=lambda r: (-rings.count(r), r))
+            for c in kids:
+                if ring_of[c] != best:
+                    ring_of[c] = best
+                    moved = True
+        if not moved:
+            return
 
 
 def _scope(graph, s: LayoutSettings, subj: str) -> set[str]:
@@ -302,41 +561,3 @@ def _scope(graph, s: LayoutSettings, subj: str) -> set[str]:
         keep |= set(graph.partners(pid))
     keep |= set(graph.descendants(subj))
     return keep
-
-
-class _Demand:
-    """How much angular room each block needs, in units of one person."""
-
-    def __init__(self, graph, scope: set[str]):
-        self.g = graph
-        self.scope = scope
-        self._below: dict[str, float] = {}
-        self._above: dict[str, float] = {}
-        self.unit = 1.0
-
-    def below(self, pid: str, depth: int = 0) -> float:
-        if pid in self._below:
-            return self._below[pid]
-        if depth > 40:
-            return 1.0
-        self._below[pid] = 1.0
-        kids = [c for c in self.g.children(pid) if c in self.scope]
-        n = 1.0 + len([x for x in self.g.partners(pid) if x in self.scope])
-        v = max(n, sum(self.below(k, depth + 1) for k in kids))
-        self._below[pid] = v
-        return v
-
-    def above(self, pid: str, depth: int = 0) -> float:
-        if pid in self._above:
-            return self._above[pid]
-        if depth > 40:
-            return 1.0
-        self._above[pid] = 1.0
-        pars = [p for p in self.g.parents(pid, primary_only=False)
-                if p in self.scope][:2]
-        here = 1.0 + len([x for x in self.g.partners(pid) if x in self.scope])
-        here += sum(self.below(x, depth + 1)
-                    for x in self.g.siblings(pid) if x in self.scope)
-        v = max(here, sum(self.above(p, depth + 1) for p in pars))
-        self._above[pid] = v
-        return v
