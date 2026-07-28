@@ -118,6 +118,15 @@
       <label>Brothers and sisters <input type="range" id="sibgap" min="0" max="80" value="10"><output id="sibgapV">close together</output></label>
       <label>Between families <input type="range" id="famgap" min="10" max="200" value="60"><output id="famgapV">0.60 of a cell</output></label>
       <label>Widest a couple may be <input type="range" id="cellcap" min="3" max="40" value="12"><output id="cellcapV">12°</output></label>
+      <label>A married couple
+        <select id="leaf">
+          <option value="auto">Together, split where it would be unclear</option>
+          <option value="shared">Two names in one leaf, always</option>
+          <option value="split">A leaf each, side by side</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="wedges" checked> Shade each family, so you can see them meet</label>
+      <label>How strong the shading is <input type="range" id="wedgeop" min="0" max="30" value="13"><output id="wedgeopV">0.13</output></label>
       <div id="fit" class="fit"></div>
     </section>
 
