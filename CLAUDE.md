@@ -1,7 +1,7 @@
 # Helix — instructions for Claude Code
 
 A genealogy program that renders family trees as laser-cuttable charts.
-Python 3.11+, **zero required dependencies**, 209 tests.
+Python 3.11+, **zero required dependencies**, 295 tests.
 
 ## Read this before anything else
 
@@ -21,9 +21,12 @@ python3 tools/diagnose_layout.py <file> --cells      # all four must be zero
 still used by the other radial designs. Its own three limits are recorded in
 the same document; they are the reason the couple grid exists.
 
-**Blocker 1 is also done** — the record system. You can enter a family in
-the app: `helix/store/records.py` is the only thing that writes, and it is
-what makes Ctrl-Z work. **Next up is Blocker 2 in `BLOCKERS.md`.**
+**Blockers 1 and 2 are done.** The record system (`helix/store/records.py`
+is the only thing that writes, and it is what makes Ctrl-Z work), and laser
+output: `--production` converts every name to single-stroke geometry with the
+built-in face in `helix/fab/strokefont.py`, reports islands, and runs a
+pre-flight that passes. **Next up is Blocker 3 in `BLOCKERS.md`** — GEDCOM,
+writer first.
 
 ## Do this first, before anything else
 
@@ -53,7 +56,7 @@ Then read, in this order:
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 193 tests, must stay green
+python3 -m pytest tests -q      # 295 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 

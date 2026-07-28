@@ -81,10 +81,12 @@ def cmd_render(a):
     plan = registry.run(engine, graph, s, style)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    _write(plan, out, production=a.production)
+    _write(plan, out, production=a.production, style=style)
     print(f"{out}  |  {plan.meta.people} people, {plan.meta.generations} "
           f"generations, {plan.meta.year_min}-{plan.meta.year_max}, "
           f"{len(plan.elements)} shapes")
+    if a.production:
+        _production_report(plan, style)
     fit = plan.meta.extra.get("fit")
     if fit:
         verdict = "fits" if fit["fits"] else f"OVER by {fit['shortfall_mm']:.0f} mm"
@@ -96,8 +98,40 @@ def cmd_render(a):
         print("  ! " + w)
 
 
-def _write(plan, out: Path, *, production: bool = False) -> None:
+def _production_report(plan, style) -> None:
+    """What the operator needs before the lid goes down.
+
+    Printed, not hidden behind a flag: the whole point of `--production` is
+    that nothing is left for somebody to remember to check.
+    """
+    from .fab import islands
+    from .fab.preflight import preflight
+    baked = plan.meta.extra.get("text_to_paths")
+    if baked:
+        print(f"  text  | {baked['strokes']} strokes in '{baked['face']}' — "
+              f"no live text left in the file")
+    print("  " + islands.check(plan).summary().replace("Island check: ",
+                                                       "cut   | "))
+    bad = 0
+    for f in preflight(plan, style):
+        if f.level == "pass":
+            continue
+        bad += f.level == "fail"
+        print(f"  {f.level:5s} | {f.title}: {f.detail}")
+        if f.fix:
+            print(f"        | {f.fix}")
+    print("  ready |" + (" pre-flight passed" if not bad else
+                         f" {bad} thing(s) to fix before cutting"))
+
+
+def _write(plan, out: Path, *, production: bool = False, style=None) -> None:
     """One place decides what a file extension means."""
+    if production:
+        # Text becomes geometry BEFORE any writer sees it. Do it here and
+        # every format gets it; do it in the writers and four of them have to
+        # agree about what a letter is.
+        from .fab import textpath
+        textpath.bake(plan, style)
     ext = out.suffix.lower()
     if ext == ".json":
         out.write_text(plan.to_json(indent=2))

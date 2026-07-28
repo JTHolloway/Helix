@@ -17,7 +17,7 @@ without a legend. `python3 tools/diagnose_layout.py <file> --cells`.
 sequence at the end of `docs/DATA_ENTRY_UI.md` runs start to finish in the
 browser; `tests/test_records.py` drives the same sequence over HTTP.
 
-**Start at Blocker 2.**
+**Start at Blocker 3.**
 
 ---
 
@@ -64,20 +64,44 @@ no unsaved state.
 
 ---
 
-## Blocker 2 — Laser output needs a manual step
+## Blocker 2 — Laser output needs a manual step  ✅ DONE
 
-**Files:** `helix/fab/textpath.py`, then `islands.py`, `kerf.py`
+**Files:** `helix/fab/strokefont.py` (new), `textpath.py`, `islands.py`,
+`preflight.py`
 
-`--production` does not yet convert text to outlines, so the operator must do
-it in LightBurn or Inkscape and hope nothing reflows.
-
-**Done when:**
 ```bash
-helix render my.helix --production -o cut.svg
+python3 -m helix.cli render my.helix --production -o cut.svg
 ```
-produces a file with **no `<text>` elements**, an island report, and a
-pre-flight that passes. Prefer Hershey single-line fonts for the ENGRAVE
-layer — three to five times faster on the machine and legible far smaller.
+now prints the island report and the pre-flight, and the file has **no
+`<text>` elements** in it.
+
+**The face is built in.** `strokefont.py` is a single-stroke engraving face —
+one centreline pass per letter, three to five times faster on the machine
+than filled outlines and crisp at 2 mm. It is drawn in the repository rather
+than loaded, because Helix installs nothing and a missing font must never be
+the reason a chart will not cut. Drop a Hershey JSON into `fab/hershey/` and
+it wins; the coordinate space is the same.
+
+**Text becomes geometry on the PLAN**, in `textpath.bake`, before any writer
+sees it — so SVG, PDF, EPS and DXF all get it and none of them has to know
+what a letter is. Colour, layer and `person_id` all survive, so hover and
+search still work on a production file.
+
+**Islands need no geometry library.** It is a nesting question: count how many
+closed CUT loops contain each one, and even depth greater than zero is a piece
+that would fall out. Even-odd ray casting, exact for the polylines this
+program emits. `islands.check()` returns a report; `auto_bridge` is
+deliberately still unbuilt, because where a tab goes is a judgement about how
+the finished piece looks.
+
+**Pre-flight gained two real checks** and lost a stub: the island report, and
+"engraving outside the cut line", which found two live bugs on its first run
+— the key sitting in a corner the round cut never reached, and a border circle
+drawn around a centre that is off the sheet when the chart is a fan.
+
+`kerf.py` is still unbuilt and is not a blocker: every laser package does kerf
+offset at the machine, and doing it here without callipers on a test strip
+would be a guess.
 
 ---
 
@@ -121,7 +145,7 @@ research-gap ranking, DNA, and the eight designs specified in
 ## What must not regress
 
 ```bash
-python3 -m pytest tests -q       # 126 tests, all green
+python3 -m pytest tests -q       # 295 tests, all green
 python3 bootstrap.py             # must still print "Ready"
 ```
 

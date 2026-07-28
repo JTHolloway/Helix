@@ -72,7 +72,12 @@ DEFAULTS: dict[str, Any] = {
                            "#8C5A4A", "#5C8A78", "#9E4F6E", "#6E6E6E"]},
     "production": {"mode": "print", "material": "birch_ply_3mm", "kerf_mm": 0.18,
                    "min_web_mm": 1.2, "bridge_width_mm": 1.5,
-                   "text_to_paths": True, "hairline_mm": 0.05},
+                   "text_to_paths": True, "hairline_mm": 0.05,
+                   # Engraved strokes are a centreline the beam
+                   # follows, not a drawn line -- but the preview
+                   # has to be visible, and a hairline is not.
+                   "engrave_stroke_mm": 0.25,
+                   "cut_outline": True, "cut_colour": "#B03A2E"},
     "rules": [],
 }
 

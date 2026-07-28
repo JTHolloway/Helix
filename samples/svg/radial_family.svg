@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="366.76mm" height="229.2526mm" viewBox="0 0 366.76 229.2526">
-<!-- helix | engine=radial_family style=default people=31 hash=942b3003b8c7 -->
+<!-- helix | engine=radial_family style=default people=31 hash=69cef540eca7 -->
 <rect x="0" y="0" width="366.76" height="229.2526" fill="#FBF8F2"/>
 <g id="PRINT_ONLY" inkscape:groupmode="layer" inkscape:label="PRINT_ONLY">
 <path d="M222.5772,141.9224L229.0156,157.6992A120.78,120.78 0 0,1 204.7683,164.7437L201.7508,147.973A103.74,103.74 0 0,0 222.5772,141.9224Z" fill="#9C6B3F" opacity="0.13"/>
@@ -11,7 +11,6 @@
 <path d="M175.2753,200.5204L174.8294,209.0287A163.38,163.38 0 0,1 20.4388,33.9069L28.9359,34.5309A154.86,154.86 0 0,0 175.2753,200.5204Z" fill="#9C6B3F" opacity="0.13"/>
 </g>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
-<path d="M12,45.8726A171.38,171.38 0 1,0 354.76,45.8726A171.38,171.38 0 1,0 12,45.8726Z" fill="none" stroke="#C9C0B0" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M292.1032,69.6974A111.303,111.303 0 0,1 289.4495,79.6013" fill="none" stroke="#22201D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M268.4179,86.5429A94.263,94.263 0 0,1 264.3144,94.1958" fill="none" stroke="#22201D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M251.9662,133.5327A111.303,111.303 0 0,1 243.6084,139.4723" fill="none" stroke="#22201D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
@@ -81,7 +80,7 @@
 <text x="42.4596" y="121.4335" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(61.8,42.4596,121.4335)">Alice Pargeter</text>
 <text x="28.9285" y="87.2578" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(75,28.9285,87.2578)">Percy Pargeter</text>
 <text x="23.5589" y="50.8952" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(88.2,23.5589,50.8952)">Beatrice Pargeter</text>
-<text x="183.38" y="45.8726" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+<text x="183.38" y="32" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
 <path d="M 20.000,195.253 L 27.000,195.253" fill="none" stroke="#22201D" stroke-width="0.22" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="30" y="196.0086" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">two names in one cell — married</text>
 <path d="M 20.000,198.925 L 27.000,198.925" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -90,5 +89,8 @@
 <text x="30" y="203.3526" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">a stem from a couple to their children</text>
 <path d="M 20.000,206.269 L 27.000,206.269" fill="none" stroke="#8A6F4E" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.6,1.2"/>
 <text x="30" y="207.0246" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">a marriage between two people already on the chart</text>
+</g>
+<g id="CUT" inkscape:groupmode="layer" inkscape:label="CUT">
+<path d="M13.8776,7H352.8824A6.8776,6.8776 0 0,1 359.76,13.8776V215.375A6.8776,6.8776 0 0,1 352.8824,222.2526H13.8776A6.8776,6.8776 0 0,1 7,215.375V13.8776A6.8776,6.8776 0 0,1 13.8776,7Z" fill="none" stroke="#B03A2E" stroke-width="0.05" stroke-linecap="round" stroke-linejoin="round"/>
 </g>
 </svg>

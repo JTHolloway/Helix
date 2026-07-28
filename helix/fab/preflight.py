@@ -28,9 +28,52 @@ def preflight(plan, style, *, bed_w_mm: float = 600, bed_h_mm: float = 400) -> l
     out.append(_text(plan, mat))
     out.append(_hairlines(plan, mat))
     out.append(_labels(plan))
-    out.append(_islands_stub())
+    out.append(_islands(plan))
+    out.append(_outside(plan))
     out.append(_layers(plan))
     return out
+
+
+def _outside(plan) -> Finding:
+    """Engraving on the wrong side of the cut line.
+
+    Nothing warns you about this at the machine: the job runs, the piece comes
+    away, and the part of the chart that was outside the line is still in the
+    offcut. Found on the first production render -- the key was in a corner
+    the cut did not reach.
+    """
+    from .islands import _bbox, _loops, _point_in
+    cuts = _loops(plan, "CUT", 0.2)
+    if not cuts:
+        return Finding("pass", "No cut line to fall outside", "Nothing to check.")
+    boxes = [_bbox(p) for p, _ in cuts]
+    lost = 0
+    for el in plan.elements:
+        if el.layer in ("CUT", "PRINT_ONLY"):
+            continue
+        pt = ((el.x, el.y) if el.x is not None else _first(el))
+        if pt is None:
+            continue
+        if not any(b[0] <= pt[0] <= b[2] and b[1] <= pt[1] <= b[3]
+                   and _point_in(pt, cuts[i][0]) for i, b in enumerate(boxes)):
+            lost += 1
+    if not lost:
+        return Finding("pass", "Everything is inside the cut",
+                       f"{len(cuts)} cut loop(s), and all the engraving is "
+                       f"within them.")
+    return Finding("fail", "Engraving outside the cut line",
+                   f"{lost} shapes lie outside every cut loop and would be "
+                   f"left in the offcut.",
+                   "Move them inside, or enlarge the cut outline to enclose "
+                   "the whole canvas.")
+
+
+def _first(el):
+    import re
+    if not el.d:
+        return None
+    m = re.search(r'(-?\d+\.?\d*)[ ,](-?\d+\.?\d*)', el.d)
+    return (float(m.group(1)), float(m.group(2))) if m else None
 
 
 def _size(c, bw, bh) -> Finding:
@@ -63,8 +106,12 @@ def _text(plan, mat) -> Finding:
 
 
 def _hairlines(plan, mat) -> Finding:
+    # A CUT line's width is not a width. It is the hairline convention that
+    # tells the machine "follow this", and warning about it sent every
+    # operator looking for a problem that was the file working correctly.
     thin = [e for e in plan.elements
-            if e.stroke_width and 0 < e.stroke_width < 0.15]
+            if e.layer not in ("CUT", "SCORE", "PRINT_ONLY")
+            and e.stroke_width and 0 < e.stroke_width < 0.15]
     if not thin:
         return Finding("pass", "No hairlines", "All lines are wide enough.")
     return Finding("warn", "Very fine lines",
@@ -83,11 +130,18 @@ def _labels(plan) -> Finding:
                    "numbered chart with a companion list.")
 
 
-def _islands_stub() -> Finding:
-    return Finding("warn", "Island check not yet run",
-                   "Closed cut loops can drop out of the piece.",
-                   "Run fab.islands.check() once Phase 4 is built, or visually "
-                   "inspect for fully enclosed cut shapes.")
+def _islands(plan) -> Finding:
+    from .islands import check
+    rep = check(plan)
+    if rep.ok:
+        return Finding("pass", "Nothing falls out", rep.summary())
+    worst = rep.islands[0]
+    return Finding(
+        "fail", "Pieces would drop out of the sheet", rep.summary(),
+        f"Bridge the largest at ({worst.centroid[0]:.0f}, "
+        f"{worst.centroid[1]:.0f}) mm -- its nearest neighbour is "
+        f"{worst.gap_mm:.1f} mm away -- or move that shape to the ENGRAVE "
+        f"layer so it is marked rather than cut.")
 
 
 def _layers(plan) -> Finding:

@@ -328,6 +328,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # rest left on the roll -- rather than a metre square with a third of it
     # blank, which is what "the chart looks sparse" actually was.
     bx0, by0, bx1, by1 = fit["box"]
+    pad_t = (math.atan2(over, max(R, 1e-6))
+             if sweep < full - 1e-9 else 0.0)      # the label overhang, in angle
     need_w, need_h = (bx1 - bx0) + 2 * margin, (by1 - by0) + 2 * margin
     W = min(W, need_w) if panel else need_w
     H = min(H, need_h) if panel else need_h
@@ -520,9 +522,42 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                            arc_available=arc)
 
     plan.meta.extra["labels_hidden"] = placer.dropped
-    add_border(plan, style, cx, cy, R + margin * 0.4)
-    add_title(plan, style, cx, cy)
-    _key(plan, style, W, H, margin, lw, col)
+
+    # ---- 7. the line the machine cuts ------------------------------------
+    #
+    # Without this the file engraves beautifully and never comes off the
+    # sheet.
+    #
+    # A full disc is cut as a disc. A FAN is cut as a plaque -- the canvas,
+    # inset -- and not as the sector, because the key and the title sit
+    # outside the sector, and a cut line that leaves engraving on the wrong
+    # side of it does not warn you, it just loses that part of the piece.
+    # The canvas is already the chart's own box rather than the whole sheet,
+    # so the plaque is not wasteful; it is the shape the chart actually is.
+    if style.get("production.cut_outline", True):
+        inset = margin * 0.35
+        d = (G.circle_path(cx, cy, R + margin * 0.45)
+             if sweep >= full - 1e-9 and abs(W - H) < 1
+             else G.rounded_rect(inset, inset, W - 2 * inset, H - 2 * inset,
+                                 min(W, H) * 0.03))
+        plan.add(Element(kind="path", layer="CUT", d=d, fill="none",
+                         stroke=style.get("production.cut_colour", "#B03A2E"),
+                         stroke_width=style.get("production.hairline_mm", 0.05),
+                         role="outline", z=99))
+
+    # The border is the edge of the DISC. A fan has no disc, and drawing one
+    # anyway put a circle round a centre that is off the sheet -- found by
+    # the pre-flight check for engraving outside the cut line, on the very
+    # first production render.
+    disc = sweep >= full - 1e-9 and abs(W - H) < 1
+    if disc:
+        add_border(plan, style, cx, cy, R + margin * 0.4)
+    add_title(plan, style, cx if disc else W / 2, cy if disc else margin * 1.6)
+    # On a full disc the key goes in the hole, where there is room and where
+    # the cut line will reach it. On a fan it goes in the corner of the
+    # plaque, which the cut line also reaches.
+    _key(plan, style, W, H, margin, lw, col,
+         at=(cx, cy) if disc else None, maxw=inner * 1.7 if disc else 0.0)
     return plan
 
 
@@ -691,17 +726,35 @@ def _thread(graph, s) -> set:
     return set(thread(graph, s.subject_id).members)
 
 
-def _key(plan, style, W, H, margin, lw, col):
-    """Six lines, bottom left. A chart that outlives its maker has to say
-    what its own marks mean."""
+def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0):
+    """Four lines. A chart that outlives its maker has to say what its own
+    marks mean.
+
+    Bottom left by default. `at` CENTRES it somewhere else instead, which is
+    what a full disc does: the corner of the sheet is outside the round cut
+    line, so a key in the corner is a key in the offcut -- and the hole in
+    the middle is empty and inside the cut. `maxw` is how wide it may be
+    there; the type shrinks to fit, and if that would take it below legible
+    the key is left off and said so.
+    """
     if not style.get("lines.key", True):
         return
-    x, y = margin, H - margin - 14
     size = style.get("type.size_mm", 2.9) * 0.72
     rows = [("cell", "two names in one cell — married"),
             ("arc", "an arc over brothers and sisters"),
             ("stem", "a stem from a couple to their children"),
             ("chord", "a marriage between two people already on the chart")]
+    need = max(est_text_width(t, size) for _, t in rows) + 12
+    if maxw > 0 and need > maxw:
+        size *= maxw / need
+        if size < style.get("type.min_size_mm", 2.2) * 0.62:
+            plan.meta.extra["key_dropped"] = True
+            return
+        need = maxw
+    if at:
+        x, y = at[0] - need / 2, at[1] - size * 1.7 * (len(rows) - 1) / 2
+    else:
+        x, y = margin, H - margin - 14
     for i, (kind, text) in enumerate(rows):
         yy = y + i * size * 1.7
         if kind == "arc":

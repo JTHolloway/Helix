@@ -301,14 +301,18 @@ def test_the_cap_does_not_bite_on_a_full_chart(graph):
 
 # ------------------------------------------------- the sheet it is cut from --
 def _drawn(plan):
-    """The box the ink actually occupies, in millimetres."""
-    import re
+    """The box the ink actually occupies, in millimetres.
+
+    Through `pathflatten`, not a regex over the path data: `H` and `V` carry
+    one number, not two, and pairing them off blind reported a 471 mm wide
+    outline as 471 mm TALL and failed a test the layout had got right.
+    """
+    from helix.render import pathflatten
     xs, ys = [], []
     for e in plan.elements:
-        if getattr(e, "d", None):
-            for m in re.finditer(r'(-?\d+\.?\d*)[ ,](-?\d+\.?\d*)', e.d):
-                xs.append(float(m.group(1)))
-                ys.append(float(m.group(2)))
+        for pts, _ in pathflatten.flatten(e):
+            xs += [p[0] for p in pts]
+            ys += [p[1] for p in pts]
         if getattr(e, "x", None) is not None:
             xs.append(e.x)
             ys.append(e.y)
