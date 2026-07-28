@@ -1,7 +1,7 @@
 # Helix — instructions for Claude Code
 
 A genealogy program that renders family trees as laser-cuttable charts.
-Python 3.11+, **zero required dependencies**, 193 tests.
+Python 3.11+, **zero required dependencies**, 209 tests.
 
 ## Read this before anything else
 
@@ -16,7 +16,9 @@ sibling's own spouse under their arc, the Thread sweeping, and cousin
 marriages splitting a couple — each with the reason the obvious fix is worse.
 Re-measure before and after any change there.
 
-**Next up is `BLOCKERS.md`, in order.**
+**Blocker 1 is also done** — the record system. You can enter a family in
+the app: `helix/store/records.py` is the only thing that writes, and it is
+what makes Ctrl-Z work. **Next up is Blocker 2 in `BLOCKERS.md`.**
 
 ## Do this first, before anything else
 
@@ -68,7 +70,8 @@ hard way and each names the failure it prevents.
    `kind='unknown'` and the original string intact.
 6. **Never `eval()` a style rule.** `style/tokens.py` uses a whitelisted AST
    walk; style files get shared between people.
-7. **Never SQL-DELETE a person.** Mark inactive. `person.active` exists.
+7. **Never SQL-DELETE a person.** Mark inactive; `store/records.retire()`
+   is how. Undo of a person's creation does the same rather than deleting.
 8. **Every error message says what to do next.** No stack traces reach the
    user. `fab/preflight.py` is the standard.
 

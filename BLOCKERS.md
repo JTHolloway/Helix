@@ -1,22 +1,28 @@
 # What must be built before this is a usable product
 
-## Done, ahead of these: the layout
+## Done already
 
-The radial layout used to sweep sibling arcs across unrelated people and put
-people on identical angles. That is fixed — `helix/layout/subject_grid.py`
-now uses a single-pass tidy tree and all four numbers in
-`tools/diagnose_layout.py` read zero. See `docs/KNOWN_ISSUE_LAYOUT.md` for
-what it still deliberately cannot do. **Start at Blocker 1 below.**
+**The layout.** It used to sweep sibling arcs across unrelated people and put
+people on identical angles. `helix/layout/subject_grid.py` now uses a
+single-pass tidy tree and all four numbers in `tools/diagnose_layout.py` read
+zero. `docs/KNOWN_ISSUE_LAYOUT.md` records what it still deliberately cannot
+do.
+
+**Blocker 1, below.** You can enter a family in the app. The ten-step
+sequence at the end of `docs/DATA_ENTRY_UI.md` runs start to finish in the
+browser; `tests/test_records.py` drives the same sequence over HTTP.
+
+**Start at Blocker 2.**
 
 ---
 
-Three gaps stop Helix being usable on a real family. Everything else is
-polish. **Build these in order and do not skip ahead.** Each has acceptance
-criteria that can be checked by running a command.
+Two gaps still stop Helix being usable on somebody else's data. Everything
+else is polish. **Build these in order and do not skip ahead.** Each has
+acceptance criteria that can be checked by running a command.
 
 ---
 
-## Blocker 1 — You cannot enter your family in the app
+## Blocker 1 — Entering your family in the app  ✅ DONE
 
 **Files:** `helix/server.py`, `helix/web/js/inspector.js`,
 `helix/web/js/main.js`, plus a new `helix/web/js/edit.js`
@@ -25,17 +31,24 @@ criteria that can be checked by running a command.
 It gives the screens, the button-to-database mapping, every endpoint with its
 payload, the navigation, and a ten-step acceptance sequence.
 
-Today the person panel **edits existing records only**. There is no way to
-add a person, add a partner, or attach a child, so the app can explore the
-sample and nothing else. This is the single thing standing between Helix and
-being usable.
+Built in `helix/store/records.py` (every write, and undo), the endpoints in
+`helix/server.py`, and `helix/web/js/edit.js` + `inspector.js` on the front.
+`tests/test_records.py` drives it against a running server.
+
+Two things from the Navigation list are **not** built: back/forward through
+visited people with browser history, and a "recently edited" list. Neither
+blocks entering a family.
 
 The model in one line: **you are always standing on somebody, and you add the
 next person relative to them.** Add father / Add mother / Add partner / Add
 child / Add brother or sister. The word "union" must never reach the screen.
 
 **Done when** the ten-step sequence at the end of `docs/DATA_ENTRY_UI.md`
-can be completed entirely in the browser, and survives a restart.
+can be completed entirely in the browser, and survives a restart. It can:
+
+```bash
+python3 -m pytest tests/test_records.py -q      # 15 tests, over real HTTP
+```
 
 **Persistence is already built** — see `docs/KEEPING_YOUR_WORK.md`. Every
 write commits immediately, daily backups are automatic, migrations run on
