@@ -299,6 +299,80 @@ def test_the_cap_does_not_bite_on_a_full_chart(graph):
     assert max(ang) - min(ang) > 300, "a 400-person family should use the disc"
 
 
+# ------------------------------------------------- the sheet it is cut from --
+def _drawn(plan):
+    """The box the ink actually occupies, in millimetres."""
+    import re
+    xs, ys = [], []
+    for e in plan.elements:
+        if getattr(e, "d", None):
+            for m in re.finditer(r'(-?\d+\.?\d*)[ ,](-?\d+\.?\d*)', e.d):
+                xs.append(float(m.group(1)))
+                ys.append(float(m.group(2)))
+        if getattr(e, "x", None) is not None:
+            xs.append(e.x)
+            ys.append(e.y)
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _panelled(graph, w, h, focus="bloodline", **tokens):
+    style = Style.load("panel1m")
+    style.set("canvas.width_mm", w)
+    style.set("canvas.height_mm", h)
+    for k, v in tokens.items():
+        style.set(k.replace("__", "."), v)
+    return registry.run("radial_family", graph,
+                        LayoutSettings(engine="radial_family", focus=focus,
+                                       subject_id=graph.subject_id), style)
+
+
+@pytest.mark.parametrize("panel", [(800, 800), (600, 900), (1200, 400)])
+@pytest.mark.parametrize("focus", ["thread", "bloodline", "all"])
+def test_the_chart_never_overruns_the_sheet(graph, panel, focus):
+    """The panel is the material. Whatever angle the chart chooses, the ink
+    has to land on it -- a fan that reported itself 3 mm over a metre panel
+    was measuring the DISC it was cut from rather than its own sector."""
+    plan = _panelled(graph, *panel, focus=focus)
+    x0, y0, x1, y1 = _drawn(plan)
+    assert x1 - x0 <= panel[0] + 0.5, f"{focus} {panel}: {x1 - x0:.0f} mm wide"
+    assert y1 - y0 <= panel[1] + 0.5, f"{focus} {panel}: {y1 - y0:.0f} mm tall"
+
+
+@pytest.mark.parametrize("focus", ["thread", "bloodline", "all"])
+def test_the_canvas_is_the_chart_not_the_sheet(graph, focus):
+    """A fan needing 760 x 440 gets a 760 x 440 canvas, cut from the metre
+    panel with the rest left on the roll. Sizing the canvas to the sheet
+    instead left a third of it blank, which is what "sparse" was."""
+    plan = _panelled(graph, 800, 800, focus=focus)
+    x0, y0, x1, y1 = _drawn(plan)
+    for used, whole, way in ((x1 - x0, plan.canvas.width_mm, "across"),
+                             (y1 - y0, plan.canvas.height_mm, "down")):
+        assert used > whole * 0.75, (
+            f"{focus}: {used:.0f} mm of ink {way} a {whole:.0f} mm canvas")
+
+
+@pytest.mark.parametrize("focus", ["thread", "bloodline", "all"])
+def test_the_hole_in_the_middle_stays_a_hole(graph, focus):
+    """Sized from the innermost ring, so it can never crowd -- but sized
+    from the NARROWEST cell on that ring it ballooned to a third of the
+    sheet, because one thin cell is thin for reasons the hole cannot fix."""
+    plan = _panelled(graph, 800, 800, focus=focus)
+    fit = plan.meta.extra["fit"]
+    reach = max(fit["chart_mm"]) / 2
+    assert fit["inner_mm"] < reach * 0.75, (
+        f"{focus}: a {fit['inner_mm']:.0f} mm hole in a {reach * 2:.0f} mm chart")
+
+
+def test_a_sparse_family_is_given_the_angle_it_needs(graph):
+    """The grid pads a small family out so one couple cannot own a quadrant,
+    and the fan does the same job again. Left in both places the chart drew
+    across 60% of its own sweep and left the rest blank."""
+    plan = _panelled(graph, 800, 800, focus="thread")
+    fit = plan.meta.extra["fit"]
+    assert fit["cell_arc_mm"] >= 8.0, (
+        f"the tightest couple got {fit['cell_arc_mm']:.1f} mm of arc")
+
+
 # ------------------------------------------------------ shared vs split leaf --
 def _leaves(graph, mode, focus="bloodline"):
     from dataclasses import replace

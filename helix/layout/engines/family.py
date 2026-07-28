@@ -66,38 +66,42 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     W = style.get("canvas.width_mm", 600)
     H = style.get("canvas.height_mm", W) if style.chose("canvas.height_mm") else W
     margin = style.get("canvas.margin_mm", 20)
+    sheet_w, sheet_h = W, H       # the material. The chart may use less.
     cx, cy = W / 2, H / 2
     col = style.get("cells.stroke", "#22201D")
     lw = style.get("connectors.width_mm", 0.4)
     size = style.get("type.size_mm", 2.9)
-    inner = style.get("layout.inner_radius_mm", 95)
-    sweep = math.radians(style.get("layout.sweep_deg", 360))
-    start = math.radians(style.get("layout.start_angle_deg", -90))
-
-    # ---- 0b. never let one couple own a quadrant --------------------------
-    #
-    # A small family cannot fill a disc. Spread over the full circle, three
-    # siblings end up forty degrees apart and the arc over them sweeps like a
-    # rainbow. Cap how wide one cell may be and draw a FAN of whatever angle
-    # the family actually needs -- the names stay the same size and the
-    # brothers and sisters stay together.
-    if g.slots:
-        widest_cell = max(sl.t1 - sl.t0 for sl in g)
-        cap = float(style.get("layout.max_cell_deg", 12.0))
-        if cap > 0 and widest_cell > 0:
-            want = math.radians(cap) / widest_cell
-            if want < sweep:
-                # centre the fan on the angle the full circle would have
-                # started from, so a small family looks composed rather than
-                # like a full chart that ran out half way round
-                start += (sweep - want) / 2
-                sweep = want
+    base_inner = float(style.get("layout.inner_radius_mm", 95))
+    full = math.radians(style.get("layout.sweep_deg", 360))
+    base_start = math.radians(style.get("layout.start_angle_deg", -90))
+    sweep, start, inner = full, base_start, base_inner
 
     if not g.slots:
         plan = RenderPlan(canvas=Canvas(W, H, style.get("canvas.background", "#FBF8F2")),
                           meta=PlanMeta(engine="radial_family",
                                         warnings=list(g.warnings)))
         return plan
+
+    # ---- 0b. the padding belongs to the sweep, not to the content ---------
+    #
+    # The grid leaves a gap at the 0/360 seam so the first family and the last
+    # do not fuse, and pads a sparse chart out so that one couple cannot own a
+    # quadrant of it. Both of those are ANGLES, and the chart is about to
+    # choose its own angle -- so take the padding off the content and put it
+    # back on the sweep, where one decision controls it. Left in both places,
+    # a small family drew across 60% of its own fan and left the rest blank.
+    t_lo = min(sl.t0 for sl in g)
+    t_hi = max(sl.t1 for sl in g)
+    span = max(t_hi - t_lo, 1e-9)
+    for sl in g:
+        sl.t0 = (sl.t0 - t_lo) / span
+        sl.t1 = (sl.t1 - t_lo) / span
+    # The fan is always centred on the same bearing a full disc would have
+    # been -- founders at the top, the family opening downward. Measure that
+    # from the WHOLE turn, before the padding comes off, or shrinking the
+    # sweep swings the whole chart round the sheet with it.
+    mid = base_start + full / 2
+    full *= span              # a whole turn, less the seam the grid asked for
 
     # ---- 1. how tall each ring has to be ---------------------------------
     #
@@ -116,6 +120,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     rows_in: dict[int, int] = {}
     widest: dict[int, float] = {}
     cells_in: dict[int, int] = {}
+    thin_in: dict[int, float] = {}
     seen_cell: set[tuple[int, str]] = set()
     for sl in g:
         rows_in[sl.gen] = max(rows_in.get(sl.gen, 1), sl.row + 1)
@@ -127,6 +132,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         if key not in seen_cell:
             seen_cell.add(key)
             cells_in[sl.gen] = cells_in.get(sl.gen, 0) + 1
+        thin_in[sl.gen] = min(thin_in.get(sl.gen, 1.0), sl.t1 - sl.t0)
 
     # A row has to be as deep as the LABEL that goes in it, not as deep as
     # one line of type: a name with its dates under it is two lines, and
@@ -143,51 +149,170 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     stem = max(size * 2.2, style.get("layout.min_ring_gap_mm", 6.0))
     gens = sorted(rows_in)
 
-    def radii(bands: dict[int, float]) -> tuple[dict[int, float], float]:
-        r, out = inner, {}
-        for gen in gens:
-            out[gen] = r
-            r += bands[gen]
-        return out, r - stem
+    # ---- 1a. how far round to go, and how big the hole is ----------------
+    #
+    # These are ONE decision, not two, and the old code made them separately
+    # and got both wrong. A small family spread over a full disc puts three
+    # siblings forty degrees apart; drawn as a narrow fan it wastes most of
+    # the sheet; and the hole in the middle has to be big enough that the
+    # OLDEST ring -- which is the innermost, where there is least room -- can
+    # hold its couples without crowding.
+    #
+    # So lay the chart out at several sweep angles and keep the best. Two
+    # things decide "best", in this order:
+    #
+    #   1. NO STARVED CELL. Measure the TIGHTEST cell on the chart, not the
+    #      average: the average is flattered by a narrow fan, where three
+    #      cells share a rim a metre long and a fourth is a sliver. Once
+    #      every cell clears `min_cell_arc_mm` this stops counting, because
+    #      arc beyond legible is worth less than the two below.
+    #   2. NAMES THAT READ AROUND THE RING. A ring whose cells are too narrow
+    #      for a name has to set it radially instead, along its own branch --
+    #      legible, but harder work, and it costs the ring a lot of depth.
+    #   3. BIG. Of the angles that tie, take the one whose RINGS cover most
+    #      sheet. Not the one with the largest radius: a thirty-degree needle
+    #      has an enormous radius and draws a chart the width of a ruler.
+    #      Area counts the hole in the middle for nothing, so it cannot be
+    #      gamed by pushing everything out to the rim.
+    #
+    # On a square sheet a small family comes out as a fan of the angle it
+    # actually needs and a four-hundred-person family comes out as the full
+    # disc, which is what each of them wants.
+    cap = float(style.get("layout.max_cell_deg", 12.0))
+    widest_cell = max(sl.t1 - sl.t0 for sl in g)
+    min_arc = float(style.get("layout.min_cell_arc_mm", size * 3.2))
+    panel = bool(style.chose("canvas.width_mm"))
+    # A name is centred on its cell, so the one on the end of a fan hangs
+    # half its width out past the edge of the sector. Pay for that in the
+    # fit, not afterwards, or the chart reports itself over the panel.
+    over = 0.5 * max(widest.values(), default=0.0)
 
-    def fit_to_panel(bands: dict[int, float]) -> dict[int, float]:
-        """Fill the sheet, and never overrun it."""
-        if not style.chose("canvas.width_mm"):
+    def solve(sweep: float) -> dict:
+        """Lay the whole chart out at one sweep angle, and report on it.
+
+        Returns everything the drawing needs, so the search can try an angle
+        and keep the winner rather than working it out a second time.
+        """
+        start = mid - sweep / 2                   # same bisector as the disc
+        # The hole has to be big enough that the innermost ring's own
+        # circumference can hold its couples. Size it from the COUNT, not
+        # from the narrowest of them: one thin cell is thin because that
+        # branch is small, and inflating the whole chart to widen it leaves
+        # a hole you could lose a plate in.
+        inner = base_inner
+        if sweep > 0:
+            inner = max(inner, cells_in[gens[0]] * min_arc / sweep)
+        inner = min(inner, min(W, H) * 0.34)      # never eat the whole sheet
+
+        def radii(bands):
+            r, out = inner, {}
+            for gen in gens:
+                out[gen] = r
+                r += bands[gen]
+            return out, r - stem
+
+        def box(r_out):
+            """The bounding box of the sector, with the label overhang."""
+            p = math.atan2(over, max(r_out, 1e-6)) if sweep < full - 1e-9 else 0.0
+            return _sector_bounds(inner, r_out, start - p, start + sweep + p)
+
+        def fill(bands):
+            """Grow to the sheet, and never overrun it.
+
+            Measured on the SECTOR the chart actually occupies, not on a
+            disc. A quarter-circle fan fits about twice the radius into the
+            same square; a full circle behaves exactly as before, because
+            its sector box IS the disc.
+            """
+            if not panel:
+                return bands
+            for _ in range(8):
+                _, r_now = radii(bands)
+                if r_now <= inner:
+                    break
+                x0, y0, x1, y1 = box(r_now)
+                k = min((W - 2 * margin) / max(x1 - x0, 1e-6),
+                        (H - 2 * margin) / max(y1 - y0, 1e-6))
+                if abs(k - 1.0) < 0.002:
+                    break
+                grow = ((inner + (r_now - inner) * k) - inner) / (r_now - inner)
+                bands = {gen: bands[gen] * grow for gen in gens}
             return bands
-        _, r_now = radii(bands)
-        room = min(W, H) / 2 - margin
-        if r_now <= inner or room <= inner:
-            return bands
-        k = (room - inner) / (r_now - inner)
-        return {gen: bands[gen] * k for gen in gens}
 
-    # A first guess, then grow to fill the sheet, then let any ring that
-    # cannot read around the circle claim the depth a radial name needs.
-    band = {gen: rows_in[gen] * pitch[gen] + stem for gen in gens}
-    tangential: dict[int, bool] = {gen: True for gen in gens}
-    for _ in range(4):
-        band = fit_to_panel(band)
-        ring_try, _ = radii(band)
-        changed = False
-        for gen in gens:
-            arc = (sweep * ring_try[gen]) / max(cells_in.get(gen, 1), 1)
-            fits = arc >= widest.get(gen, 0.0) * 1.08
-            floor = rows_in[gen] * pitch[gen] + stem
-            if not fits:
-                floor = max(floor, widest.get(gen, 0.0) + stem)
-            if tangential[gen] != fits or band[gen] < floor - 0.01:
-                changed = True
-            tangential[gen] = fits
-            band[gen] = max(band[gen], floor)
-        if not changed:
-            break
-    band = fit_to_panel(band)
+        # A first guess, then grow to fill the sheet, then let any ring that
+        # cannot read around the circle claim the depth a radial name needs.
+        band = {gen: rows_in[gen] * pitch[gen] + stem for gen in gens}
+        tang = {gen: True for gen in gens}
+        for _ in range(4):
+            band = fill(band)
+            ring_try, _ = radii(band)
+            changed = False
+            for gen in gens:
+                arc = (sweep * ring_try[gen]) / max(cells_in.get(gen, 1), 1)
+                fits = arc >= widest.get(gen, 0.0) * 1.08
+                floor = rows_in[gen] * pitch[gen] + stem
+                if not fits:
+                    floor = max(floor, widest.get(gen, 0.0) + stem)
+                if tang[gen] != fits or band[gen] < floor - 0.01:
+                    changed = True
+                tang[gen] = fits
+                band[gen] = max(band[gen], floor)
+            if not changed:
+                break
+        band = fill(band)
+        ring_r, R = radii(band)
 
-    ring_r, R = radii(band)
+        # The tightest cell anywhere, in millimetres of arc. This is the one
+        # number that says whether a name can be got into its own cell.
+        tight = min(sweep * thin_in[gen] * ring_r[gen] for gen in gens)
+        return {"sweep": sweep, "start": start, "inner": inner, "band": band,
+                "ring_r": ring_r, "R": R, "tangential": tang, "box": box(R),
+                "read": tight / min_arc if min_arc > 0 else 1.0,
+                "tang": sum(tang.values()) / len(gens),
+                # How much of the sheet the RINGS cover. The hole in the
+                # middle counts for nothing, which is what stops a narrow
+                # fan winning by pushing everything out to the rim.
+                "area": 0.5 * sweep * (R * R - inner * inner)}
 
-    if not style.chose("canvas.width_mm"):
-        W = H = 2 * (R + margin)
-        cx, cy = W / 2, H / 2
+    # The cap is the user's own upper bound on how wide one couple may get:
+    # it is what keeps three brothers close together instead of a third of a
+    # circle apart. The search may go tighter than it, never wider.
+    cap_sweep = full
+    if cap > 0 and widest_cell > 0:
+        cap_sweep = min(full, math.radians(cap) / widest_cell)
+
+    # A sweep of anything but a whole turn is the user saying "draw this arc
+    # and no more" -- honour it exactly. (Every preset sets `sweep_deg`, so
+    # asking whether it was set says nothing; asking what it says does.)
+    tries = [cap_sweep]
+    if panel and full >= 2 * math.pi - 1e-9:
+        tries += [math.radians(d) for d in range(30, 361, 10)
+                  if math.radians(d) < cap_sweep - 1e-9]
+    best = None
+    for sw in tries:
+        got = solve(sw)
+        key = (round(min(got["read"], 1.0), 2), round(got["tang"], 3),
+               round(got["area"], 0))
+        if best is None or key > best[0]:
+            best = (key, got)
+    fit = best[1]
+    sweep, start, inner = fit["sweep"], fit["start"], fit["inner"]
+    band, ring_r, R = fit["band"], fit["ring_r"], fit["R"]
+    tangential = fit["tangential"]
+
+    # Put the sector where it belongs. A fan is not centred on the middle of
+    # its own bounding box, so centring it as if it were leaves the chart
+    # sitting off to one side with the empty half of the disc still paid for.
+    #
+    # And the sheet is a MAXIMUM, not a shape to fill. A fan that needs
+    # 760 x 440 gets a 760 x 440 canvas, cut from the metre panel with the
+    # rest left on the roll -- rather than a metre square with a third of it
+    # blank, which is what "the chart looks sparse" actually was.
+    bx0, by0, bx1, by1 = fit["box"]
+    need_w, need_h = (bx1 - bx0) + 2 * margin, (by1 - by0) + 2 * margin
+    W = min(W, need_w) if panel else need_w
+    H = min(H, need_h) if panel else need_h
+    cx, cy = (W - (bx1 - bx0)) / 2 - bx0, (H - (by1 - by0)) / 2 - by0
 
     def row_r(sl) -> float:
         return ring_r[sl.gen] + sl.row * pitch[sl.gen]
@@ -201,11 +326,21 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                       people=len(g.slots), generations=g.max_gen + 1,
                       year_min=int(g.year_min), year_max=int(g.year_max),
                       warnings=list(g.warnings)))
+    # What the chart NEEDS is the box round its sector, not the diameter of
+    # the disc it was cut from -- a fan asked for a metre of sheet it was
+    # never going to touch, and then reported itself over the panel by it.
+    # Both directions, separately: a fan on a 600x900 sheet is not over the
+    # panel because it is 700 mm wide, if the 700 is the way the 900 runs.
+    short = max(need_w - sheet_w, need_h - sheet_h, 0.0)
     plan.meta.extra["fit"] = {
-        "required_mm": round(2 * (R + margin), 1),
-        "panel_mm": round(min(W, H), 1),
-        "fits": 2 * (R + margin) <= min(W, H) + 0.01,
-        "shortfall_mm": round(max(0.0, 2 * (R + margin) - min(W, H)), 1),
+        "required_mm": round(max(need_w, need_h), 1),
+        "chart_mm": [round(need_w, 1), round(need_h, 1)],
+        "panel_mm": round(min(sheet_w, sheet_h), 1),
+        "fits": short <= 0.5,
+        "shortfall_mm": round(short, 1),
+        "sweep_deg": round(math.degrees(sweep), 1),
+        "inner_mm": round(inner, 1),
+        "cell_arc_mm": round(fit["read"] * min_arc, 1),
         "ring_pitch_mm": round(min(band.values()), 1),
         "min_pitch_mm": round(min(pitch.values()) + stem, 1),
         "pitch_ok": True,
@@ -351,6 +486,28 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     add_title(plan, style, cx, cy)
     _key(plan, style, W, H, margin, lw, col)
     return plan
+
+
+def _sector_bounds(r0: float, r1: float, a0: float, a1: float):
+    """Bounding box of an annular sector, relative to its own centre.
+
+    A full disc is its own bounding box and there is nothing to think about.
+    A FAN is not: a 168 degree fan drawn on a disc-sized square wastes most
+    of the sheet, and on a fixed panel it could use nearly twice the radius.
+    The box is the four corners plus whichever axis crossings fall inside the
+    sweep -- those are where an arc bulges past its own endpoints.
+    """
+    pts = [(r * math.cos(a), r * math.sin(a))
+           for a in (a0, a1) for r in (r0, r1)]
+    lo, hi = min(a0, a1), max(a0, a1)
+    k = math.ceil(lo / (math.pi / 2))
+    while k * (math.pi / 2) <= hi:
+        a = k * (math.pi / 2)
+        pts.append((r1 * math.cos(a), r1 * math.sin(a)))
+        k += 1
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    return min(xs), min(ys), max(xs), max(ys)
 
 
 def _flip(t: float) -> bool:
