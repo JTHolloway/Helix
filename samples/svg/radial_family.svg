@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="366.76mm" height="229.2526mm" viewBox="0 0 366.76 229.2526">
-<!-- helix | engine=radial_family style=default people=31 hash=b9ffe2952577 -->
+<!-- helix | engine=radial_family style=default people=31 hash=942b3003b8c7 -->
 <rect x="0" y="0" width="366.76" height="229.2526" fill="#FBF8F2"/>
+<g id="PRINT_ONLY" inkscape:groupmode="layer" inkscape:label="PRINT_ONLY">
+<path d="M222.5772,141.9224L229.0156,157.6992A120.78,120.78 0 0,1 204.7683,164.7437L201.7508,147.973A103.74,103.74 0 0,0 222.5772,141.9224Z" fill="#9C6B3F" opacity="0.13"/>
+<path d="M253.3456,144.3237L263.2165,158.2135A137.82,137.82 0 0,1 176.1671,183.5037L177.0589,166.4871A120.78,120.78 0 0,0 253.3456,144.3237Z" fill="#9C6B3F" opacity="0.13"/>
+<path d="M161.9917,164.7437L158.9742,181.5144A137.82,137.82 0 0,1 131.306,173.4761L137.7444,157.6992A120.78,120.78 0 0,0 161.9917,164.7437Z" fill="#9C6B3F" opacity="0.13"/>
+<path d="M190.5929,183.5037L191.4847,200.5204A154.86,154.86 0 0,1 93.6725,172.1033L103.5435,158.2135A137.82,137.82 0 0,0 190.5929,183.5037Z" fill="#9C6B3F" opacity="0.13"/>
+<path d="M90.093,147.3215L78.559,159.8646A154.86,154.86 0 0,1 57.1493,135.5801L71.0391,125.7091A137.82,137.82 0 0,0 90.093,147.3215Z" fill="#9C6B3F" opacity="0.13"/>
+<path d="M175.2753,200.5204L174.8294,209.0287A163.38,163.38 0 0,1 20.4388,33.9069L28.9359,34.5309A154.86,154.86 0 0,0 175.2753,200.5204Z" fill="#9C6B3F" opacity="0.13"/>
+</g>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
 <path d="M12,45.8726A171.38,171.38 0 1,0 354.76,45.8726A171.38,171.38 0 1,0 12,45.8726Z" fill="none" stroke="#C9C0B0" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M292.1032,69.6974A111.303,111.303 0 0,1 289.4495,79.6013" fill="none" stroke="#22201D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>

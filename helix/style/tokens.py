@@ -30,17 +30,25 @@ DEFAULTS: dict[str, Any] = {
                # family is drawn as a fan of the angle it needs rather than
                # stretched round the full circle.
                "max_cell_deg": 12.0, "min_cells": 0,
-               },
+               # The narrowest a couple's cell may get before the chart is
+               # doing them a disservice. Drives both the angle the chart
+               # chooses and the size of the hole in the middle.
+               "min_cell_arc_mm": 0,
+               "start_angle_deg": -90, "sweep_deg": 360, "sector_gap_deg": 2,
+               "radius_gamma": 0.5, "time_scale": True, "weight_mode": "leaves",
+               "cell_pad_deg": 0.12, "min_ring_mm": 8},
     "couple": {
                # shared | split | auto. Shared stacks both names in
                # one leaf; split gives each partner their own leaf so
                # their own ancestry sits inside them. Auto splits only
                # where sharing would be ambiguous -- both partners
                # having parents on the chart.
-               "leaf": "auto",
-               "start_angle_deg": -90, "sweep_deg": 360, "sector_gap_deg": 2,
-               "radius_gamma": 0.5, "time_scale": True, "weight_mode": "leaves",
-               "cell_pad_deg": 0.12, "min_ring_mm": 8},
+               "leaf": "auto"},
+    # The tinted ground behind each family. Off the cutter's layer, so it
+    # costs nothing on plywood and shows the shape of the tree on screen.
+    "family": {"wedges": True, "wedge_opacity": 0.13,
+               "wedge_min_cells": 3, "wedge_max": 10,
+               "wedge_max_share": 0.95},
     "cells": {"shape": "annular_sector", "fill": "none", "stroke": "#22201D",
               "stroke_width_mm": 0.3, "stroke_by_confidence": True,
               "radial_depth_mm": 9},

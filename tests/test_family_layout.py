@@ -363,6 +363,65 @@ def test_the_hole_in_the_middle_stays_a_hole(graph, focus):
         f"{focus}: a {fit['inner_mm']:.0f} mm hole in a {reach * 2:.0f} mm chart")
 
 
+# --------------------------------------------------- the family wedges --
+def _wedges(plan):
+    return [e for e in plan.elements if e.role == "family"]
+
+
+@pytest.mark.parametrize("focus", ["bloodline", "all"])
+def test_every_family_gets_ground_of_its_own(graph, focus):
+    """The whole point of the tint: more than one, so the eye can tell one
+    family from another. One wedge over the entire chart says nothing, which
+    is what a descendancy chart got until the rule learned to drop down a
+    generation when a founder's descendants ARE the chart.
+
+    `thread` is left out on purpose. It is one line of descent, every couple
+    on it married in from off the chart, and one family is the truth."""
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    fills = {e.fill for e in _wedges(plan)}
+    assert len(fills) >= 2, f"{focus}: {len(fills)} family colour(s) on the chart"
+
+
+def test_the_wedges_never_reach_the_cutter(graph):
+    """They are ink on paper, not a cut. `PRINT_ONLY` is the layer that says
+    so, and every writer drops it in production."""
+    plan = _panelled(graph, 1000, 1000)
+    assert _wedges(plan), "no wedges were drawn at all"
+    assert all(e.layer == "PRINT_ONLY" for e in _wedges(plan))
+
+
+def test_the_wedges_can_be_turned_off(graph):
+    plan = _panelled(graph, 1000, 1000, family__wedges=False)
+    assert not _wedges(plan)
+
+
+def test_two_lines_that_marry_share_their_descendants(graph):
+    """A marriage between two families is not drawn. It does not have to be:
+    from that ring outward both families cover the same ground, so the two
+    tints lie on top of each other and the blend IS the marriage. If no two
+    wedges ever overlap, that has stopped working."""
+    import math
+    plan = _panelled(graph, 1000, 1000, focus="bloodline")
+    cx, cy = plan.canvas.width_mm / 2, plan.canvas.height_mm / 2
+    spans = {}
+    for e in _wedges(plan):
+        pts = [(float(a), float(b)) for a, b in
+               __import__("re").findall(r'(-?\d+\.?\d*)[ ,](-?\d+\.?\d*)', e.d)]
+        rs = [math.hypot(x - cx, y - cy) for x, y in pts]
+        ts = [math.atan2(y - cy, x - cx) % (2 * math.pi) for x, y in pts]
+        spans.setdefault(e.fill, []).append((round(min(rs)), min(ts), max(ts)))
+    hits = 0
+    for a in spans:
+        for b in spans:
+            if a >= b:
+                continue
+            for ra, a0, a1 in spans[a]:
+                for rb, b0, b1 in spans[b]:
+                    if ra == rb and a0 < b1 and b0 < a1:
+                        hits += 1
+    assert hits, "no two family wedges ever cover the same ground"
+
+
 def test_a_sparse_family_is_given_the_angle_it_needs(graph):
     """The grid pads a small family out so one couple cannot own a quadrant,
     and the fan does the same job again. Left in both places the chart drew

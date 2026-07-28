@@ -120,7 +120,6 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     rows_in: dict[int, int] = {}
     widest: dict[int, float] = {}
     cells_in: dict[int, int] = {}
-    thin_in: dict[int, float] = {}
     seen_cell: set[tuple[int, str]] = set()
     for sl in g:
         rows_in[sl.gen] = max(rows_in.get(sl.gen, 1), sl.row + 1)
@@ -132,7 +131,19 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         if key not in seen_cell:
             seen_cell.add(key)
             cells_in[sl.gen] = cells_in.get(sl.gen, 0) + 1
-        thin_in[sl.gen] = min(thin_in.get(sl.gen, 1.0), sl.t1 - sl.t0)
+
+    # How much room a name really has: the distance to the NEXT couple along
+    # the ring, not the width of its own cell. Every cell is one unit wide by
+    # construction, so cell width says only how many cells the chart has --
+    # it called a founder couple alone on the innermost ring "starved" when
+    # the entire ring was theirs, and the chart grew a hole to fix it.
+    centres: dict[int, list[float]] = {}
+    for cid, mem in {(sl.gen, sl.cell or sl.pid): sl for sl in g}.items():
+        centres.setdefault(cid[0], []).append(mem.tc)
+    thin_in: dict[int, float] = {}
+    for gen, ts in centres.items():
+        ts.sort()
+        thin_in[gen] = min((b - a for a, b in zip(ts, ts[1:])), default=1.0)
 
     # A row has to be as deep as the LABEL that goes in it, not as deep as
     # one line of type: a name with its dates under it is two lines, and
@@ -180,28 +191,34 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # disc, which is what each of them wants.
     cap = float(style.get("layout.max_cell_deg", 12.0))
     widest_cell = max(sl.t1 - sl.t0 for sl in g)
-    min_arc = float(style.get("layout.min_cell_arc_mm", size * 3.2))
+    # 0 means "work it out from the type": about three characters of arc,
+    # which is the point below which a name has nowhere to go.
+    min_arc = float(style.get("layout.min_cell_arc_mm", 0) or 0) or size * 3.2
     panel = bool(style.chose("canvas.width_mm"))
     # A name is centred on its cell, so the one on the end of a fan hangs
     # half its width out past the edge of the sector. Pay for that in the
     # fit, not afterwards, or the chart reports itself over the panel.
     over = 0.5 * max(widest.values(), default=0.0)
 
-    def solve(sweep: float) -> dict:
-        """Lay the whole chart out at one sweep angle, and report on it.
+    def solve(sweep: float, tighten: float = 1.0) -> dict:
+        """Lay the whole chart out at one sweep and hole size, and report.
 
-        Returns everything the drawing needs, so the search can try an angle
+        Returns everything the drawing needs, so the search can try a shape
         and keep the winner rather than working it out a second time.
         """
         start = mid - sweep / 2                   # same bisector as the disc
         # The hole has to be big enough that the innermost ring's own
-        # circumference can hold its couples. Size it from the COUNT, not
-        # from the narrowest of them: one thin cell is thin because that
-        # branch is small, and inflating the whole chart to widen it leaves
-        # a hole you could lose a plate in.
-        inner = base_inner
-        if sweep > 0:
-            inner = max(inner, cells_in[gens[0]] * min_arc / sweep)
+        # circumference can hold its couples, and no bigger. Size it from
+        # the COUNT of them, not from the narrowest: one thin cell is thin
+        # because that branch is small, and inflating the whole chart to
+        # widen it leaves a hole you could lose a plate in.
+        #
+        # It works downward too. A descendancy chart starts from one couple,
+        # so its innermost ring holds a single cell and wants a much smaller
+        # hole than the style's default -- which is why `tighten` is a search
+        # variable rather than a constant: rings 63 mm apart became 88 mm.
+        inner = max(base_inner * tighten, cells_in[gens[0]] * min_arc / sweep
+                    if sweep > 0 else 0.0)
         inner = min(inner, min(W, H) * 0.34)      # never eat the whole sheet
 
         def radii(bands):
@@ -288,13 +305,15 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     if panel and full >= 2 * math.pi - 1e-9:
         tries += [math.radians(d) for d in range(30, 361, 10)
                   if math.radians(d) < cap_sweep - 1e-9]
+    holes = [1.0, 0.62, 0.38] if panel else [1.0]
     best = None
     for sw in tries:
-        got = solve(sw)
-        key = (round(min(got["read"], 1.0), 2), round(got["tang"], 3),
-               round(got["area"], 0))
-        if best is None or key > best[0]:
-            best = (key, got)
+        for hole in holes:
+            got = solve(sw, hole)
+            key = (round(min(got["read"], 1.0), 2), round(got["tang"], 3),
+                   round(got["area"], 0))
+            if best is None or key > best[0]:
+                best = (key, got)
     fit = best[1]
     sweep, start, inner = fit["sweep"], fit["start"], fit["inner"]
     band, ring_r, R = fit["band"], fit["ring_r"], fit["R"]
@@ -351,14 +370,33 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     tcol = style.get("thread.colour", "#9B3A2E")
     tw = style.get("thread.stroke_width_mm", 1.2)
 
-    # ---- 2. the couple cells ---------------------------------------------
+    cells: dict[str, list] = {}
+    for sl in g:
+        cells.setdefault(sl.cell or sl.pid, []).append(sl)
+
+    # ---- 2. the families, and where they come together --------------------
+    #
+    # At the inner rings a two-hundred-name chart is a dozen separate
+    # families. Every marriage joins two of them, and by the outermost ring
+    # there is one. Nothing in the linework says so -- a stem to a couple
+    # looks the same whether the partner brought a documented line with them
+    # or married in from nowhere.
+    #
+    # So tint the ground. Each family gets a wedge running outward from its
+    # founders, and where a marriage brings two families together the two
+    # wedges TAPER INTO ONE CELL and continue as a single wedge in the blend
+    # of their two colours. That is the shape of the family, drawn once, in
+    # the one place on the chart where nothing else is competing for the
+    # ink: behind everything, on the layer the cutter never sees.
+    if style.get("family.wedges", True) and len(gens) > 1:
+        _wedges(plan, graph, g, cells, gens, ring_r, rows_in, pitch, stem,
+                cx, cy, theta, style)
+
+    # ---- 3. the couple cells ---------------------------------------------
     #
     # A hairline under every row but the last: it reads as "and", which is
     # exactly what it means, and it stops two names in one cell running
     # together when the type is small.
-    cells: dict[str, list] = {}
-    for sl in g:
-        cells.setdefault(sl.cell or sl.pid, []).append(sl)
     for cid, members in cells.items():
         members.sort(key=lambda x: (x.row, x.tc))
         split = len(members) > 1 and all(m.row == 0 for m in members)
@@ -389,7 +427,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              stroke_width=lw * 0.6, fill="none",
                              person_id=sl.pid, role="marriage", z=8))
 
-    # ---- 3. one stem per family, one arc per sibling group ----------------
+    # ---- 4. one stem per family, one arc per sibling group ----------------
     #
     # ONE line for each fact, and never two. The direct line is not drawn as
     # a second path laid over the first -- it is the SAME stem, arc and tick,
@@ -447,7 +485,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              fill="none", person_id=c, union_id=uid,
                              role="thread" if on else "branch", z=10))
 
-    # ---- 4. a cousin marriage, drawn as a chord --------------------------
+    # ---- 5. a cousin marriage, drawn as a chord --------------------------
     #
     # When both partners were born into the tree only one can hold the cell.
     # The chord says so, and it is the one relationship on this chart that
@@ -469,7 +507,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              dash=style.get("lines.marriage_dash", "1.6,1.2"),
                              person_id=a, role="married_across", z=7))
 
-    # ---- 5. names ---------------------------------------------------------
+    # ---- 6. names ---------------------------------------------------------
     placer = PolarLabelPlacer()
     for sl in sorted(g, key=lambda x: (x.gen, x.tc, x.row)):
         person = graph.people[sl.pid]
@@ -486,6 +524,120 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     add_title(plan, style, cx, cy)
     _key(plan, style, W, H, margin, lw, col)
     return plan
+
+
+def _wedges(plan, graph, g, cells, gens, ring_r, rows_in, pitch, stem,
+            cx, cy, theta, style) -> None:
+    """Tint the ground under each family, so you can see them come together.
+
+    A family here is a founding couple and everyone descended from them. Its
+    wedge covers, ring by ring, the angular ground its people stand on --
+    narrow at the founders, widening outward as the family grows.
+
+    A marriage between two of them is not drawn. It does not have to be:
+    from that ring outward the two families share their descendants, so both
+    wedges cover the same ground and the two tints LIE ON TOP OF EACH OTHER.
+    The blend is the marriage. By the rim of a pedigree every wedge on the
+    chart has converged on one cell, which is the person it was drawn for.
+
+    Nothing here states a relationship the linework does not. It is the same
+    facts at a distance you can read across a room, which is what a metre of
+    plywood on a wall is for. It never reaches the cutter: `PRINT_ONLY`.
+    """
+    ring_of = {cid: m[0].gen for cid, m in cells.items()}
+    cell_of = {sl.pid: (sl.cell or sl.pid) for sl in g}
+
+    def parent_cells(cid):
+        out = []
+        for sl in cells[cid]:
+            uid = graph.people[sl.pid].child_of
+            u = graph.unions.get(uid) if uid else None
+            if not u:
+                continue
+            for p in u.partners:
+                pc = cell_of.get(p)
+                if pc is not None and ring_of.get(pc) == ring_of[cid] - 1:
+                    out.append(pc)
+        return list(dict.fromkeys(out))
+
+    kids: dict[str, list[str]] = {}
+    for cid in sorted(cells):
+        for pc in parent_cells(cid):
+            kids.setdefault(pc, []).append(cid)
+
+    cone: dict[str, set] = {}
+    for r in reversed(gens):             # inward, so children answer first
+        for cid in sorted(c for c in cells if ring_of[c] == r):
+            out = {cid}
+            for k in kids.get(cid, ()):
+                out |= cone[k]
+            cone[cid] = out
+
+    # WHICH families get a wedge. The founders -- unless a founder's
+    # descendants ARE the chart, which is the whole of a descendancy chart,
+    # and one tint over all of it says nothing. Where that happens, drop down
+    # to that couple's children and let their branches be the families.
+    #
+    # Nearly all, not most. On a pedigree BOTH of the subject's lines cover
+    # about seventy per cent of the chart, because they share everything from
+    # the marriage outward -- that overlap is the thing being drawn, and a
+    # threshold that split it took the tint off the founders entirely.
+    total = len(cells)
+    share = float(style.get("family.wedge_max_share", 0.95))
+    least = int(style.get("family.wedge_min_cells", 3))
+    most = int(style.get("family.wedge_max", 10))
+    queue = [c for c in sorted(cells) if not parent_cells(c)]
+    pick: list[str] = []
+    while queue:
+        cid = queue.pop()
+        if len(cone[cid]) > share * total and kids.get(cid):
+            queue += kids[cid]
+        else:
+            pick.append(cid)
+    keep = [f for f in sorted(set(pick), key=lambda k: (-len(cone[k]), k))
+            if len(cone[f]) >= least][:most]
+    if not keep:
+        return
+
+    pal = list(style.get("colour.palette"))[1:]     # [0] is the ink colour
+    alpha = float(style.get("family.wedge_opacity", 0.13))
+
+    def edges(r):
+        """Ring bands that TOUCH, so a family is one wedge and not a ladder.
+
+        The step where one ring is wider than the next is the point: it says
+        the family was this wide here and that wide there.
+        """
+        r0 = ring_r[r] - stem * 0.5
+        out = ring_r.get(r + 1)
+        return r0, (out - stem * 0.5 if out is not None
+                    else ring_r[r] + rows_in[r] * pitch[r])
+
+    for i, f in enumerate(keep):
+        fill = pal[i % len(pal)]
+        for r in gens:
+            here = [cells[c] for c in cone[f] if ring_of[c] == r]
+            if not here:
+                continue
+            r0, r1 = edges(r)
+            spans = sorted((min(m.t0 for m in c), max(m.t1 for m in c))
+                           for c in here)
+            # One shape per contiguous RUN. Taking the outermost pair instead
+            # painted straight over whoever happened to sit in the gap, which
+            # on a chart with two families interleaved is most of it.
+            runs = [list(spans[0])]
+            for lo, hi in spans[1:]:
+                if lo <= runs[-1][1] + 0.02:
+                    runs[-1][1] = max(runs[-1][1], hi)
+                else:
+                    runs.append([lo, hi])
+            for lo, hi in runs:
+                plan.add(Element(
+                    kind="path", layer="PRINT_ONLY",
+                    d=G.annular_sector(cx, cy, r0, r1, theta(lo), theta(hi)),
+                    fill=fill, stroke="none", opacity=alpha,
+                    person_id=cells[f][0].pid if f in cells else "",
+                    role="family", z=-10))
 
 
 def _sector_bounds(r0: float, r1: float, a0: float, a1: float):
