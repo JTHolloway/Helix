@@ -20,7 +20,8 @@ const S = {                       // everything the preview depends on
   tpl: '{given_first} {surname}', cmode: 'none', redact: false,
   threadOn: true, w: 1000, h: 1000, inner: 110, gamma: 50, timeScale: true,
   rings: true, fsize: 34, lw: 45, conn: 'orthogonal', start: -90, sweep: 360,
-  pitch: 25, entrygap: 0, cluster: 0, orient: 'radial', marr: true
+  pitch: 25, entrygap: 0, cluster: 0, orient: 'radial', marr: true,
+  sibgap: 10, famgap: 60, cellcap: 12
 };
 
 // ─────────────────────────────────────────────────────────────── boot ────
@@ -98,6 +99,9 @@ function params() {
     's.layout.min_ring_pitch_mm': S.pitch,
     's.layout.min_entry_gap_mm': S.entrygap,
     's.layout.sibling_gap_frac': (S.cluster / 100).toFixed(2),
+    's.layout.sibling_gap_cells': (S.sibgap / 100).toFixed(2),
+    's.layout.family_gap_cells': (S.famgap / 100).toFixed(2),
+    's.layout.max_cell_deg': S.cellcap,
     's.labels.orientation': S.orient,
     's.marriage.show': S.marr,
     's.labels.lines': JSON.stringify(S.tpl.split('|').filter(Boolean)),
@@ -212,6 +216,10 @@ function wireControls() {
   bind('orient', 'orient');
   bind('entrygap', 'entrygap',
     v => v == 0 ? 'as tight as the text allows' : `at least ${v} mm apart`);
+  bind('sibgap', 'sibgap', v => v <= 15 ? 'close together'
+    : v <= 40 ? 'a little apart' : 'well spread');
+  bind('famgap', 'famgap', v => (v / 100).toFixed(2) + ' of a cell');
+  bind('cellcap', 'cellcap', v => v + '\u00b0 — a sparse family draws as a fan');
   bind('cluster', 'cluster',
     v => v == 0 ? 'off' : `families pulled ${v}% closer together`);
   $('#preset').addEventListener('change', e => {

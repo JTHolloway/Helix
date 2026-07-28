@@ -46,7 +46,21 @@ from ..registry import register
                    "married whom and which children are whose.",
           laser="good")
 def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
-    g = build_grid(graph, replace(s, cells=True))
+    # ---- 0. the knobs worth turning --------------------------------------
+    #
+    # All of these are style tokens, so a preset can carry a whole look and
+    # the control panel can offer them as sliders. See docs/OPTIONS.md.
+    sib = float(style.get("layout.sibling_gap_cells", 0.10))
+    fam = float(style.get("layout.family_gap_cells", 0.60))
+    # `sibling_gap_frac` is the older, gentler control and still works: it
+    # squeezes a sibling group toward its own centre, which is the same
+    # intention said a different way.
+    squeeze = float(style.get("layout.sibling_gap_frac", 0.0) or 0.0)
+    if squeeze:
+        sib *= max(0.0, 1.0 - min(squeeze, 0.95))
+    g = build_grid(graph, replace(s, cells=True, sibling_gap=sib,
+                                  family_gap=max(sib, fam),
+                                  min_cells=float(style.get("layout.min_cells", 0))))
 
     W = style.get("canvas.width_mm", 600)
     H = style.get("canvas.height_mm", W) if style.chose("canvas.height_mm") else W
@@ -58,6 +72,25 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     inner = style.get("layout.inner_radius_mm", 95)
     sweep = math.radians(style.get("layout.sweep_deg", 360))
     start = math.radians(style.get("layout.start_angle_deg", -90))
+
+    # ---- 0b. never let one couple own a quadrant --------------------------
+    #
+    # A small family cannot fill a disc. Spread over the full circle, three
+    # siblings end up forty degrees apart and the arc over them sweeps like a
+    # rainbow. Cap how wide one cell may be and draw a FAN of whatever angle
+    # the family actually needs -- the names stay the same size and the
+    # brothers and sisters stay together.
+    if g.slots:
+        widest_cell = max(sl.t1 - sl.t0 for sl in g)
+        cap = float(style.get("layout.max_cell_deg", 12.0))
+        if cap > 0 and widest_cell > 0:
+            want = math.radians(cap) / widest_cell
+            if want < sweep:
+                # centre the fan on the angle the full circle would have
+                # started from, so a small family looks composed rather than
+                # like a full chart that ran out half way round
+                start += (sweep - want) / 2
+                sweep = want
 
     if not g.slots:
         plan = RenderPlan(canvas=Canvas(W, H, style.get("canvas.background", "#FBF8F2")),

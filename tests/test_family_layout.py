@@ -208,3 +208,92 @@ def test_both_sets_of_children_hang_off_that_one_cell(remarried):
     rows = {g.slots[e.person_id].row for e in stems
             if e.person_id in g.slots and e.person_id != dad}
     assert rows, "each family's stem should leave from a partner's own row"
+
+
+# ------------------------------------------------------------- the settings --
+def _spread(graph, style_kw, names):
+    """Degrees between the first and last of `names`, as drawn."""
+    from dataclasses import replace
+    from helix.layout.base import build_grid
+    style = Style.load("panel1m")
+    style.set("canvas.width_mm", 800)
+    style.set("canvas.height_mm", 800)
+    for k, v in style_kw.items():
+        style.set(k, v)
+    plan = registry.run("radial_family", graph,
+                        LayoutSettings(engine="radial_family", focus="all",
+                                       subject_id=graph.subject_id), style)
+    pts = {e.person_id: (e.x, e.y) for e in plan.elements
+           if e.role == "label" and e.person_id}
+    import math
+    cx = cy = plan.canvas.width_mm / 2
+    ang = []
+    for n in names:
+        pid = next(p for p, q in graph.people.items() if q.full_name == n)
+        if pid in pts:
+            x, y = pts[pid]
+            ang.append(math.degrees(math.atan2(y - cy, x - cx)))
+    return max(ang) - min(ang) if len(ang) > 1 else 0.0
+
+
+def test_siblings_can_be_pulled_closer_together(graph):
+    """Three brothers should read as three brothers. The gap between them is
+    a setting, and turning it down has to actually move them."""
+    from dataclasses import replace
+    from helix.layout.base import build_grid
+
+    def gap_between_siblings(sib):
+        """How far apart three brothers sit, IN CELLS. Measuring the raw
+        0..1 spread instead says almost nothing: pulling the siblings in
+        shrinks the whole chart too, so the fraction barely moves. A cell is
+        one couple, and it is the unit the eye actually uses."""
+        g = build_grid(graph, replace(
+            LayoutSettings(engine="radial_family", focus="bloodline",
+                           subject_id=graph.subject_id),
+            cells=True, sibling_gap=sib, family_gap=0.6))
+        cell = max(sl.t1 - sl.t0 for sl in g)
+        worst = 0.0
+        for uid, u in graph.unions.items():
+            kids = [c for c in u.children
+                    if c in g.slots and g.slots[c].row == 0
+                    and graph.people[c].child_of == uid]
+            if len(kids) < 3:
+                continue
+            ts = sorted(g.slots[c].tc for c in kids)
+            worst = max(worst, (ts[-1] - ts[0]) / cell)
+        return worst
+
+    tight, loose = gap_between_siblings(0.05), gap_between_siblings(1.2)
+    assert tight < loose, "turning the sibling gap down must bring them closer"
+    assert tight < loose * 0.8, "and by a useful amount, not a rounding error"
+
+
+def test_a_sparse_family_is_drawn_as_a_fan(graph):
+    """A small tree cannot fill a disc. Stretched round the full circle,
+    three siblings end up forty degrees apart; capped, the chart draws as a
+    fan of the angle it needs and they stay together."""
+    import math
+    style = Style.load("panel1m")
+    style.set("layout.max_cell_deg", 6.0)
+    s = LayoutSettings(engine="radial_family", focus="thread",
+                       subject_id=graph.subject_id)
+    plan = registry.run("radial_family", graph, s, style)
+    cx = cy = plan.canvas.width_mm / 2
+    ang = [math.degrees(math.atan2(e.y - cy, e.x - cx)) % 360
+           for e in plan.elements if e.role == "label" and e.person_id]
+    assert ang, "nothing was drawn"
+    used = max(ang) - min(ang)
+    assert used < 359, "a sparse family should not be stretched round the disc"
+
+
+def test_the_cap_does_not_bite_on_a_full_chart(graph):
+    """A real family fills the circle, and the cap must leave it alone."""
+    import math
+    style = Style.load("panel1m")
+    s = LayoutSettings(engine="radial_family", focus="all",
+                       subject_id=graph.subject_id)
+    plan = registry.run("radial_family", graph, s, style)
+    cx = cy = plan.canvas.width_mm / 2
+    ang = [math.degrees(math.atan2(e.y - cy, e.x - cx)) % 360
+           for e in plan.elements if e.role == "label" and e.person_id]
+    assert max(ang) - min(ang) > 300, "a 400-person family should use the disc"

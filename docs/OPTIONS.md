@@ -63,6 +63,10 @@ a sparse chart where legibility beats completeness.
 | `layout.max_ring_pitch_mm` ★ | `0` (none) | Cap, so a sparse chart on a big panel does not end up with absurd voids. |
 | `layout.ring_pad_mm` ★ | `5` | Breathing space at the outer edge of each band. |
 | `layout.min_entry_gap_mm` ★ | `0` | **Density along a ring.** The arc each person is entitled to. Raise it and the ring staggers sooner, thinning out; leave at `0` and it uses the text height. |
+| `layout.sibling_gap_cells` ★ | `0.10` | **How close brothers and sisters sit**, in cells (one cell = one couple). The first thing to turn if a family reads as scattered. Three siblings at `0.10` are a couple of cells apart; at `1.0` they are twice that and stop reading as one family. |
+| `layout.family_gap_cells` ★ | `0.60` | Space between two FAMILIES. Wants to stay several times `sibling_gap_cells` — the contrast between the two is what makes a family read as a cluster rather than as part of the row. |
+| `layout.max_cell_deg` ★ | `12` | **No couple may own more than this much of the disc.** A small family cannot fill a circle; stretched round it, three siblings end up forty degrees apart. Capped, the chart is drawn as a FAN of whatever angle it needs, centred, with the names the same size. Set `0` to always use the full sweep. |
+| `layout.min_cells` ★ | `0` | Fewest cells the disc is divided into; `0` uses the layout's own floor. Raise it to thin a crowded chart, lower it to close a sparse one up. |
 | `layout.sibling_gap_frac` ★ | `0` | Squeeze each sibling group toward its own centre by this fraction (0–0.6), so families read as clusters with air between them. `0.12` is a gentle, pleasant setting. |
 | `layout.max_subrows` ★ | `3` | Cap on staggered rows per ring. |
 | `layout.stagger` ★ | `auto` | `auto` \| `always` \| `never`. |

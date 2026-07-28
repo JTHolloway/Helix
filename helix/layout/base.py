@@ -36,6 +36,20 @@ class LayoutSettings:
     min_year: Optional[int] = None
     max_year: Optional[int] = None
     surname_filter: Optional[str] = None
+    sibling_gap: float = 0.10
+    """Blank space between two brothers or sisters, in cells.
+
+    Small on purpose. Three siblings should read as three siblings, not as
+    three unrelated families that happen to be near each other, and the arc
+    over them should be short enough to take in at a glance.
+    """
+    family_gap: float = 0.60
+    """Blank space between two families, in cells. Wants to be several times
+    `sibling_gap`: the contrast between the two is what makes a family read
+    as a cluster rather than as part of the row."""
+    min_cells: float = 0.0
+    """Fewest cells the disc is divided into. 0 uses the layout's own floor.
+    Raise it to thin a crowded chart out, lower it to close a sparse one up."""
     cells: bool = False
     """One angular cell per COUPLE, partners stacked radially inside the ring.
 

@@ -20,6 +20,16 @@ DEFAULTS: dict[str, Any] = {
     "canvas": {"width_mm": 600, "height_mm": 600, "margin_mm": 20,
                "background": "#FBF8F2", "shape": "circle"},
     "layout": {"engine": "radial_family", "inner_radius_mm": 90,
+               # How close family is. `sibling_gap_cells` is the one to turn
+               # first: three brothers should read as three brothers, not as
+               # three separate households. `family_gap_cells` wants to stay
+               # several times bigger -- the CONTRAST is what makes a family
+               # read as a cluster.
+               "sibling_gap_cells": 0.10, "family_gap_cells": 0.60,
+               # No couple may own more than this much of the disc. A sparse
+               # family is drawn as a fan of the angle it needs rather than
+               # stretched round the full circle.
+               "max_cell_deg": 12.0, "min_cells": 0,
                "start_angle_deg": -90, "sweep_deg": 360, "sector_gap_deg": 2,
                "radius_gamma": 0.5, "time_scale": True, "weight_mode": "leaves",
                "cell_pad_deg": 0.12, "min_ring_mm": 8},

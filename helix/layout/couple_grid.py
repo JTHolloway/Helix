@@ -60,9 +60,6 @@ from typing import Optional
 from .base import Grid, LayoutSettings, Slot
 from .subject_grid import _scope
 
-# Blank cells between two adjacent families. Under about a third of a cell
-# two families read as one.
-GAP = 0.45
 # Blank cells at the 0/360 seam so the first and last family do not fuse.
 SEAM = 1.5
 # Fewest cells the disc is ever divided into, so a four-person chart does not
@@ -101,7 +98,7 @@ def _merge(acc: dict, other: dict, dx: float) -> None:
             acc[ring] = (lo, hi)
 
 
-def _clear(acc: dict, other: dict) -> float:
+def _clear(acc: dict, other: dict, gap: float) -> float:
     """How far right `other` must move to clear everything left of it.
 
     Reingold-Tilford's contour step, and the whole non-overlap guarantee.
@@ -117,7 +114,7 @@ def _clear(acc: dict, other: dict) -> float:
     need = 0.0
     for ring, (lo, _hi) in other.items():
         if ring in acc:
-            need = max(need, acc[ring][1] + GAP - lo)
+            need = max(need, acc[ring][1] + gap - lo)
     return max(0.0, need)
 
 
@@ -127,7 +124,7 @@ def _span(cell: _Cell) -> tuple[float, float]:
     return lo, hi
 
 
-def _tidy(cell: _Cell) -> None:
+def _tidy(cell: _Cell, sib: float, fam: float) -> None:
     """Bottom-up: place every block inside its parent, and sit the couple
     over the children they belong to.
 
@@ -143,7 +140,12 @@ def _tidy(cell: _Cell) -> None:
     symmetric, and never cross.
     """
     for k in cell.kids:
-        _tidy(k)
+        _tidy(k, sib, fam)
+
+    # A container with no names of its own holds ONE union's children, so the
+    # blocks inside it are brothers and sisters and belong close together.
+    # Everywhere else is a boundary between families and wants air.
+    gap = sib if not cell.members else fam
 
     o0 = cell.over if cell.members else -1
     o1 = o0 + cell.over_n - 1
@@ -152,7 +154,7 @@ def _tidy(cell: _Cell) -> None:
     # 1 -- everything to the left of the couple's own children
     for k in cell.kids[:max(o0, 0)]:
         if k.contour:
-            k.rel = _clear(acc, k.contour)
+            k.rel = _clear(acc, k.contour, gap)
             _merge(acc, k.contour, k.rel)
 
     # 2 -- the children, then the couple centred over them
@@ -160,10 +162,10 @@ def _tidy(cell: _Cell) -> None:
         run = [k for k in cell.kids[o0:o1 + 1] if k.contour]
         inner: dict[int, tuple[float, float]] = {}
         for k in run:
-            k.rel = _clear(acc, k.contour) if not inner else \
-                _clear(inner, k.contour)
+            k.rel = _clear(acc, k.contour, gap) if not inner else \
+                _clear(inner, k.contour, gap)
             if inner:
-                k.rel = max(k.rel, _clear(acc, k.contour))
+                k.rel = max(k.rel, _clear(acc, k.contour, gap))
             _merge(inner, k.contour, k.rel)
         if run:
             lo = min(_span(k)[0] for k in run)
@@ -171,7 +173,7 @@ def _tidy(cell: _Cell) -> None:
             x = (lo + hi) / 2
             shift = 0.0
             if cell.depth in acc:
-                shift = max(0.0, acc[cell.depth][1] + GAP - (x - 0.5))
+                shift = max(0.0, acc[cell.depth][1] + fam - (x - 0.5))
             if shift:
                 for k in run:
                     k.rel += shift
@@ -188,12 +190,12 @@ def _tidy(cell: _Cell) -> None:
     # 3 -- everything to the right
     for k in cell.kids[max(o1 + 1, 0):]:
         if k.contour:
-            k.rel = _clear(acc, k.contour)
+            k.rel = _clear(acc, k.contour, gap)
             _merge(acc, k.contour, k.rel)
 
     if cell.members and o0 < 0:
         # no children of their own: stand clear of whatever is here
-        x = 0.5 if not acc else max(v[1] for v in acc.values()) + GAP + 0.5
+        x = 0.5 if not acc else max(v[1] for v in acc.values()) + fam + 0.5
         cell.x = x
         _merge(acc, {cell.depth: (x - 0.5, x + 0.5)}, 0.0)
     elif not cell.members:
@@ -383,9 +385,11 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     # ---- lay it out ------------------------------------------------------
     acc: dict[int, tuple[float, float]] = {}
     xs: dict[str, float] = {}
+    sib = max(0.0, float(s.sibling_gap))
+    fam = max(sib, float(s.family_gap))
     for b in blocks:
-        _tidy(b)
-        b.rel = _clear(acc, b.contour)
+        _tidy(b, sib, fam)
+        b.rel = _clear(acc, b.contour, fam)
         _merge(acc, b.contour, b.rel)
     for b in blocks:
         _assign(b, b.rel, xs)
@@ -398,7 +402,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     top_depth = max(depths.values())
     lo = min(xs.values()) - 0.5
     raw = (max(xs.values()) + 0.5) - lo
-    width = max(raw + SEAM, MIN_CELLS)
+    width = max(raw + SEAM, float(s.min_cells or MIN_CELLS))
     pad = (width - raw) / 2
     order = 0
     for anchor, x in sorted(xs.items(), key=lambda kv: kv[1]):
