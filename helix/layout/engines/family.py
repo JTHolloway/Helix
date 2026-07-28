@@ -207,6 +207,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              person_id=sl.pid, role="marriage", z=8))
 
     # ---- 3. one stem per family, one arc per sibling group ----------------
+    #
+    # ONE line for each fact, and never two. The direct line is not drawn as
+    # a second path laid over the first -- it is the SAME stem, arc and tick,
+    # in a different colour. A highlight drawn on top of the linework is
+    # exactly the doubled-up clutter this chart exists to avoid.
     for uid, union in graph.unions.items():
         kids = [c for c in union.children if c in g.slots and g.slots[c].row == 0]
         parents = [p for p in union.partners if p in g.slots]
@@ -216,47 +221,39 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         if gen_k - 1 not in ring_r:
             continue
         ts = sorted(theta(g.slots[c].tc) for c in kids)
-        # the arc sits just inside the children's own row
         r_arc = ring_r[gen_k] - stem * 0.55
-        # the stem leaves from the row of the parent this family belongs to,
+        # the stem leaves from the row of the partner this family belongs to,
         # so a second marriage is visibly a second marriage
         anchor = max(parents, key=lambda p: g.slots[p].row)
         r_from = row_r(g.slots[anchor]) + pitch[g.slots[anchor].gen] * 0.55
         t_head = theta(g.slots[anchor].tc)
-        on_thread = anchor in thr and any(c in thr for c in kids)
+        line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
+        c_line = tcol if line else col
+        w_line = tw if line else lw
 
         plan.add(Element(kind="path", layer="ENGRAVE",
                          d=G.polyline([G.polar(cx, cy, r_from, t_head),
                                        G.polar(cx, cy, r_arc, t_head)]),
-                         stroke=col, stroke_width=lw, fill="none",
+                         stroke=c_line, stroke_width=w_line, fill="none",
                          person_id=anchor, union_id=uid, role="stem", z=10))
         if len(kids) > 1:
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.short_arc(cx, cy, r_arc, ts[0], ts[-1]),
-                             stroke=col, stroke_width=lw, fill="none",
+                             stroke=c_line, stroke_width=w_line, fill="none",
                              union_id=uid, role="siblings", z=10))
         for c in kids:
             tc = theta(g.slots[c].tc)
             person = graph.people[c]
+            on = c in thr and line
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.polyline([G.polar(cx, cy, r_arc, tc),
                                            G.polar(cx, cy, ring_r[gen_k], tc)]),
-                             stroke=colour_for(person, g.slots[c], style, graph),
-                             stroke_width=lw, dash=dash_for(person, style),
+                             stroke=tcol if on else colour_for(person, g.slots[c],
+                                                               style, graph),
+                             stroke_width=tw if on else lw,
+                             dash=dash_for(person, style),
                              fill="none", person_id=c, union_id=uid,
-                             role="branch", z=10))
-        if on_thread:
-            kid = next(c for c in kids if c in thr)
-            tk = theta(g.slots[kid].tc)
-            pts = [G.polar(cx, cy, r_from, t_head), G.polar(cx, cy, r_arc, t_head)]
-            steps = max(2, int(abs(tk - t_head) / 0.02))
-            pts += [G.polar(cx, cy, r_arc, t_head + (tk - t_head) * i / steps)
-                    for i in range(1, steps + 1)]
-            pts.append(G.polar(cx, cy, ring_r[gen_k], tk))
-            plan.add(Element(kind="path", layer=style.get("thread.layer",
-                                                          "ENGRAVE_DEEP"),
-                             d=G.polyline(pts), stroke=tcol, stroke_width=tw,
-                             fill="none", person_id=kid, role="thread", z=80))
+                             role="thread" if on else "branch", z=10))
 
     # ---- 4. a cousin marriage, drawn as a chord --------------------------
     #

@@ -30,8 +30,15 @@ def cellgrid(graph, focus="bloodline"):
 
 
 def _primary_kids(graph, uid, union, g):
+    """The children an arc is actually drawn over.
+
+    Row 0 only. A daughter who is on the chart solely as somebody's wife is
+    drawn inside her husband's cell, on the row below, and the arc over her
+    parents' children does not reach her -- it cannot, and should not try.
+    """
     return [c for c in union.children
-            if c in g.slots and graph.people[c].child_of == uid]
+            if c in g.slots and g.slots[c].row == 0
+            and graph.people[c].child_of == uid]
 
 
 @pytest.mark.parametrize("focus", FOCUSES)
