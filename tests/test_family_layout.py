@@ -297,3 +297,76 @@ def test_the_cap_does_not_bite_on_a_full_chart(graph):
     ang = [math.degrees(math.atan2(e.y - cy, e.x - cx)) % 360
            for e in plan.elements if e.role == "label" and e.person_id]
     assert max(ang) - min(ang) > 300, "a 400-person family should use the disc"
+
+
+# ------------------------------------------------------ shared vs split leaf --
+def _leaves(graph, mode, focus="bloodline"):
+    from dataclasses import replace
+    from helix.layout.base import build_grid
+    g = build_grid(graph, replace(
+        LayoutSettings(engine="radial_family", subject_id=graph.subject_id,
+                       focus=focus), cells=True, couple_leaf=mode))
+    cells = {}
+    for sl in g.slots.values():
+        cells.setdefault(sl.cell, []).append(sl)
+    return g, cells
+
+
+def _is_split(members):
+    return len(members) > 1 and all(m.row == 0 for m in members)
+
+
+def test_shared_leaves_stack_and_split_leaves_sit_side_by_side(graph):
+    g, cells = _leaves(graph, "shared")
+    for members in cells.values():
+        if len(members) < 2:
+            continue
+        assert len({m.tc for m in members}) == 1, "shared: one leaf, one angle"
+        assert len({m.row for m in members}) == len(members), "stacked rows"
+
+    g, cells = _leaves(graph, "split")
+    couples = [m for m in cells.values() if len(m) > 1]
+    assert couples, "the sample has married couples"
+    for members in couples:
+        assert _is_split(members), "split: a leaf each"
+        assert len({m.tc for m in members}) == len(members), "side by side"
+        assert all(m.row == 0 for m in members), "same ring, not stacked"
+
+
+def test_auto_splits_only_where_a_shared_leaf_would_be_ambiguous(graph):
+    """A shared leaf holding two ancestries cannot say which is whose. That
+    is the ONLY thing wrong with it, so it is the only thing that triggers a
+    split -- and it needs both partners to have parents on the chart, which
+    is rare."""
+    g, cells = _leaves(graph, "auto")
+    for anchor, members in cells.items():
+        if not _is_split(members):
+            continue
+        with_parents = [m for m in members
+                        if any(x in g.slots for x in
+                               graph.parents(m.pid, primary_only=False))]
+        assert len(with_parents) > 1, (
+            f"{graph.people[anchor].full_name} was split but only one of them "
+            f"has parents on the chart -- sharing was not ambiguous")
+
+
+def test_auto_is_never_wider_than_forcing_split(graph):
+    """Auto exists to spend width only where it buys clarity."""
+    _, auto = _leaves(graph, "auto")
+    _, forced = _leaves(graph, "split")
+    n_auto = sum(1 for m in auto.values() if _is_split(m))
+    n_forced = sum(1 for m in forced.values() if _is_split(m))
+    assert n_auto <= n_forced
+
+
+def test_a_split_couple_still_hangs_its_children_from_between_them(graph):
+    """Children of a marriage belong to the marriage, not to one partner, so
+    the stem leaves from between the two leaves."""
+    style = Style.load("panel1m")
+    style.set("couple.leaf", "split")
+    plan = registry.run("radial_family", graph,
+                        LayoutSettings(engine="radial_family", focus="bloodline",
+                                       subject_id=graph.subject_id), style)
+    assert any(e.role == "marriage" for e in plan.elements), \
+        "a split couple needs a tie -- it is the one line this design must draw"
+    assert any(e.role == "stem" for e in plan.elements)

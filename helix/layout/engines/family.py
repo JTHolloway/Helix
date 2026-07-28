@@ -58,9 +58,10 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     squeeze = float(style.get("layout.sibling_gap_frac", 0.0) or 0.0)
     if squeeze:
         sib *= max(0.0, 1.0 - min(squeeze, 0.95))
-    g = build_grid(graph, replace(s, cells=True, sibling_gap=sib,
-                                  family_gap=max(sib, fam),
-                                  min_cells=float(style.get("layout.min_cells", 0))))
+    g = build_grid(graph, replace(
+        s, cells=True, sibling_gap=sib, family_gap=max(sib, fam),
+        couple_leaf=str(style.get("couple.leaf", "auto")),
+        min_cells=float(style.get("layout.min_cells", 0))))
 
     W = style.get("canvas.width_mm", 600)
     H = style.get("canvas.height_mm", W) if style.chose("canvas.height_mm") else W
@@ -224,7 +225,21 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     for sl in g:
         cells.setdefault(sl.cell or sl.pid, []).append(sl)
     for cid, members in cells.items():
-        members.sort(key=lambda x: x.row)
+        members.sort(key=lambda x: (x.row, x.tc))
+        split = len(members) > 1 and all(m.row == 0 for m in members)
+        if split:
+            # TWO leaves, one per partner, so each ancestry sits inside the
+            # partner it belongs to. The marriage is the tie between them --
+            # the one place this design has to draw a line for it.
+            for a, b in zip(members, members[1:]):
+                r = row_r(a) + lab_h.get(a.gen, 0.0) * 0.5
+                plan.add(Element(kind="path", layer="ENGRAVE",
+                                 d=G.short_arc(cx, cy, r, theta(a.tc),
+                                               theta(b.tc)),
+                                 stroke=style.get("lines.marriage_colour", col),
+                                 stroke_width=lw * 0.9, fill="none",
+                                 person_id=a.pid, role="marriage", z=8))
+            continue
         t0, t1 = theta(members[0].t0), theta(members[0].t1)
         mid = (t0 + t1) / 2
         for sl in members[:-1]:
@@ -259,7 +274,16 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         # so a second marriage is visibly a second marriage
         anchor = max(parents, key=lambda p: g.slots[p].row)
         r_from = row_r(g.slots[anchor]) + pitch[g.slots[anchor].gen] * 0.55
-        t_head = theta(g.slots[anchor].tc)
+        same = [p for p in parents if g.slots[p].cell == g.slots[anchor].cell]
+        if len(same) > 1 and all(g.slots[p].row == 0 for p in same):
+            # split leaves: the children hang from BETWEEN the two, which is
+            # what says they are the children of that marriage and not of one
+            # of the partners alone
+            t_head = sum(theta(g.slots[p].tc) for p in same) / len(same)
+            r_from = max(row_r(g.slots[p]) for p in same) + \
+                lab_h.get(g.slots[anchor].gen, 0.0) * 0.7
+        else:
+            t_head = theta(g.slots[anchor].tc)
         line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
         c_line = tcol if line else col
         w_line = tw if line else lw

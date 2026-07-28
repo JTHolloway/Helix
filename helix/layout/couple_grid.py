@@ -81,11 +81,23 @@ class _Cell:
     # Which child block this cell sits directly over. That is what keeps the
     # descent radial: a couple is centred on their own children, not on
     # everything hanging off them.
+    split: bool = False                        # a leaf each, not one shared
     over: int = -1
     over_n: int = 1                            # how many of them are children
     rel: float = 0.0
     x: float = 0.0
     contour: dict[int, tuple[float, float]] = field(default_factory=dict)
+
+    @property
+    def width(self) -> float:
+        """How many cells wide this leaf is.
+
+        A SHARED leaf is one cell however many names are stacked in it. A
+        SPLIT couple is one cell per partner, side by side, which costs
+        twice the width and buys the one thing shared cannot give: each
+        partner's own ancestry sitting directly inside them.
+        """
+        return float(len(self.members)) if self.split else 1.0
 
 
 # ================================================================ the tidy ====
@@ -173,7 +185,8 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
             x = (lo + hi) / 2
             shift = 0.0
             if cell.depth in acc:
-                shift = max(0.0, acc[cell.depth][1] + fam - (x - 0.5))
+                shift = max(0.0, acc[cell.depth][1] + fam
+                            - (x - cell.width / 2))
             if shift:
                 for k in run:
                     k.rel += shift
@@ -183,7 +196,8 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
                     _merge(inner, k.contour, k.rel)
             cell.x = x
             _merge(acc, inner, 0.0)
-            _merge(acc, {cell.depth: (x - 0.5, x + 0.5)}, 0.0)
+            _merge(acc, {cell.depth: (x - cell.width / 2,
+                                  x + cell.width / 2)}, 0.0)
         else:
             o0 = -1
 
@@ -195,9 +209,10 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
 
     if cell.members and o0 < 0:
         # no children of their own: stand clear of whatever is here
-        x = 0.5 if not acc else max(v[1] for v in acc.values()) + fam + 0.5
+        half = cell.width / 2
+        x = half if not acc else max(v[1] for v in acc.values()) + fam + half
         cell.x = x
-        _merge(acc, {cell.depth: (x - 0.5, x + 0.5)}, 0.0)
+        _merge(acc, {cell.depth: (x - half, x + half)}, 0.0)
     elif not cell.members:
         cell.x = 0.0
     cell.contour = acc
@@ -242,6 +257,25 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             out.append(q)
         return out
 
+    def wants_split(members: list[str]) -> bool:
+        """Shared is better until it becomes ambiguous.
+
+        The moment BOTH partners have parents on the chart, a shared leaf
+        holds two ancestries with nothing to say which is whose. Splitting
+        the leaf puts each ancestry directly inside the partner it belongs
+        to. Everywhere else shared wins: it is half the width and the
+        marriage cannot be misread.
+        """
+        mode = (s.couple_leaf or "auto").lower()
+        if mode == "split":
+            return len(members) > 1
+        if mode == "shared":
+            return False
+        with_parents = sum(
+            1 for m in members
+            if in_scope(graph.parents(m, primary_only=False)))
+        return len(members) > 1 and with_parents > 1
+
     def new_cell(anchor: str, depth: int, extra: list[str] = ()) -> _Cell:
         used.add(anchor)
         members = [anchor]
@@ -252,7 +286,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         members += take_spouses(anchor)
         for x in list(members[1:]):
             members += [y for y in take_spouses(x) if y not in members]
-        c = _Cell(members=members, depth=depth)
+        c = _Cell(members=members, depth=depth, split=wants_split(members))
         for m in members:
             cell_of[m] = c
         return c
@@ -407,15 +441,23 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     order = 0
     for anchor, x in sorted(xs.items(), key=lambda kv: kv[1]):
         cell = cell_of[anchor]
-        t0 = (x - 0.5 - lo + pad) / width
-        t1 = (x + 0.5 - lo + pad) / width
         ring = top_depth - cell.depth
-        for row, pid in enumerate(cell.members):
+        half = cell.width / 2
+        for i, pid in enumerate(cell.members):
             p = graph.people[pid]
+            if cell.split:
+                # a leaf each, side by side on one ring
+                a = x - half + i
+                t0, t1 = (a - lo + pad) / width, (a + 1 - lo + pad) / width
+                row = 0
+            else:
+                t0 = (x - half - lo + pad) / width
+                t1 = (x + half - lo + pad) / width
+                row = i
             g.slots[pid] = Slot(
                 pid=pid, gen=ring, t0=t0, t1=t1, order=order,
                 lineage=anchor, row=row, cell=anchor,
-                partner_of=None if row == 0 else anchor,
+                partner_of=None if i == 0 else anchor,
                 year=p.birth.sort_value, death_year=p.death.sort_value)
             g.order.append(pid)
             order += 1

@@ -30,6 +30,14 @@ DEFAULTS: dict[str, Any] = {
                # family is drawn as a fan of the angle it needs rather than
                # stretched round the full circle.
                "max_cell_deg": 12.0, "min_cells": 0,
+               },
+    "couple": {
+               # shared | split | auto. Shared stacks both names in
+               # one leaf; split gives each partner their own leaf so
+               # their own ancestry sits inside them. Auto splits only
+               # where sharing would be ambiguous -- both partners
+               # having parents on the chart.
+               "leaf": "auto",
                "start_angle_deg": -90, "sweep_deg": 360, "sector_gap_deg": 2,
                "radius_gamma": 0.5, "time_scale": True, "weight_mode": "leaves",
                "cell_pad_deg": 0.12, "min_ring_mm": 8},

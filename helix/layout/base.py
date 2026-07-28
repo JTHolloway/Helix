@@ -50,6 +50,22 @@ class LayoutSettings:
     min_cells: float = 0.0
     """Fewest cells the disc is divided into. 0 uses the layout's own floor.
     Raise it to thin a crowded chart out, lower it to close a sparse one up."""
+    couple_leaf: str = "auto"
+    """How a married couple is drawn: `shared` | `split` | `auto`.
+
+    SHARED puts both names in one leaf, stacked. Compact, and the marriage
+    cannot be misread -- but if BOTH partners have their own parents on the
+    chart, the two ancestries sit inside one leaf and there is nothing to
+    say which is whose.
+
+    SPLIT gives each partner their own leaf side by side, with a tie between
+    them and their children between and outward. Each ancestry then sits
+    directly inside the partner it belongs to. Costs twice the width.
+
+    AUTO decides per couple: shared unless both partners have parents on the
+    chart, which is the only case where shared is ambiguous. Most spouses
+    married in and have no ancestry drawn, so most leaves stay shared.
+    """
     cells: bool = False
     """One angular cell per COUPLE, partners stacked radially inside the ring.
 
