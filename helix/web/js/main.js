@@ -7,6 +7,7 @@ import { get, post, svgUrl } from './api.js';
 import { draw } from './canvas.js';
 import { attach } from './zoom.js';
 import * as inspector from './inspector.js';
+import { addPerson as addFirstPerson } from './edit.js';
 
 const $ = s => document.querySelector(s);
 const wrap = $('#canvasWrap'), host = $('#canvas');
@@ -33,6 +34,8 @@ async function init() {
   wireSearch();
   wireExport();
   wireKeys();
+  wirePeopleList();
+  undoLabels();
   await refresh();
   view.fit();
   status();
@@ -46,6 +49,10 @@ function refresh() {
 }
 
 async function _refresh() {
+  // An empty file has nobody to stand on, so there is nothing to click and
+  // no chart to draw. Offer the one thing that can happen next.
+  if (!META.stats.people) { showEmptyState(); return; }
+  $('#empty').hidden = true;
   $('#loading').hidden = false;
   try {
     PLAN = await get('plan', params());
@@ -57,6 +64,25 @@ async function _refresh() {
     if (SEL) markSelected();
     readout();
   } catch (e) { fail(e); } finally { $('#loading').hidden = true; }
+}
+
+function showEmptyState() {
+  $('#loading').hidden = true;
+  $('#empty').hidden = false;
+  host.innerHTML = '';
+  $('#readout').textContent = '';
+  const b = $('#firstPerson');
+  if (b.dataset.wired) return;
+  b.dataset.wired = '1';
+  b.addEventListener('click', () => addFirstPerson({
+    to: null, as: null, toName: '', toSurname: '', toSex: 'U',
+  }, async (id) => {
+    await post('subject', { id });          // the first person is you
+    META = await get('meta');
+    await refresh();
+    select(id);
+    undoLabels();
+  }));
 }
 
 function params() {
@@ -82,6 +108,35 @@ function params() {
     's.colour.mode': S.cmode,
     's.thread.enabled': S.threadOn
   };
+}
+
+// Both of these were CALLED but never defined, so the fit report never
+// appeared and the saved indicator never updated — every refresh threw a
+// ReferenceError before it got as far as drawing the readout.
+function showFit(fit, hidden) {
+  const box = $('#fit');
+  if (!fit) { box.innerHTML = ''; return; }
+  const ok = fit.fits !== false;
+  box.innerHTML =
+    `<b class="${ok ? 'ok' : 'warn'}">${ok ? 'Fits the panel' : 'Too big for the panel'}</b>` +
+    (fit.required_mm ? `<br>needs ${Math.round(fit.required_mm)} mm across` : '') +
+    (fit.panel_mm ? ` of ${Math.round(fit.panel_mm)} mm` : '') +
+    (fit.ring_pitch_mm ? `<br>rings ${fit.ring_pitch_mm} mm apart` : '') +
+    (fit.pitch_ok === false ? `<br><span class="warn">the rings are tighter
+       than the text needs</span>` : '') +
+    (hidden ? `<br><span class="warn">${hidden} names left off — make it bigger,
+       show fewer generations, or shorten the label.</span>` : '');
+}
+
+async function status() {
+  try {
+    const st = await get('status');
+    const el = $('#saved');
+    el.textContent = 'Saved';
+    el.title = `${st.people} people · ${st.size_kb} KB · last written ` +
+      `${st.modified.replace('T', ' ')} · ${st.backups} backups` +
+      (st.problems && st.problems.length ? ` · ${st.problems.length} problems` : '');
+  } catch { /* an empty file has no status worth showing */ }
 }
 
 function readout() {
@@ -199,7 +254,8 @@ async function select(pid) {
   await inspector.show($('#inspector'), pid, {
     onSelect: select,
     onSubject: async () => { META = await get('meta'); refresh(); },
-    onChanged: () => refresh()
+    onChanged: async () => { META = await get('meta'); refresh(); undoLabels(); },
+    onToast: toast,
   });
 }
 
@@ -359,7 +415,98 @@ function wireKeys() {
     if (k === 'escape') { clearWhatIf(); $('#right').hidden = true; SEL = null; markSelected(); }
     if (k === '+' || k === '=') view.zoom(1.35);
     if (k === '-') view.zoom(1 / 1.35);
+    if (k === 'l') { e.preventDefault(); showPeople(); }
   });
+
+  // Undo and redo work while typing too, which is where mistakes happen.
+  document.addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z' && !e.shiftKey) { e.preventDefault(); step('undo'); }
+    else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); step('redo'); }
+  });
+}
+
+// ────────────────────────────────────────────────────── undo and redo ────
+async function step(which) {
+  const r = await post(which, {});
+  toast(r.message || (which === 'undo' ? 'Nothing to undo.' : 'Nothing to redo.'),
+        r.ok ? '' : 'warn');
+  if (!r.ok) return;
+  META = await get('meta');
+  await refresh();
+  undoLabels();
+  if (SEL && META.people.some(p => p.id === SEL)) select(SEL);
+  else { $('#right').hidden = true; SEL = null; }
+}
+
+async function undoLabels() {
+  try {
+    const h = await get('history');
+    const u = $('#undoBtn'), r = $('#redoBtn');
+    if (!u) return;
+    u.disabled = !h.undo; r.disabled = !h.redo;
+    u.title = h.undo ? `Undo: ${h.undo}  (Ctrl-Z)` : 'Nothing to undo';
+    r.title = h.redo ? `Redo: ${h.redo}  (Ctrl-Y)` : 'Nothing to redo';
+  } catch { /* an empty file has no history yet */ }
+}
+
+let toastTimer = null;
+function toast(msg, kind = '') {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast ' + kind;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 5200);
+}
+
+// ──────────────────────────────────────────────────── the plain list ─────
+let listSort = 'surname';
+function wirePeopleList() {
+  $('#peopleBtn').addEventListener('click', showPeople);
+  $('#undoBtn').addEventListener('click', () => step('undo'));
+  $('#redoBtn').addEventListener('click', () => step('redo'));
+}
+
+async function showPeople() {
+  const rows = await get('people');
+  const dlg = $('#listDlg');
+  $('#listTitle').textContent = `Everyone in the file — ${rows.length}`;
+  const render = () => {
+    const key = {
+      surname: (a, b) => (a.surname || '~').localeCompare(b.surname || '~') ||
+                         (a.given || '').localeCompare(b.given || ''),
+      born: (a, b) => (a.born ?? 9e9) - (b.born ?? 9e9),
+      complete: (a, b) => a.complete - b.complete,
+    }[listSort];
+    const sorted = [...rows].sort(key);
+    $('#listBody').innerHTML = `
+      <table class="people">
+        <thead><tr>
+          <th><button data-sort="surname">Name</button></th>
+          <th><button data-sort="born">Born</button></th>
+          <th><button data-sort="complete">How complete</button></th>
+        </tr></thead>
+        <tbody>${sorted.map(p => `<tr>
+          <td><button class="link" data-p="${p.id}">${escape2(p.name) || '—'}</button>
+            ${p.is_subject ? '<small> · you</small>' : ''}</td>
+          <td>${p.born ?? '<span class="none">—</span>'}</td>
+          <td><span class="meter" style="--v:${p.complete}%"
+            title="${p.complete}% of the basics filled in"></span></td>
+        </tr>`).join('')}</tbody></table>
+      <p class="hint">Sorted by ${ {surname:'surname', born:'birth year',
+        complete:'how complete the record is'}[listSort] }. The least
+        complete records are the ones worth an afternoon.</p>`;
+    $('#listBody').querySelectorAll('[data-sort]').forEach(b =>
+      b.addEventListener('click', () => { listSort = b.dataset.sort; render(); }));
+    $('#listBody').querySelectorAll('[data-p]').forEach(b =>
+      b.addEventListener('click', () => {
+        dlg.close(); select(b.dataset.p); focusOn(b.dataset.p);
+      }));
+  };
+  render();
+  dlg.showModal();
 }
 
 // ────────────────────────────────────────────────────────────── errors ───

@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Helix</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body data-mode="simple">
@@ -13,6 +14,9 @@
   <div class="grow"></div>
   <input id="search" type="search" placeholder="Find a person…" autocomplete="off">
   <div id="results" class="results" hidden></div>
+  <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶</button>
+  <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷</button>
+  <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
   <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
   <span id="saved" class="saved" title="Every change is written to your family file the moment you make it">Saved</span>
   <button id="exportBtn" class="primary">Export</button>
@@ -160,6 +164,13 @@
   <section id="stage">
     <div id="canvasWrap"><div id="canvas"></div></div>
     <div id="loading" class="loading" hidden>Drawing…</div>
+    <div id="empty" class="empty" hidden>
+      <h2>Nobody here yet</h2>
+      <p>A family tree starts with one person, and the easiest one to start
+        with is you. Everyone else gets added relative to somebody already
+        here — your father, her mother, their children.</p>
+      <button class="primary" id="firstPerson">Add yourself</button>
+    </div>
     <div id="readout" class="readout"></div>
     <div id="whatifCard" class="whatif" hidden></div>
     <div class="zoomers">
@@ -175,6 +186,8 @@
     <div id="inspector"></div>
   </aside>
 </main>
+
+<div id="toast" class="toast" hidden></div>
 
 <dialog id="exportDlg">
   <h2>Export</h2>

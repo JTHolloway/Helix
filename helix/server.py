@@ -298,7 +298,9 @@ def _person_detail(st: State, pid: str) -> dict:
 
 def _brief(g, pid: str) -> dict:
     p = g.people[pid]
-    return {"id": pid, "name": p.full_name, "life": p.lifespan}
+    # `sex` is here so the panel knows whether it still needs a "+ Add father"
+    # or a "+ Add mother" button.
+    return {"id": pid, "name": p.full_name, "life": p.lifespan, "sex": p.sex}
 
 
 def _siblings(g, pid: str) -> list[str]:

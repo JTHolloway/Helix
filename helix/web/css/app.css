@@ -162,3 +162,97 @@ dialog h2{margin:0 0 4px;font-size:19px}
 .saved{font-size:12.5px;color:#3B6B3B;background:#EEF4EC;border:1px solid #CBDCC6;
        border-radius:20px;padding:3px 11px;white-space:nowrap}
 .saved.warn{color:#9B3A2E;background:#FBEFEC;border-color:#E2C4BC}
+
+/* `hidden` must win over any display rule that comes after it. Without this
+   a later `.details{display:block}` quietly beat the attribute and the edit
+   form was open on every person. */
+[hidden] { display: none !important; }
+
+/* ─────────────────────────── the record system ───────────────────────── */
+/* The person panel, the add dialogue, the undo toast and the list view.
+   Everything here is plain CSS on the existing custom properties; there is
+   no build step and nothing to install. */
+
+#right .who h3 { display: flex; align-items: baseline; gap: .4rem; }
+button.icon { background: none; border: 0; cursor: pointer; font-size: 1rem;
+  opacity: .55; padding: .1rem .3rem; border-radius: 4px; }
+button.icon:hover { opacity: 1; background: rgba(128, 128, 128, .15); }
+.rel.me { font-weight: 600; }
+
+#right h4 { margin: 1.4rem 0 .3rem; padding-bottom: .2rem;
+  border-bottom: 1px solid rgba(128, 128, 128, .3); }
+#right h5 { margin: .9rem 0 .25rem; font-size: .82rem; letter-spacing: .04em;
+  text-transform: uppercase; opacity: .65; }
+#right h6 { margin: .55rem 0 .2rem; font-size: .8rem; font-weight: 500;
+  opacity: .8; font-style: italic; }
+.group { margin-bottom: .3rem; }
+.family { margin: 0 0 .5rem .7rem; padding-left: .6rem;
+  border-left: 2px solid rgba(128, 128, 128, .28); }
+.none { opacity: .55; font-size: .82rem; margin: .15rem 0; }
+
+.kinrow { display: flex; align-items: baseline; gap: .4rem; }
+.kinrow small { opacity: .6; font-size: .76rem; }
+.kinrow button, button.link { background: none; border: 0; padding: .12rem 0;
+  cursor: pointer; color: inherit; text-align: left;
+  text-decoration: underline; text-decoration-color: rgba(128,128,128,.45); }
+.kinrow button:hover, button.link:hover { text-decoration-color: currentColor; }
+
+button.addlink { display: block; background: none; border: 0; cursor: pointer;
+  padding: .18rem 0; font-size: .84rem; opacity: .75; color: inherit; }
+button.addlink:hover { opacity: 1; text-decoration: underline; }
+
+.details { margin: .5rem 0; }
+.details label { display: block; margin-bottom: .35rem; }
+.echo { display: block; opacity: .7; font-style: italic; min-height: 1em;
+  font-size: .78rem; }
+.warnBox { margin: .4rem 0; padding: .45rem .6rem; border-radius: 5px;
+  background: rgba(200, 140, 0, .13); font-size: .84rem; }
+.warnBox p { margin: .15rem 0; }
+.actions { margin-top: 1.2rem; }
+.danger { color: #a8342a; }
+table.facts { width: 100%; }
+
+/* the add dialogue */
+dialog.addDlg { min-width: 22rem; max-width: 26rem; border-radius: 8px;
+  border: 1px solid rgba(128, 128, 128, .4); padding: 1.1rem 1.3rem; }
+dialog.addDlg::backdrop { background: rgba(0, 0, 0, .35); }
+dialog.addDlg h2 { margin-top: 0; }
+dialog.addDlg label { display: block; margin-bottom: .5rem; }
+dialog.addDlg input[type=text], dialog.addDlg input:not([type]) { width: 100%; }
+fieldset.sexes { border: 0; padding: 0; margin: .3rem 0 .6rem;
+  display: flex; gap: 1rem; }
+fieldset.sexes label { display: inline-flex; align-items: center; gap: .3rem;
+  margin: 0; }
+.row { display: flex; gap: .5rem; margin-top: .8rem; flex-wrap: wrap; }
+.dupe { margin: .2rem 0 .6rem; padding: .45rem .6rem; border-radius: 5px;
+  background: rgba(120, 160, 220, .16); font-size: .84rem; }
+.dupe p { margin: 0 0 .3rem; }
+.dupe .linkBtn { display: block; width: 100%; text-align: left;
+  margin-bottom: .2rem; }
+
+/* the undo toast */
+.toast { position: fixed; left: 50%; bottom: 1.6rem; transform: translateX(-50%);
+  z-index: 60; padding: .6rem 1.1rem; border-radius: 999px; font-size: .88rem;
+  background: #222; color: #f4f1e8; box-shadow: 0 3px 14px rgba(0,0,0,.28);
+  max-width: 34rem; }
+.toast.warn { background: #8a5a06; }
+
+/* the plain list */
+table.people { width: 100%; border-collapse: collapse; }
+table.people th { text-align: left; font-size: .78rem; opacity: .7;
+  border-bottom: 1px solid rgba(128,128,128,.35); }
+table.people th button { background: none; border: 0; cursor: pointer;
+  font: inherit; color: inherit; padding: .3rem 0; }
+table.people th button:hover { text-decoration: underline; }
+table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
+  border-bottom: 1px solid rgba(128,128,128,.14); }
+.meter { display: inline-block; width: 5.5rem; height: .5rem; border-radius: 3px;
+  background: rgba(128,128,128,.22); position: relative; }
+.meter::after { content: ''; position: absolute; inset: 0 auto 0 0; width: var(--v);
+  background: currentColor; opacity: .55; border-radius: 3px; }
+#listDlg { min-width: 30rem; max-width: 46rem; max-height: 80vh;
+  overflow: auto; border-radius: 8px; }
+.empty { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  gap: .4rem; padding: 2rem; }
+.empty p { max-width: 26rem; opacity: .75; }

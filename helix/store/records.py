@@ -569,6 +569,12 @@ def search(con, q: str, *, limit: int = 8, exclude: str = "") -> list[dict]:
         "SELECT n.person_id id, n.given, n.surname FROM person_name n "
         "JOIN person p ON p.id=n.person_id "
         "WHERE n.is_primary=1 AND p.active=1").fetchall()
+    # A shared surname is not a duplicate. Scoring the whole string alone
+    # offered "James Pargeter" to somebody adding his sister Claire, because
+    # the surname is most of the characters -- and a wrong "link to them
+    # instead" is worse than no suggestion at all. So the given name has to
+    # agree too, unless the whole thing is nearly identical.
+    qgiven = q.split()[0] if q.split() else q
     scored = []
     for r in rows:
         if r["id"] == exclude:
@@ -577,10 +583,11 @@ def search(con, q: str, *, limit: int = 8, exclude: str = "") -> list[dict]:
         low = name.lower()
         if not low:
             continue
-        score = difflib.SequenceMatcher(None, q, low).ratio()
-        if q in low:
-            score = max(score, 0.9)
-        if score >= 0.6:
+        whole = difflib.SequenceMatcher(None, q, low).ratio()
+        given = max((difflib.SequenceMatcher(None, qgiven, tok).ratio()
+                     for tok in low.split()), default=0.0)
+        score = max(whole, 0.9 if q in low else 0.0)
+        if score >= 0.85 or (score >= 0.6 and given >= 0.7):
             scored.append((score, r["id"], name))
     scored.sort(key=lambda t: (-t[0], t[2]))
     out = []

@@ -354,3 +354,36 @@ def test_a_bad_request_explains_itself(app):
         "person/new", {"given": "X", "attach": {"to": me, "as": "wombat"}})
     assert "wombat" in err["error"] and "father" in err["error"]
     assert "Traceback" not in err["error"]
+
+
+def test_a_shared_surname_alone_is_not_a_duplicate(app):
+    """Offering James when somebody adds his sister Claire invites a wrong
+    "link to them instead", which is worse than no suggestion at all."""
+    c = app
+    james = add(c, "James", "Pargeter", birth="1992")
+    add(c, "Arthur", "Pargeter", birth="1935")
+    assert [h["id"] for h in c.get("person/search", q="Claire Pargeter")] == []
+    # a real near-miss still surfaces
+    assert c.get("person/search", q="Jame Pargeter")[0]["id"] == james
+    assert c.get("person/search", q="James Pargetter")[0]["id"] == james
+
+
+def test_the_word_union_never_reaches_the_screen(app):
+    """A hard rule from docs/DATA_ENTRY_UI.md. "Union" is the right word for
+    the schema and the wrong word for somebody adding their aunt."""
+    import re
+    from pathlib import Path
+    web = Path(__file__).resolve().parents[1] / "helix" / "web"
+
+    visible = re.sub(r"<[^>]+>", " ", (web / "index.html").read_text())
+    assert "union" not in visible.lower(), "index.html shows the word to the user"
+
+    # and nothing the API hands back as prose says it either
+    c = app
+    me = add(c, "James", "Pargeter")
+    add(c, "Michael", "Pargeter", me, "father")
+    d = c.get("person", id=me)
+    prose = " ".join(str(v) for k, v in d.items() if isinstance(v, str))
+    assert "union" not in prose.lower()
+    assert "union" not in str(c.get("history")).lower()
+    assert "union" not in c.post("person/retire", {"id": me})["message"].lower()
