@@ -91,30 +91,34 @@ def _migrate(con: sqlite3.Connection) -> None:
     """Bring any file, new or old, up to the current shape.
 
     `schema.sql` is the version 1 schema and is never edited -- changes go in
-    MIGRATIONS. So a brand new file starts at 1 and runs the same upgrades an
-    old one does, and the two end up identical.
+    MIGRATIONS.
 
-    Stamping a new file with the LATEST version instead, and skipping the
-    upgrades, is the obvious shortcut and it is wrong: it produced files
-    claiming v3 with none of the v2 or v3 columns, so `person.active` -- which
-    "Remove from tree" depends on -- did not exist on any file this program
-    had ever created.
+    EVERY migration runs on EVERY open, not just the ones above the recorded
+    version, and each must therefore be safe to run twice. That looks
+    wasteful and it is deliberate. An earlier version stamped a brand new
+    file with the latest version number and skipped the upgrades entirely,
+    which produced files claiming v3 with none of the v2 columns in them --
+    `person.active`, which "Remove from tree" depends on, was missing from
+    every file this program had ever created. Trusting the stamp leaves
+    those files broken for ever; re-running the upgrades repairs them on the
+    next open, quietly, which is what somebody with ten years of research in
+    the file deserves.
+
+    So: a migration may only ADD things, and must tolerate what it adds being
+    there already. Anything that needs to run exactly once needs a different
+    mechanism than this.
     """
     con.executescript(_SCHEMA.read_text())
-    row = con.execute("SELECT v FROM settings WHERE k='schema_version'").fetchone()
-    current = int(row["v"]) if row else 1
-    if not row:
-        con.execute("INSERT INTO settings(k,v) VALUES('schema_version','1')")
-    while current < SCHEMA_VERSION:
-        for stmt in MIGRATIONS.get(current, []):
+    for version in sorted(MIGRATIONS):
+        for stmt in MIGRATIONS[version]:
             try:
                 con.execute(stmt)
             except sqlite3.OperationalError as e:
                 if "duplicate column" not in str(e).lower():
                     raise
-        current += 1
-        con.execute("UPDATE settings SET v=? WHERE k='schema_version'",
-                    (str(current),))
+    con.execute("INSERT INTO settings(k,v) VALUES('schema_version',?) "
+                "ON CONFLICT(k) DO UPDATE SET v=excluded.v",
+                (str(SCHEMA_VERSION),))
     con.commit()
 
 

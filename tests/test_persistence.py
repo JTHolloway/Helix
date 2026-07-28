@@ -199,3 +199,37 @@ def test_restored_file_is_editable_not_read_only(sample_db, tmp_path):
     con.commit()
     assert con.execute("SELECT COUNT(*) FROM person WHERE id=?",
                        (pid,)).fetchone()[0] == 1
+
+
+def test_a_brand_new_file_has_every_migrated_column(tmp_path):
+    """A new file must end up shaped exactly like an upgraded old one.
+
+    An earlier version stamped new files with the latest schema version and
+    skipped the migrations, so `person.active` -- which "Remove from tree"
+    depends on -- was missing from every file this program had created.
+    """
+    from helix.store.db import SCHEMA_VERSION, connect, get_setting
+    con = connect(tmp_path / "new.helix")
+    cols = {r[1] for r in con.execute("PRAGMA table_info(person)")}
+    assert "active" in cols
+    log = {r[1] for r in con.execute("PRAGMA table_info(change_log)")}
+    assert {"batch", "label", "undone"} <= log
+    assert int(get_setting(con, "schema_version")) == SCHEMA_VERSION
+
+
+def test_opening_repairs_a_file_stamped_ahead_of_its_shape(tmp_path):
+    """Files already damaged by that bug are repaired on the next open,
+    rather than being trusted because of the number they carry."""
+    import sqlite3
+    from helix.store.db import connect
+    p = tmp_path / "damaged.helix"
+    connect(p).close()
+    raw = sqlite3.connect(p)
+    raw.execute("DROP INDEX IF EXISTS ix_person_active")
+    raw.execute("ALTER TABLE person DROP COLUMN active")
+    raw.execute("UPDATE settings SET v='3' WHERE k='schema_version'")
+    raw.commit()
+    raw.close()
+
+    con = connect(p)
+    assert "active" in {r[1] for r in con.execute("PRAGMA table_info(person)")}
