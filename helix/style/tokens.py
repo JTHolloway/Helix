@@ -19,7 +19,7 @@ DEFAULTS: dict[str, Any] = {
     "name": "Default",
     "canvas": {"width_mm": 600, "height_mm": 600, "margin_mm": 20,
                "background": "#FBF8F2", "shape": "circle"},
-    "layout": {"engine": "radial_sunburst", "inner_radius_mm": 90,
+    "layout": {"engine": "radial_family", "inner_radius_mm": 90,
                "start_angle_deg": -90, "sweep_deg": 360, "sector_gap_deg": 2,
                "radius_gamma": 0.5, "time_scale": True, "weight_mode": "leaves",
                "cell_pad_deg": 0.12, "min_ring_mm": 8},

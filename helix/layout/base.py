@@ -36,6 +36,15 @@ class LayoutSettings:
     min_year: Optional[int] = None
     max_year: Optional[int] = None
     surname_filter: Optional[str] = None
+    cells: bool = False
+    """One angular cell per COUPLE, partners stacked radially inside the ring.
+
+    Halves the angular width a generation costs, takes married-in spouses out
+    of the row the sibling arc runs along, and makes every parent-to-child
+    link exactly one ring long. See `couple_grid.py`. Radial designs turn it
+    on; the linear ones place by `t0`/`t1` alone and would draw a couple on
+    top of itself.
+    """
 
 
 @dataclass
@@ -52,6 +61,14 @@ class Slot:
     death_year: Optional[float] = None
     weight: float = 1.0
     on_thread: bool = False
+    # A couple shares ONE angular cell and is stacked radially inside the ring
+    # band: row 0 was born into the family at this generation, rows 1+ married
+    # in. Two names in one cell is the marriage, so it needs no tie line, and
+    # the row that carries the sibling arc holds only blood siblings.
+    # Designs that ignore `row` still work -- they just draw a couple on top
+    # of itself -- so `cells=False` on LayoutSettings keeps them one to a slot.
+    row: int = 0
+    cell: str = ""
 
     @property
     def tc(self) -> float:
@@ -86,6 +103,9 @@ def build_grid(graph, s: LayoutSettings) -> Grid:
     is the only way a married couple reliably lands on the same ring beside
     each other. Without one, fall back to descent depth from an apex.
     """
+    if s.cells:
+        from .couple_grid import build_couple_grid
+        return build_couple_grid(graph, s)
     if s.subject_id and s.subject_id in graph.people and s.focus != "raw":
         from .subject_grid import build_subject_grid
         return build_subject_grid(graph, s)

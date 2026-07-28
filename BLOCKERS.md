@@ -8,6 +8,11 @@ single-pass tidy tree and all four numbers in `tools/diagnose_layout.py` read
 zero. `docs/KNOWN_ISSUE_LAYOUT.md` records what it still deliberately cannot
 do.
 
+**The chart.** `helix/layout/couple_grid.py` + the `radial_family` design:
+one cell per couple, one ring per generation, founders at the centre.
+Marriage, siblings, cousins and remarriage are all readable off the geometry
+without a legend. `python3 tools/diagnose_layout.py <file> --cells`.
+
 **Blocker 1, below.** You can enter a family in the app. The ten-step
 sequence at the end of `docs/DATA_ENTRY_UI.md` runs start to finish in the
 browser; `tests/test_records.py` drives the same sequence over HTTP.

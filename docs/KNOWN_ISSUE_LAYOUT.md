@@ -1,13 +1,12 @@
-# The radial layout: fixed, and what it still cannot do
+# The radial layout: two rewrites, and what each bought
 
-**Status: resolved.** The ad-hoc angular allocation was replaced with a
-single-pass tidy tree in `helix/layout/subject_grid.py`. All four diagnostic
-numbers read zero, on every focus mode, and `tests/test_layout.py` now
-asserts the guarantees so they cannot rot quietly.
+**Status: resolved, twice.** First the ad-hoc angular allocation was replaced
+with a single-pass tidy tree in `helix/layout/subject_grid.py`. Then the unit
+changed from the person to the COUPLE, in `helix/layout/couple_grid.py`, and
+three limits that the first rewrite had proved unavoidable stopped existing.
 
-This file is kept because the three limits at the bottom are real, were
-arrived at the hard way, and each one looks like a bug until you know why it
-is not.
+Read it in that order. The second rewrite only makes sense once you know
+exactly what the first one could not do, and why.
 
 ## What the owner saw
 
@@ -64,7 +63,63 @@ docstring: contours are indexed by **ring** rather than tree depth, and a
 node is **not centred over its children**, because the couple occupies its
 own ring and is one more item in the sequence rather than a mark above it.
 
-## The three things it still cannot do
+## Then the design changed, and the three limits went away
+
+Everything above is still true of `subject_grid.py`, which the other radial
+designs use. But the three limits below were all the same limit wearing
+three hats: **every relationship was being expressed as angular adjacency,
+and a slot has only two sides.** A person on the direct line needs to touch
+their parent, their brothers and sisters, and their child. Two sides, three
+neighbours. Something had to give, and which one gave was the only choice
+available.
+
+`couple_grid.py` gives the disc a second dimension to work in. A COUPLE owns
+one angular cell, and the two partners are stacked **radially** inside the
+ring band:
+
+```
+    ┌──────────────────────────┐
+    │  Samuel Marlow    1791–  │   row 0 — born into this family
+    │  ────                    │   the rule that means "married"
+    │  Clara Salter     1786–  │   row 1 — married in
+    └──────────────────────────┘
+                │                  one stem, to their children
+```
+
+Three consequences, which are exactly the three limits, undone:
+
+1. **Marriage needs no line at all.** Not a tie, not a bracket, not a chord.
+   The cell is the marriage. 40 of the 40 marriages on the sample are drawn
+   this way and nothing is drawn between them.
+2. **The row an arc runs along holds only blood siblings**, because spouses
+   are on the row below. So the arc covers its own group and *nobody* --
+   which the angular layout could not promise, because a married-in partner
+   sits on their partner's ring by definition.
+3. **Parent and child are radial neighbours**, so they stop competing with
+   siblings for the two angular sides. The cell is centred over its children
+   in the ordinary tidy-tree way and every parent-to-child link is exactly
+   one ring long. The Thread runs out along a radius and can be traced with
+   a finger.
+
+Measured on the same 461-person sample, at `--focus bloodline`:
+
+| | one slot per person | one cell per couple |
+|---|---|---|
+| Child not exactly one ring out | — | **0** |
+| Anyone at all under a sibling arc | 22 (irreducible) | **0** |
+| Couples not drawn as one thing | 0, via 40 tie lines | **0**, via no lines |
+| Two cells at the same angle | 0 | **0** |
+
+```bash
+python3 tools/diagnose_layout.py my-family.helix --cells
+```
+
+The one thing that survives is cousin marriage: when both partners were born
+into the tree only one can hold the cell, and the other keeps their place in
+their own family. 2 of 230 on the sample, at `--focus all` only. They are
+drawn as a chord, which is in the key.
+
+## What the OLDER layout still cannot do
 
 **1. A sibling's own husband or wife sits under the arc.** A married-in
 spouse is on their partner's ring — that is what a ring means. So in a
@@ -97,9 +152,17 @@ python3 tools/diagnose_layout.py my-family.helix --focus all  # all four zero
 python3 -m pytest tests -q                                    # stays green
 ```
 
-Then render `--design radial_rings --style panel1m --panel 1000x1000` and
-**look at it**. Trace one family from a grandparent down to a grandchild. If
-that is not effortless, it is not fixed.
+And for the couple-cell layout, which is the default:
+
+```bash
+python3 tools/diagnose_layout.py my-family.helix --cells
+python3 tools/diagnose_layout.py my-family.helix --cells --focus all
+```
+
+Then render `--design radial_family --style panel1m --panel 1000x1000` and
+**look at it**. Trace one family from a grandparent down to a grandchild,
+then follow the red Thread from a founder out to yourself. If either is not
+effortless, it is not fixed.
 
 ## A note on how this got missed the first time
 

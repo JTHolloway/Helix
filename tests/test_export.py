@@ -5,7 +5,7 @@ import pytest
 
 from helix.layout import registry
 from helix.layout.base import LayoutSettings
-from helix.layout.engines import experimental, linear, radial  # noqa: F401
+from helix.layout.engines import experimental, family, linear, radial  # noqa: F401
 from helix.render import dxf, eps
 from helix.render import pdf as pdfr
 from helix.render import svg as svgr

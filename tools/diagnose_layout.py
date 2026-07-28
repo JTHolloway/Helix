@@ -48,10 +48,88 @@ def true_generations(g, subject):
     return out
 
 
+def cells_report(g, grid, name, args) -> None:
+    """The four things that matter when a couple owns one cell.
+
+    Different questions from the one-slot layout, because the layout makes
+    different promises. "Which ring is this person on relative to you" stops
+    being the point once rings are depth from the founders; "is every
+    parent-to-child link exactly one ring" takes its place, and it is a
+    stronger thing to be able to say.
+    """
+    S = grid.slots
+    print(f"{args.db}  subject {name[g.subject_id]}  focus {args.focus}  "
+          f"[couple cells]")
+    cells = {}
+    for sl in S.values():
+        cells.setdefault(sl.cell or sl.pid, []).append(sl)
+    print(f"{len(S)} people in {len(cells)} cells on {grid.max_gen + 1} rings\n")
+
+    # 1 ---------------------------------------------------- generation steps
+    bad = [(name[p], S[p].gen, name[sl.parent], S[sl.parent].gen)
+           for p, sl in S.items()
+           if sl.row == 0 and sl.parent in S
+           and S[sl.parent].gen != sl.gen - 1]
+    print(f"1. CHILD NOT ONE RING OUT   {len(bad)}")
+    for b in bad[:5]:
+        print(f"     {b[0]} on ring {b[1]}, parent {b[2]} on ring {b[3]}")
+
+    # 2 ------------------------------------------------------- sibling arcs
+    strangers = 0
+    worst = []
+    for uid, u in g.unions.items():
+        kids = [c for c in u.children if c in S and g.people[c].child_of == uid]
+        if len(kids) < 2:
+            continue
+        ks = set(kids)
+        lo = min(S[c].tc for c in kids)
+        hi = max(S[c].tc for c in kids)
+        odd = [p for p in grid.by_gen.get(S[kids[0]].gen, [])
+               if p not in ks and S[p].row == 0 and lo <= S[p].tc <= hi]
+        strangers += len(odd)
+        if odd:
+            worst.append(((hi - lo) * 360, [name[c] for c in kids[:3]],
+                          [name[o] for o in odd[:4]]))
+    worst.sort(reverse=True)
+    print(f"\n2. ARC SWEEPS PAST OTHERS   {strangers}   "
+          f"(anyone at all under a sibling arc who is not one of them)")
+    for span, kids, odd in worst[:4]:
+        print(f"     {span:5.0f}deg arc  siblings {kids}  swept {odd}")
+
+    # 3 ----------------------------------------------------------- marriages
+    split = []
+    for u in g.unions.values():
+        ps = [x for x in u.partners if x in S]
+        if len(ps) == 2 and S[ps[0]].cell != S[ps[1]].cell:
+            split.append((abs(S[ps[0]].tc - S[ps[1]].tc) * 360,
+                          [name[x] for x in ps]))
+    split.sort(reverse=True)
+    total = sum(1 for u in g.unions.values()
+                if len([x for x in u.partners if x in S]) == 2)
+    print(f"\n3. COUPLES NOT IN ONE CELL  {len(split)}   of {total} marriages "
+          f"drawn  (the rest need no line at all)")
+    for d, ps in split[:4]:
+        print(f"     {d:5.0f}deg apart, drawn as a chord: {ps}")
+
+    # 4 ---------------------------------------------------------- collisions
+    coll = 0
+    for gen, ppl in grid.by_gen.items():
+        seen = sorted({S[p].cell or p: S[p].tc for p in ppl}.items(),
+                      key=lambda kv: kv[1])
+        for (_, a), (_, b) in zip(seen, seen[1:]):
+            if abs(a - b) * 360 < 0.5:
+                coll += 1
+    print(f"\n4. CELLS ON TOP OF EACH OTHER  {coll}   (closer than 0.5deg)")
+    print("\nAll four should be ZERO on a chart that reads properly.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("db")
     ap.add_argument("--focus", default="bloodline")
+    ap.add_argument("--cells", action="store_true",
+                    help="measure the couple-cell layout (radial_family) "
+                         "instead of the one-slot-per-person one")
     args = ap.parse_args()
 
     g = build.load(connect(args.db, create=False, backup_daily=False))
@@ -59,8 +137,10 @@ def main() -> None:
     subj = g.subject_id
     if not subj:
         raise SystemExit("No subject set on this file.")
-    grid = build_grid(g, LayoutSettings(engine="radial_rings",
+    grid = build_grid(g, LayoutSettings(engine="radial_rings", cells=args.cells,
                                         subject_id=subj, focus=args.focus))
+    if args.cells:
+        return cells_report(g, grid, name, args)
     S = grid.slots
     truth = true_generations(g, subj)
     print(f"{args.db}  subject {name[subj]}  focus {args.focus}")

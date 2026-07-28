@@ -10,7 +10,7 @@ from pathlib import Path
 from .graph import build as gbuild
 from .layout import registry
 from .layout.base import LayoutSettings
-from .layout.engines import experimental, linear, radial   # noqa: F401
+from .layout.engines import experimental, family, linear, radial  # noqa: F401
 from .render import svg as svgrender
 from .store.db import connect, get_setting, set_setting
 

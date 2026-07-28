@@ -5,16 +5,21 @@ Python 3.11+, **zero required dependencies**, 209 tests.
 
 ## Read this before anything else
 
-**The radial layout has been fixed.** `helix/layout/subject_grid.py` now
-allocates angle with a single-pass tidy tree (Reingold–Tilford adapted to
-polar coordinates) instead of four competing heuristics. All four numbers in
-`python3 tools/diagnose_layout.py <file>` read zero, on every focus mode.
+**The layout is a couple-cell descent tree.** `helix/layout/couple_grid.py`
+gives each COUPLE one angular cell and stacks the partners radially inside
+the ring band. That is what lets the chart say, without a legend, who is
+married to whom, which children are whose, and who is a cousin of whom.
+`docs/KNOWN_ISSUE_LAYOUT.md` has the reasoning and the measurements.
 
-`docs/KNOWN_ISSUE_LAYOUT.md` is still worth reading before you touch that
-file: it records the three things the layout deliberately cannot do — a
-sibling's own spouse under their arc, the Thread sweeping, and cousin
-marriages splitting a couple — each with the reason the obvious fix is worse.
-Re-measure before and after any change there.
+Measure before and after any change there:
+
+```bash
+python3 tools/diagnose_layout.py <file> --cells      # all four must be zero
+```
+
+`helix/layout/subject_grid.py` is the older one-slot-per-person layout,
+still used by the other radial designs. Its own three limits are recorded in
+the same document; they are the reason the couple grid exists.
 
 **Blocker 1 is also done** — the record system. You can enter a family in
 the app: `helix/store/records.py` is the only thing that writes, and it is
@@ -142,5 +147,10 @@ tools/           sample generator, .ftz importer
 docs/            specifications. Read before writing
 ```
 
-The flagship design is `radial_rings` (Concentric Rings). If you have to
-choose where to spend care, spend it there.
+The flagship design is `radial_family` (Family Rings), and it is the
+default. One cell per couple, one ring per generation, founders at the
+centre. If you have to choose where to spend care, spend it there.
+
+`radial_rings` is the older one-slot-per-person layout and still works; the
+difference, and why the newer one can promise things the older one cannot,
+is in `docs/KNOWN_ISSUE_LAYOUT.md`.
