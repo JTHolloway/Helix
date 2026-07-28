@@ -19,10 +19,27 @@ from .layout import registry
 from .layout.base import LayoutSettings
 from .layout.engines import experimental, linear, radial   # noqa: F401
 from .render import svg as svgrender
+from .store import records
 from .store.db import connect, get_setting, set_setting
 from .style.tokens import Style
 
 WEB = Path(__file__).with_name("web")
+
+# The write half of the API. Each one takes (connection, payload) and returns
+# a JSON-able dict; the handler reloads the graph and adds undo state. Keeping
+# the table here rather than in a chain of ifs is what makes it obvious that
+# every write goes through `store.records` and nothing writes rows inline.
+_RECORD_ROUTES = {
+    "/api/person":        lambda con, b: records.update_person(con, b),
+    "/api/person/new":    lambda con, b: records.add_person(con, b),
+    "/api/person/link":   lambda con, b: records.link_person(con, b),
+    "/api/person/detach": lambda con, b: records.detach(con, b),
+    "/api/person/retire": lambda con, b: records.retire(con, b["id"]),
+    "/api/union":         lambda con, b: records.union_op(con, b),
+    "/api/union/child":   lambda con, b: records.union_child_op(con, b),
+    "/api/undo":          lambda con, b: records.undo(con),
+    "/api/redo":          lambda con, b: records.redo(con),
+}
 
 
 class State:
@@ -82,8 +99,6 @@ class Handler(BaseHTTPRequestHandler):
                 set_setting(ST.con, "subject_person_id", body["id"])
                 ST.reload()
                 return self._json({"ok": True, "subject": ST.subject})
-            if u.path == "/api/person":
-                return self._json(_save_person(ST, body))
             if u.path == "/api/backup":
                 from .store.db import backup, checkpoint
                 checkpoint(ST.con)
@@ -92,7 +107,15 @@ class Handler(BaseHTTPRequestHandler):
                 from .store.archive import archive
                 return self._json({"ok": True,
                                    "path": str(archive(ST.dbpath))})
+            # ---- the record system. Everything below writes and reloads. --
+            if u.path in _RECORD_ROUTES:
+                out = _RECORD_ROUTES[u.path](ST.con, body)
+                ST.reload()
+                out.setdefault("history", records.history(ST.con))
+                return self._json(out)
             self._json({"error": "unknown endpoint"}, 404)
+        except KeyError as e:
+            self._json({"error": f"That request is missing {e}."}, 400)
         except Exception as e:
             self._json({"error": str(e)}, 400)
 
@@ -128,6 +151,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         if route == "person":
             return self._json(_person_detail(ST, q["id"]))
+        if route == "person/search":
+            return self._json(records.search(ST.con, q.get("q", ""),
+                                             exclude=q.get("exclude", "")))
+        if route == "date":
+            from .model.gendate import parse as gparse
+            d = gparse(q.get("q", ""))
+            return self._json({"text": d.spoken, "display": d.display,
+                               "kind": d.kind, "known": d.known})
+        if route == "history":
+            return self._json(records.history(ST.con))
+        if route == "people":
+            return self._json(_people_list(ST))
         if route == "contingency":
             r = ST.contingency.report(q["id"], ST.subject)
             r["removed"] = sorted(r["removed"])
@@ -245,61 +280,112 @@ def _person_detail(st: State, pid: str) -> dict:
     return {
         "id": pid, "name": p.full_name, "life": p.lifespan, "age": p.age,
         "sex": p.sex, "confidence": p.confidence,
+        "given": p.given, "surname": p.surname,
         "birth": p.birth.display, "death": p.death.display,
         "birth_place": p.birth_place, "occupation": p.occupation,
         "events": evs,
         "relationship": rel,
-        "parents": [{"id": x, "name": g.people[x].full_name} for x in g.parents(pid, False)],
-        "partners": [{"id": x, "name": g.people[x].full_name} for x in g.partners(pid)],
-        "children": [{"id": x, "name": g.people[x].full_name} for x in g.children(pid)],
+        "is_subject": pid == st.subject,
+        "parents": [_brief(g, x) for x in g.parents(pid, False)],
+        "partners": [_brief(g, x) for x in g.partners(pid)],
+        "children": [_brief(g, x) for x in g.children(pid)],
+        "siblings": [dict(_brief(g, x), kind=g.sibling_kind(pid, x))
+                     for x in _siblings(g, pid)],
+        "families": _families(g, pid),
         "on_thread": pid in thread(g, st.subject).members,
     }
 
 
-def _save_person(st: State, body: dict) -> dict:
-    from .model.gendate import parse as gparse
-    from .store.db import new_id
-    pid = body["id"]
-    con = st.con
-    if "given" in body or "surname" in body:
-        con.execute("UPDATE person_name SET given=?,surname=?,"
-                    "sort_key=? WHERE person_id=? AND is_primary=1",
-                    (body.get("given", ""), body.get("surname", ""),
-                     f"{body.get('surname','').upper()}, {body.get('given','')}", pid))
-    for typ in ("birth", "death"):
-        if typ not in body:
+def _brief(g, pid: str) -> dict:
+    p = g.people[pid]
+    return {"id": pid, "name": p.full_name, "life": p.lifespan}
+
+
+def _siblings(g, pid: str) -> list[str]:
+    """Brothers and sisters through either parent, so a half-sibling is a
+    sibling here rather than a special case.
+
+    Walks the FAMILY, not the parents. "Add a brother" on somebody whose
+    parents are not recorded yet creates the family that will hold them, and
+    two children of a family with no named parents are still siblings.
+    """
+    fams = list(g.people[pid].child_of_all)          # full brothers and sisters
+    for par in g.parents(pid, primary_only=False):   # and half, through either
+        fams.extend(g.people[par].unions)
+    out, seen = [], {pid}
+    for uid in dict.fromkeys(fams):
+        u = g.unions.get(uid)
+        if not u:
             continue
-        d = gparse(body[typ])
-        row = con.execute(
-            "SELECT e.id FROM event e JOIN event_role r ON r.event_id=e.id "
-            "WHERE r.person_id=? AND e.type=?", (pid, typ)).fetchone()
-        if row:
-            con.execute("UPDATE event SET date_json=?,date_earliest=?,"
-                        "date_latest=?,date_sort=? WHERE id=?",
-                        (d.to_json(), d.earliest.isoformat() if d.earliest else None,
-                         d.latest.isoformat() if d.latest else None,
-                         d.sort_value, row["id"]))
-        elif d.known:
-            eid = new_id()
-            con.execute("INSERT INTO event(id,type,date_json,date_earliest,"
-                        "date_latest,date_sort) VALUES(?,?,?,?,?,?)",
-                        (eid, typ, d.to_json(),
-                         d.earliest.isoformat() if d.earliest else None,
-                         d.latest.isoformat() if d.latest else None, d.sort_value))
-            con.execute("INSERT INTO event_role(event_id,person_id,role) "
-                        "VALUES(?,?,'principal')", (eid, pid))
-    if "notes" in body:
-        con.execute("UPDATE person SET notes=? WHERE id=?", (body["notes"], pid))
-    con.commit()
-    st.reload()
-    return {"ok": True}
+        for c in u.children:
+            if c not in seen:
+                seen.add(c)
+                out.append(c)
+    return out
+
+
+def _families(g, pid: str) -> list[dict]:
+    """Children grouped under the partner they belong to.
+
+    This is the one piece of the panel that teaches somebody something they
+    did not know: seeing their father's children split into two lists is how
+    a person discovers the word half-brother without being taught it. A
+    family with no partner recorded still gets its own group, headed so the
+    UI can offer to name the other parent.
+    """
+    out = []
+    for uid in g.people[pid].unions:
+        u = g.unions.get(uid)
+        if not u:
+            continue
+        others = [x for x in u.partners if x != pid]
+        out.append({
+            "union_id": uid,
+            "partner": _brief(g, others[0]) if others else None,
+            "children": [_brief(g, c) for c in u.children],
+        })
+    return out
+
+
+def _completeness(g, p) -> int:
+    """How finished a record looks, 0-100. Deliberately crude: it exists to
+    sort a list so the half-filled records rise to the top, not to grade
+    anybody's research."""
+    have = [bool(p.given), bool(p.surname), p.birth.known, p.death.known,
+            bool(p.birth_place), bool(g.parents(p.id, primary_only=False)),
+            p.sex in ("M", "F")]
+    return round(100 * sum(1 for x in have if x) / len(have))
+
+
+def _people_list(st: State) -> list[dict]:
+    """Every person as a plain table. Some people prefer a list to a chart,
+    and it is the fastest way to spot a half-finished record."""
+    g = st.graph
+    return [{"id": p.id, "name": p.full_name, "surname": p.surname,
+             "given": p.given, "life": p.lifespan,
+             "born": p.birth.year, "sex": p.sex,
+             "complete": _completeness(g, p),
+             "is_subject": p.id == st.subject}
+            for p in g.people.values()]
+
+
+def make_server(dbpath: str, host="127.0.0.1", port=8731) -> ThreadingHTTPServer:
+    """Build the server without starting it.
+
+    Exists so the tests can drive the real thing over real HTTP. That is not
+    fussiness: every database-backed endpoint once failed with a threading
+    error that no test caught, because the tests called the functions
+    directly and only a request thread triggers it. Pass port 0 for a free
+    one and read `srv.server_port` back.
+    """
+    global ST
+    ST = State(dbpath)
+    return ThreadingHTTPServer((host, port), Handler)
 
 
 def serve(dbpath: str, host="127.0.0.1", port=8731, open_browser=True):
-    global ST
-    ST = State(dbpath)
-    srv = ThreadingHTTPServer((host, port), Handler)
-    url = f"http://{host}:{port}/"
+    srv = make_server(dbpath, host, port)
+    url = f"http://{host}:{srv.server_port}/"
     print(f"\n  Helix is running.  Open  {url}\n  (Ctrl-C to stop)\n")
     if open_browser:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()

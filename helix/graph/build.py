@@ -277,7 +277,12 @@ def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
 
     places = {r["id"]: r["name"] for r in con.execute("SELECT id,name FROM place")}
     people: dict[str, Person] = {}
-    for r in con.execute("SELECT * FROM v_person"):
+    # Retired people are still in the file -- "Remove from tree" never
+    # deletes -- but they are off the chart until somebody undoes it. The
+    # join reads `active` from `person` rather than the view, because the
+    # view predates the column and old files still carry the old definition.
+    for r in con.execute("SELECT v.* FROM v_person v JOIN person p ON p.id=v.id "
+                         "WHERE p.active=1"):
         people[r["id"]] = Person(
             id=r["id"], given=r["given"] or "", given_used=r["given_used"] or "",
             surname=r["surname"] or "", surname_prefix=r["surname_prefix"] or "",
@@ -306,13 +311,12 @@ def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
             p.education = r["d"] or ""
 
     unions: dict[str, Union] = {}
-    for r in con.execute("SELECT * FROM union_"):
+    for r in con.execute("SELECT * FROM union_ WHERE active=1"):
         unions[r["id"]] = Union(id=r["id"], type=r["type"])
     for r in con.execute("SELECT * FROM union_partner ORDER BY seq"):
-        if r["union_id"] in unions:
+        if r["union_id"] in unions and r["person_id"] in people:
             unions[r["union_id"]].partners.append(r["person_id"])
-            if r["person_id"] in people:
-                people[r["person_id"]].unions.append(r["union_id"])
+            people[r["person_id"]].unions.append(r["union_id"])
     for r in con.execute("SELECT * FROM union_child ORDER BY birth_order"):
         u = unions.get(r["union_id"])
         p = people.get(r["person_id"])

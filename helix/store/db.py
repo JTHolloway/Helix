@@ -24,7 +24,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 _SCHEMA = Path(__file__).with_name("schema.sql")
 
 
@@ -41,6 +41,16 @@ MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE person ADD COLUMN active INTEGER NOT NULL DEFAULT 1",
         "ALTER TABLE union_ ADD COLUMN active INTEGER NOT NULL DEFAULT 1",
         "CREATE INDEX IF NOT EXISTS ix_person_active ON person(active)",
+    ],
+    2: [
+        # v3 groups change_log rows into one user action, so Ctrl-Z takes back
+        # "add my father" -- three rows across three tables -- rather than a
+        # third of it.
+        "ALTER TABLE change_log ADD COLUMN batch TEXT",
+        "ALTER TABLE change_log ADD COLUMN label TEXT",
+        "ALTER TABLE change_log ADD COLUMN undone INTEGER NOT NULL DEFAULT 0",
+        "CREATE INDEX IF NOT EXISTS ix_log_batch ON change_log(batch)",
+        "CREATE INDEX IF NOT EXISTS ix_log_undone ON change_log(undone,id)",
     ],
 }
 
@@ -78,14 +88,23 @@ def connect(path: str | Path, *, create: bool = True,
 
 
 def _migrate(con: sqlite3.Connection) -> None:
+    """Bring any file, new or old, up to the current shape.
+
+    `schema.sql` is the version 1 schema and is never edited -- changes go in
+    MIGRATIONS. So a brand new file starts at 1 and runs the same upgrades an
+    old one does, and the two end up identical.
+
+    Stamping a new file with the LATEST version instead, and skipping the
+    upgrades, is the obvious shortcut and it is wrong: it produced files
+    claiming v3 with none of the v2 or v3 columns, so `person.active` -- which
+    "Remove from tree" depends on -- did not exist on any file this program
+    had ever created.
+    """
     con.executescript(_SCHEMA.read_text())
     row = con.execute("SELECT v FROM settings WHERE k='schema_version'").fetchone()
-    current = int(row["v"]) if row else 0
-    if current == 0:
-        con.execute("INSERT OR REPLACE INTO settings(k,v) VALUES('schema_version',?)",
-                    (str(SCHEMA_VERSION),))
-        con.commit()
-        return
+    current = int(row["v"]) if row else 1
+    if not row:
+        con.execute("INSERT INTO settings(k,v) VALUES('schema_version','1')")
     while current < SCHEMA_VERSION:
         for stmt in MIGRATIONS.get(current, []):
             try:

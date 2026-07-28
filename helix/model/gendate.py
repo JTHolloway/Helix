@@ -100,6 +100,40 @@ class GenDate:
             return f"{prefix}{self.year}"
         return prefix + _fmt(self.earliest, self.precision)
 
+    @property
+    def spoken(self) -> str:
+        """The same date said out loud: `abt 1834` becomes "about 1834".
+
+        `display` is the compact genealogical form and belongs on a chart.
+        This is for the echo under a date field while somebody types, where
+        the whole point is to show that the shorthand was understood. An
+        unparseable date echoes back exactly what was typed -- it is being
+        kept, and saying so is better than a red border.
+        """
+        if self.kind == "unknown":
+            return f"kept as written: {self.original}" if self.original else ""
+        if self.kind == "between":
+            return (f"between {_fmt(self.earliest, self.precision)} and "
+                    f"{_fmt(self.latest, self.precision)}")
+        if self.kind == "before":
+            return f"before {_fmt(self.latest, self.precision)}"
+        if self.kind == "after":
+            return f"after {_fmt(self.earliest, self.precision)}"
+        if self.kind == "quarter":
+            q = (self.earliest.month + 2) // 3
+            return (f"the {['first', 'second', 'third', 'fourth'][q - 1]} "
+                    f"quarter of {self.earliest.year}")
+        if self.calendar == "dual" and self.earliest:
+            y = self.earliest.year
+            return f"{y-1}/{str(y)[-2:]} — the year began in March until 1752"
+        if self.precision == "decade" and self.earliest:
+            return f"some time in the {self.earliest.year}s"
+        word = {"about": "about ", "estimated": "estimated ",
+                "calculated": "calculated "}.get(self.kind, "")
+        if self.kind in ("about", "estimated", "calculated"):
+            return f"{word}{self.year}"
+        return _fmt(self.earliest, self.precision)
+
     def overlaps(self, other: "GenDate") -> bool:
         a0, a1 = self.earliest or OPEN_LOW, self.latest or OPEN_HIGH
         b0, b1 = other.earliest or OPEN_LOW, other.latest or OPEN_HIGH
