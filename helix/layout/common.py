@@ -433,7 +433,16 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
             # lines stack outward along the radius; text follows the arc
             r = r_start + run + h * 0.5
             x, y = _G.polar(cx, cy, r, theta)
-            rot, anchor = _upright(_G.deg(theta) + 90, "middle")
+            # `outward` reads the ring as if you were standing OUTSIDE it
+            # looking in: the tops of the letters point away from the centre,
+            # all the way round. `_upright` instead turns a name through 180
+            # wherever it would be upside down on the page, which keeps it
+            # readable without moving the chart but means the top half and
+            # the bottom half read in opposite directions.
+            if face == "outward":
+                rot, anchor = _G.deg(theta) + 90, "middle"
+            else:
+                rot, anchor = _upright(_G.deg(theta) + 90, "middle")
             add_label(plan, txt, x, y, style, rotate=rot, size=size,
                       anchor=anchor, person_id=person.id, colour=col)
         else:

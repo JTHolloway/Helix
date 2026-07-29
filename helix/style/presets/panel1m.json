@@ -38,7 +38,7 @@
         "{birth_place}"
       ]
     },
-    "orientation": "radial",
+    "orientation": "auto",
     "flip_bottom": true,
     "lines": [
       "{given_first} {surname}",

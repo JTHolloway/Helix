@@ -581,36 +581,42 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         return sum(at) / len(at) if at else None
 
     def outward(anchor: str) -> list[str]:
+        """Which way round the leaves of a split cell go.
+
+        ONE rule, for any number of leaves: every member stands on the side
+        their own brothers and sisters are on. Marriages have to stay
+        adjacent, so there are only two orders to choose between -- the
+        marriage-adjacent one and its reverse -- and this takes whichever
+        satisfies more of them.
+
+        What it prevents, generally: two sibling arcs on the same ring
+        OVERLAPPING. Michaela's arc to her brother ran 84.9 to 130.5 degrees
+        and David's to his ran 64.6 to 97.6, half a millimetre apart in
+        radius, so the two drew as ONE continuous ring passing through the
+        pair -- reading as though the husband and wife were also brother and
+        sister. Any interleaved pair of groups does that; ordering each
+        partner toward their own kin is what stops it happening at all.
+        """
         cell = cell_of[anchor]
-        if not cell.split:
+        if not cell.split or len(cell.members) < 2:
             return cell.members
-        if len(cell.members) != 2:
-            return pairs_adjacent(cell.members)
-        a, b = cell.members
-        ka, kb = _kin_x(a, cell), _kin_x(b, cell)
-        if ka is None and kb is None:
-            return cell.members
+        order = pairs_adjacent(cell.members)
         here = xs[anchor]
-        if ka is not None and kb is not None:
-            # BOTH have brothers and sisters elsewhere -- which is the whole
-            # reason this leaf was split. Each one wants the side their own
-            # group is on; when the groups are on opposite sides, as they
-            # almost always are, both get it.
-            if (ka < here) != (kb < here):
-                return cell.members if ka < here else [b, a]
-            # Both groups the same way. Then the one whose group is NEARER
-            # takes the side facing it, and their partner is pushed out to
-            # the far side, clear of the arc. Ordering by which group was
-            # further left instead put Paul's wife between him and his own
-            # brothers, where she read as a fourth sibling.
-            near = a if abs(ka - here) <= abs(kb - here) else b
-            far = b if near == a else a
-            return [far, near] if ka > here else [near, far]
-        # only one of them has a group to belong to; they take the side it is
-        # on and their partner takes the other
-        pid, mid = (a, ka) if ka is not None else (b, kb)
-        first = pid if mid < here else (b if pid == a else a)
-        return [first, b if first == a else a]
+
+        def score(seq: list[str]) -> float:
+            n, good = len(seq), 0.0
+            for i, pid in enumerate(seq):
+                mid = _kin_x(pid, cell)
+                if mid is None:
+                    continue
+                # nearer kin pull harder: a group just off the end matters
+                # more than one on the far side of the chart
+                w = 1.0 / (1.0 + abs(mid - here))
+                good += w if (mid > here) == (i > (n - 1) / 2) else -w
+            return good
+
+        rev = order[::-1]
+        return order if score(order) >= score(rev) else rev
 
     order = 0
     for anchor, x in sorted(xs.items(), key=lambda kv: kv[1]):
