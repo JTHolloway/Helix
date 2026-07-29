@@ -392,7 +392,7 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
             # something to LAND on, never something with a loose end of its
             # own: a rule is a tie between two names and ends at each of them
             for pts, _c in flatten(el, 0.4):
-                body += [(p, id(el)) for p in pts]
+                body += [((a, b), id(el)) for a, b in zip(pts, pts[1:])]
             continue
         key = id(el)                 # THE PATH, not the family: a tick
         # ONLY THE ENDS THAT MUST JOIN SOMETHING, and measured over the WHOLE
@@ -417,20 +417,33 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
                     if rp < far - 0.01:      # a hop, or the name it leaves
                         continue
                 ends.append((p, key, el.role))
-            body += [(p, key) for p in pts]
+            body += [((a, b), key) for a, b in zip(pts, pts[1:])]
+    # Against the SEGMENTS, not against the sampled points. A long arc at a
+    # small radius is flattened into steps twenty millimetres apart, so a
+    # tick landing squarely on the middle of one was reported ten
+    # millimetres from the nearest point and called adrift.
     bgrid: dict = {}
-    for p, key in body:
-        bgrid.setdefault((int(p[0] // 4), int(p[1] // 4)), []).append((p, key))
+    for (a, b), key in body:
+        for gx in range(int(min(a[0], b[0]) // 8), int(max(a[0], b[0]) // 8) + 1):
+            for gy in range(int(min(a[1], b[1]) // 8),
+                            int(max(a[1], b[1]) // 8) + 1):
+                bgrid.setdefault((gx, gy), []).append(((a, b), key))
+
+    def _to_seg(p, a, b) -> float:
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        d2 = dx * dx + dy * dy
+        t = 0.0 if d2 < 1e-12 else max(0.0, min(
+            1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / d2))
+        return math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy))
+
     loose = []
     for p, key, role in ends:
         near = False
         for gx in (-1, 0, 1):
             for gy in (-1, 0, 1):
-                for q, k2 in bgrid.get((int(p[0] // 4) + gx,
-                                        int(p[1] // 4) + gy), ()):
-                    if k2 == key:
-                        continue
-                    if math.hypot(p[0] - q[0], p[1] - q[1]) < 1.2:
+                for (a, b), k2 in bgrid.get((int(p[0] // 8) + gx,
+                                             int(p[1] // 8) + gy), ()):
+                    if k2 != key and _to_seg(p, a, b) < 1.2:
                         near = True
                         break
                 if near:

@@ -111,7 +111,8 @@ def _merge(acc: dict, other: dict, dx: float) -> None:
             acc[ring] = (lo, hi)
 
 
-def _clear(acc: dict, other: dict, gap: float) -> float:
+def _clear(acc: dict, other: dict, gap: float, fam: float = 0.0,
+           near: int = -1) -> float:
     """How far right `other` must move to clear everything left of it.
 
     Reingold-Tilford's contour step, and the whole non-overlap guarantee.
@@ -123,11 +124,19 @@ def _clear(acc: dict, other: dict, gap: float) -> float:
     two families flanking them, and they tuck in underneath. What is NOT
     allowed is two cells on one ring at one angle, which is what the ring
     index prevents.
+
+    `near` is THE ONE RING ON WHICH THESE TWO BLOCKS ARE SIBLINGS. There,
+    and only there, they get the close sibling gap; on every other ring they
+    are cousins, or cousins' children, and get the gap between families. One
+    gap for the whole contour meant two sisters sitting close -- rightly --
+    put their children the same distance apart on the ring outside, and two
+    first cousins were spaced exactly like brother and sister.
     """
     need = 0.0
     for ring, (lo, _hi) in other.items():
         if ring in acc:
-            need = max(need, acc[ring][1] + gap - lo)
+            g = gap if (near < 0 or ring == near) else max(gap, fam)
+            need = max(need, acc[ring][1] + g - lo)
     return max(0.0, need)
 
 
@@ -167,7 +176,12 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
     # A container with no names of its own holds ONE union's children, so the
     # blocks inside it are brothers and sisters and belong close together.
     # Everywhere else is a boundary between families and wants air.
+    #
+    # Close ON THEIR OWN RING and nowhere else, though: two sisters belong
+    # side by side, their children are cousins and belong apart. `near` says
+    # which ring that is -- the depth the blocks in this container sit at.
     gap = sib if not cell.members else fam
+    near = (cell.kids[0].depth if not cell.members and cell.kids else -1)
 
     o0 = cell.over if cell.members else -1
     o1 = o0 + cell.over_n - 1
@@ -176,7 +190,7 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
     # 1 -- everything to the left of the couple's own children
     for k in cell.kids[:max(o0, 0)]:
         if k.contour:
-            k.rel = _clear(acc, k.contour, gap)
+            k.rel = _clear(acc, k.contour, gap, fam, near)
             _merge(acc, k.contour, k.rel)
 
     # 2 -- the children, then the couple centred over them
@@ -184,10 +198,10 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
         run = [k for k in cell.kids[o0:o1 + 1] if k.contour]
         inner: dict[int, tuple[float, float]] = {}
         for k in run:
-            k.rel = _clear(acc, k.contour, gap) if not inner else \
-                _clear(inner, k.contour, gap)
+            k.rel = _clear(acc, k.contour, gap, fam, near) if not inner \
+                else _clear(inner, k.contour, gap, fam, near)
             if inner:
-                k.rel = max(k.rel, _clear(acc, k.contour, gap))
+                k.rel = max(k.rel, _clear(acc, k.contour, gap, fam, near))
             _merge(inner, k.contour, k.rel)
         if run:
             lo = min(_span(k)[0] for k in run)
@@ -214,7 +228,7 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
     # 3 -- everything to the right
     for k in cell.kids[max(o1 + 1, 0):]:
         if k.contour:
-            k.rel = _clear(acc, k.contour, gap)
+            k.rel = _clear(acc, k.contour, gap, fam, near)
             _merge(acc, k.contour, k.rel)
 
     if cell.members and o0 < 0:

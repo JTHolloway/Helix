@@ -20,12 +20,33 @@ DEFAULTS: dict[str, Any] = {
     "canvas": {"width_mm": 600, "height_mm": 600, "margin_mm": 20,
                "background": "#FBF8F2", "shape": "circle"},
     "layout": {"engine": "radial_family", "inner_radius_mm": 90,
-               # How close family is. `sibling_gap_cells` is the one to turn
-               # first: three brothers should read as three brothers, not as
-               # three separate households. `family_gap_cells` wants to stay
-               # several times bigger -- the CONTRAST is what makes a family
-               # read as a cluster.
-               "sibling_gap_cells": 0.10, "family_gap_cells": 0.60,
+               # HOW CLOSE FAMILY IS, and it is the only thing on the chart
+               # that says so without a line. There are three distances and
+               # they have to be TOLD APART at a glance, because each means
+               # something different:
+               #
+               #   married   two names in one cell, touching. No gap at all.
+               #   siblings  `sibling_gap_cells` -- close, but a visible
+               #             step out from touching.
+               #   a new     `family_gap_cells` -- unmistakably wider. This
+               #   family    is the boundary between one household and the
+               #             next, and it is what lets you see where a
+               #             family ends without following a single line.
+               #
+               # On a 142-name chart that is 6.0, 6.8 and 10.3 degrees --
+               # gaps of 0, 0.8 and 4.3 -- so the three read apart at a
+               # glance. Turn `family_gap_cells` up for a bigger step; the
+               # only cost is cell width, and past about 0.9 a long name in
+               # a narrow cell starts being shortened to initials.
+               #
+               # Getting the NUMBERS apart was not enough on its own: the
+               # gap is applied to a whole block, so two sisters sitting
+               # close -- rightly -- put their children the same distance
+               # apart on the ring outside, and two first cousins ended up
+               # spaced exactly like brother and sister. `couple_grid._clear`
+               # now applies the sibling gap only on the ring where the two
+               # blocks ARE siblings.
+               "sibling_gap_cells": 0.16, "family_gap_cells": 0.75,
                # No couple may own more than this much of the disc. A sparse
                # family is drawn as a fan of the angle it needs rather than
                # stretched round the full circle.
