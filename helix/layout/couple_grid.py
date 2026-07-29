@@ -500,12 +500,58 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     raw = (max(xs.values()) + 0.5) - lo
     width = max(raw + SEAM, float(s.min_cells or MIN_CELLS))
     pad = (width - raw) / 2
+    # ---- which way round a SPLIT leaf goes -------------------------------
+    #
+    # A split couple takes two leaves side by side, and the one that is NOT a
+    # brother or sister of the group around them has to be on the outside.
+    # Put them on the inside and the arc drawn over "Paul, Derek and Gorden"
+    # runs straight over Paul's wife, who reads as a fourth sibling. Reported
+    # on the owner's own tree, and it is the one thing a chart may never do:
+    # say somebody is a sibling when they are a spouse.
+    #
+    # Which side is "outside" is not known until every cell has an x, so it
+    # is decided here rather than when the cell was built.
+    def _kin_x(pid: str, cell) -> Optional[float]:
+        """Where this person's brothers and sisters are, on average, if any of
+        them are drawn somewhere other than this same leaf."""
+        uid = graph.people[pid].child_of
+        u = graph.unions.get(uid) if uid else None
+        if not u:
+            return None
+        at = [xs[cell_of[c].members[0]] for c in u.children
+              if c != pid and c in cell_of and cell_of[c] is not cell
+              and cell_of[c].members[0] in xs]
+        return sum(at) / len(at) if at else None
+
+    def outward(anchor: str) -> list[str]:
+        cell = cell_of[anchor]
+        if not cell.split or len(cell.members) != 2:
+            return cell.members
+        a, b = cell.members
+        ka, kb = _kin_x(a, cell), _kin_x(b, cell)
+        if ka is None and kb is None:
+            return cell.members
+        here = xs[anchor]
+        if ka is not None and kb is not None:
+            # BOTH have brothers and sisters elsewhere -- which is the whole
+            # reason this leaf was split. Each one wants the side their own
+            # group is on; when the groups are on opposite sides, as they
+            # almost always are, both get it.
+            if (ka < here) != (kb < here):
+                return cell.members if ka < here else [b, a]
+            return cell.members if ka <= kb else [b, a]
+        # only one of them has a group to belong to; they take the side it is
+        # on and their partner takes the other
+        pid, mid = (a, ka) if ka is not None else (b, kb)
+        first = pid if mid < here else (b if pid == a else a)
+        return [first, b if first == a else a]
+
     order = 0
     for anchor, x in sorted(xs.items(), key=lambda kv: kv[1]):
         cell = cell_of[anchor]
         ring = top_depth - cell.depth
         half = cell.width / 2
-        for i, pid in enumerate(cell.members):
+        for i, pid in enumerate(outward(anchor)):
             p = graph.people[pid]
             if cell.split:
                 # a leaf each, side by side on one ring
