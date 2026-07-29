@@ -175,17 +175,51 @@ def remarried(tmp_path):
     return build.load(con), dad
 
 
-def test_a_second_marriage_stacks_in_the_same_cell(remarried):
+def test_two_marriages_that_both_had_children_get_a_leaf_each(remarried):
+    """Stacked, a man's two wives sit under him with both families hanging
+    off one leaf, and which children are whose stops being something you can
+    SEE -- it becomes something you work out from which row a stem left.
+
+    Given a leaf each the order reads [ first wife ][ HIM ][ second wife ],
+    with a rule between each married pair and each family's stem leaving
+    from between the right two. One marriage is different and stays stacked
+    however many children it had: there is only one family, so there is
+    nothing to tell apart.
+    """
     graph, dad = remarried
     g = cellgrid(graph, "all")
     cell = g.slots[dad].cell
     members = sorted([sl for sl in g.slots.values() if sl.cell == cell],
-                     key=lambda x: x.row)
+                     key=lambda x: x.tc)
     names = [graph.people[m.pid].full_name for m in members]
-    assert names[0] == "Michael Pargeter", "the blood member holds row 0"
-    assert set(names[1:]) == {"Susan Hallam", "Rachel Dunmore"}
-    assert [m.row for m in members] == [0, 1, 2]
-    assert len({m.tc for m in members}) == 1, "one cell is one angle"
+    assert set(names) == {"Michael Pargeter", "Susan Hallam", "Rachel Dunmore"}
+    assert all(m.row == 0 for m in members), "a leaf each, side by side"
+    assert len({m.tc for m in members}) == 3, "three leaves, three angles"
+    assert names[1] == "Michael Pargeter", (
+        "the twice-married one goes in the middle, so both marriages are "
+        f"between neighbours -- got {names}")
+
+
+def test_one_marriage_still_shares_a_leaf(remarried):
+    """The other half of the same rule, and the owner's own distinction:
+    Doreen, who married twice, against Heather, who married once."""
+    graph, dad = remarried
+    g = cellgrid(graph, "all")
+    once = [p for p in graph.people
+            if p in g.slots and p != dad
+            and len([u for u in graph.people[p].unions
+                     if any(c in g.slots for c in graph.unions[u].children)]) == 1
+            and len([q for q in g.slots
+                     if g.slots[q].cell == g.slots[p].cell]) > 1]
+    for p in once:
+        mates = [g.slots[q] for q in g.slots
+                 if g.slots[q].cell == g.slots[p].cell]
+        if any(len([u for u in graph.people[m.pid].unions
+                    if any(c in g.slots for c in graph.unions[u].children)]) > 1
+               for m in mates):
+            continue
+        assert len({m.tc for m in mates}) == 1, (
+            f"{graph.people[p].full_name} married once and should share a leaf")
 
 
 def test_both_sets_of_children_hang_off_that_one_cell(remarried):

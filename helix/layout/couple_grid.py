@@ -266,6 +266,35 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             out.append(q)
         return out
 
+    def _families(pid: str) -> int:
+        """How many of this person's marriages put children on the chart."""
+        return sum(1 for uid in graph.people[pid].unions
+                   if any(c in scope for c in graph.unions[uid].children))
+
+    def _married(a: str, b: str) -> bool:
+        return bool(set(graph.people[a].unions) & set(graph.people[b].unions))
+
+    def pairs_adjacent(members: list[str]) -> list[str]:
+        """Arrange leaves so every married pair is side by side.
+
+        A leaf with three names in it is somebody and their two spouses, and
+        [him, HER, the other him] is the only order where both marriages are
+        neighbours: each rule joins two adjacent leaves and each family's
+        stem leaves from between the right two. Any other order draws a rule
+        between two people who never met.
+        """
+        if len(members) < 3:
+            return list(members)
+        deg = {m: sum(1 for n in members if n != m and _married(m, n))
+               for m in members}
+        rest = sorted(members, key=lambda m: (deg[m], members.index(m)))
+        out, left = [rest[0]], [m for m in members if m != rest[0]]
+        while left:
+            nxt = next((m for m in left if _married(out[-1], m)), left[0])
+            out.append(nxt)
+            left.remove(nxt)
+        return out
+
     def has_line(pid: str) -> bool:
         """Is this person's own ancestry drawn on the chart?
 
@@ -303,6 +332,23 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             return False
         if len(members) < 2:
             return False
+        # TWO MARRIAGES THAT BOTH HAD CHILDREN cannot share a leaf. Stacked,
+        # a great-grandmother's two husbands sit under her with both families
+        # hanging off the same leaf, and which children are whose stops being
+        # something you can see -- it becomes something you work out from
+        # which row a stem left. Given a leaf each, the order reads
+        #
+        #     [ first husband ][ HER ][ second husband ]
+        #
+        # with a rule between each married pair and each family's stem
+        # leaving from between the right two.
+        #
+        # A single marriage is different and stays stacked, however many
+        # children it had: there is only one family, so there is nothing to
+        # tell apart. That is the owner's own distinction -- Doreen, who had
+        # two, against Heather, who had one.
+        if any(_families(m) > 1 for m in members):
+            return True
         # ONE line in a leaf is fine, because `line_first` has already put
         # the person it belongs to on top of it. Splitting on that as well
         # was tried and cost more than it bought: a split leaf puts the
@@ -525,8 +571,10 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
 
     def outward(anchor: str) -> list[str]:
         cell = cell_of[anchor]
-        if not cell.split or len(cell.members) != 2:
+        if not cell.split:
             return cell.members
+        if len(cell.members) != 2:
+            return pairs_adjacent(cell.members)
         a, b = cell.members
         ka, kb = _kin_x(a, cell), _kin_x(b, cell)
         if ka is None and kb is None:
