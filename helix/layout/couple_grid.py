@@ -82,6 +82,7 @@ class _Cell:
     # descent radial: a couple is centred on their own children, not on
     # everything hanging off them.
     split: bool = False                        # a leaf each, not one shared
+    uid: str = ""                              # which marriage a group holds
     over: int = -1
     over_n: int = 1                            # how many of them are children
     rel: float = 0.0
@@ -387,7 +388,8 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
                 blocks = [descend(k, depth) for k in kids]
                 blocks = [b for b in blocks if b]
                 if blocks:
-                    groups.append(_Cell(members=[], depth=depth, kids=blocks))
+                    groups.append(_Cell(members=[], depth=depth,
+                                        kids=blocks, uid=uid))
         return groups
 
     def descend(pid: str, depth: int) -> Optional[_Cell]:
@@ -445,6 +447,15 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         if up_a:
             ups.append(up_a)
         groups = child_groups(cell, depth - 1)
+        # `pid`'s OWN brothers and sisters go nearest `pid`; a half-brother
+        # from the same parent's other marriage belongs beyond them. One
+        # group per marriage already, but ordered by which spouse came first
+        # they interleaved: the arc over Paul, Gorden and Derek ran straight
+        # over Barry, who is their half-brother by a different father and has
+        # an arc of his own. Two arcs for two marriages is the whole point of
+        # keeping them separate; they must not overlap.
+        mine = graph.people[pid].child_of
+        groups.sort(key=lambda blk: blk.uid != mine, reverse=side < 0)
         for m in cell.members[1:]:
             up_b = ancestry(m, depth + 1, side)
             if up_b:
@@ -587,7 +598,14 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             # almost always are, both get it.
             if (ka < here) != (kb < here):
                 return cell.members if ka < here else [b, a]
-            return cell.members if ka <= kb else [b, a]
+            # Both groups the same way. Then the one whose group is NEARER
+            # takes the side facing it, and their partner is pushed out to
+            # the far side, clear of the arc. Ordering by which group was
+            # further left instead put Paul's wife between him and his own
+            # brothers, where she read as a fourth sibling.
+            near = a if abs(ka - here) <= abs(kb - here) else b
+            far = b if near == a else a
+            return [far, near] if ka > here else [near, far]
         # only one of them has a group to belong to; they take the side it is
         # on and their partner takes the other
         pid, mid = (a, ka) if ka is not None else (b, kb)

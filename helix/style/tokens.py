@@ -65,7 +65,12 @@ DEFAULTS: dict[str, Any] = {
              "min_size_mm": 2.2, "weight": 400, "tracking": 0.0,
              "colour": "#22201D", "case": "as_typed"},
     "labels": {"template": "{given_first} {surname}", "by_ring": {},
-               "orientation": "auto", "show": True},
+               "orientation": "radial", "show": True,
+               # outward | upright. Which way a RADIAL name reads. `outward`
+               # always runs from the middle out, the way the family grows;
+               # `upright` never sets one upside down on the page, at the
+               # cost of half of them reading inward instead.
+               "face": "outward"},
     "thread": {"enabled": True, "colour": "#A3392B", "stroke_width_mm": 1.4,
                "layer": "ENGRAVE_DEEP", "node_marker": "diamond", "halo_mm": 0.0},
     "ornament": {"time_rings": True, "time_ring_colour": "#C9C0B0",

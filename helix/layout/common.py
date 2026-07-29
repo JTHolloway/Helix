@@ -331,7 +331,7 @@ def place_radial_label(plan, placer: PolarLabelPlacer, person,
                        lines: list[tuple[str, float, str]],
                        theta: float, r_start: float, cx: float, cy: float,
                        style, *, flip: bool, orientation: str = "radial",
-                       arc_available: float = 0.0) -> bool:
+                       arc_available: float = 0.0, face: str = "upright") -> bool:
     """Place a stacked label, demoting it if the full version will not fit.
 
     Orientation:
@@ -392,7 +392,7 @@ def place_radial_label(plan, placer: PolarLabelPlacer, person,
         placer.take(theta, r_start, rad_extent, ang_extent)
         if i:
             placer.demoted += 1
-        _emit(plan, person, var, theta, r_start, cx, cy, style, flip,
+        _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
               mode, total_h)
         return True
     placer.dropped += 1
@@ -414,8 +414,17 @@ def _upright(rot: float, anchor: str) -> tuple[float, str]:
     return a, anchor
 
 
-def _emit(plan, person, var, theta, r_start, cx, cy, style, flip,
+def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
           orientation, total_h):
+    """`face` decides what a RADIAL name does on the left half of the disc.
+
+    upright   turn it through 180 so it is never upside down on the page.
+              Conventional, but it means names read outward on one side of
+              the chart and inward on the other.
+    outward   always read from the middle outward, the way the family grows.
+              Half of them are then upside down if you hold the chart still,
+              which is the point: you turn the chart, not your head.
+    """
     from . import geometry as _G
     run = 0.0
     for txt, size, col in var:
@@ -432,8 +441,11 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip,
             off = (-total_h / 2 + run + h / 2) / max(r_start, 1e-3)
             t = theta + (-off if flip else off)
             x, y = _G.polar(cx, cy, r_start, t)
-            rot, anchor = _upright(_G.deg(t) + (180 if flip else 0),
-                                   "end" if flip else "start")
+            if face == "outward":
+                rot, anchor = _G.deg(t), "start"
+            else:
+                rot, anchor = _upright(_G.deg(t) + (180 if flip else 0),
+                                       "end" if flip else "start")
             add_label(plan, txt, x, y, style, rotate=rot, size=size,
                       anchor=anchor, person_id=person.id, colour=col)
         run += h

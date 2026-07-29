@@ -75,6 +75,19 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     full = math.radians(style.get("layout.sweep_deg", 360))
     base_start = math.radians(style.get("layout.start_angle_deg", -90))
     sweep, start, inner = full, base_start, base_inner
+    # Which way a radial name reads. "outward" always runs from the
+    # middle out, the way the family grows -- you turn the chart, not
+    # your head. "upright" never sets a name upside down on the page,
+    # at the cost of half of them reading inward.
+    face = str(style.get("labels.face", "outward")).lower()
+    # And WHICH WAY UP. `radial` sets every name along its own branch,
+    # reading outward; `tangential` sets them all around the ring;
+    # `auto` picks per ring, which reads well but means neighbouring
+    # rings can run in different directions -- and on the left and
+    # lower parts of the disc a tangential name has to be turned to
+    # stay upright, so it ends up reading the opposite way to its
+    # neighbour. Radial is the default because it is CONSISTENT.
+    orient = str(style.get("labels.orientation", "radial")).lower()
 
     if not g.slots:
         plan = RenderPlan(canvas=Canvas(W, H, style.get("canvas.background", "#FBF8F2")),
@@ -156,7 +169,14 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # 1.5, not 1.12: the label may be three lines deep (name, dates,
     # place) and the row under it has to start clear of the last of them,
     # with room left over for the rule that marks the marriage.
-    pitch = {gen: lab_h.get(gen, size * 1.16) * 1.5 for gen in rows_in}
+    # A RADIAL name runs along the radius, so the room a stacked row needs
+    # is the name's LENGTH, not its height. Spacing rows by height while
+    # setting them radially printed a wife straight through her husband --
+    # the two rows of a couple overlapped by most of a name.
+    pitch = {gen: max(lab_h.get(gen, size * 1.16) * 1.5,
+                      widest.get(gen, 0.0) + size * 1.3
+                      if orient == "radial" and rows_in[gen] > 1 else 0.0)
+             for gen in rows_in}
     stem = max(size * 2.2, style.get("layout.min_ring_gap_mm", 6.0))
     gens = sorted(rows_in)
 
@@ -199,6 +219,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # half its width out past the edge of the sector. Pay for that in the
     # fit, not afterwards, or the chart reports itself over the panel.
     over = 0.5 * max(widest.values(), default=0.0)
+    # what reaches past the outermost ring, radially
+    pad_r = (size * 2.6) if orient == "radial" else size * 0.9
 
     def solve(sweep: float, tighten: float = 1.0) -> dict:
         """Lay the whole chart out at one sweep and hole size, and report.
@@ -229,7 +251,14 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             return out, r - stem
 
         def box(r_out):
-            """The bounding box of the sector, with the label overhang."""
+            """The bounding box of the sector, with the label overhang.
+
+            `pad_r` is what sticks out past the last ring: a radial name runs
+            outward from its row, and the marriage rule sits past the end of
+            that. Leaving it out fitted the rings to the sheet and then drew
+            the last name over the edge.
+            """
+            r_out = r_out + pad_r
             p = math.atan2(over, max(r_out, 1e-6)) if sweep < full - 1e-9 else 0.0
             return _sector_bounds(inner, r_out, start - p, start + sweep + p)
 
@@ -271,9 +300,17 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             for gen in gens:
                 arc = (sweep * ring_try[gen]) / max(cells_in.get(gen, 1), 1)
                 fits = arc >= widest.get(gen, 0.0) * 1.08
+                # The band has to be sized for the way the names will ACTUALLY
+                # be set. Sizing for tangential and then drawing radially left
+                # the ring a name-length too shallow, and the marriage rule --
+                # which sits past the end of the name -- fell outside the cut.
+                if orient in ("radial", "tangential"):
+                    fits = orient == "tangential"
                 floor = rows_in[gen] * pitch[gen] + stem
                 if not fits:
-                    floor = max(floor, widest.get(gen, 0.0) + stem)
+                    # the name, plus the marriage rule that sits past its end
+                    floor = max(floor,
+                                widest.get(gen, 0.0) + stem + size * 1.2)
                 if tang[gen] != fits or band[gen] < floor - 0.01:
                     changed = True
                 tang[gen] = fits
@@ -345,6 +382,22 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     def theta(t: float) -> float:
         return start + t * sweep
 
+    def reach(gen: int) -> float:
+        """How far a name actually extends along the radius.
+
+        Its HEIGHT if it is set around the ring, its LENGTH if it is set
+        along the branch. The marriage rule is placed past this, and using
+        the height for a radial name put the rule straight through it.
+        """
+        if want_orient(gen) == "radial":
+            return widest.get(gen, 0.0)
+        return lab_h.get(gen, 0.0)
+
+    def want_orient(gen: int) -> str:
+        if orient in ('radial', 'tangential'):
+            return orient
+        return 'tangential' if tangential[gen] else 'radial'
+
     plan = RenderPlan(
         canvas=Canvas(W, H, style.get("canvas.background", "#FBF8F2"), "circle"),
         meta=PlanMeta(engine="radial_family", style=style.get("id", ""),
@@ -415,7 +468,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # partner it belongs to. The marriage is the tie between them --
             # the one place this design has to draw a line for it.
             for a, b in zip(members, members[1:]):
-                r = row_r(a) + lab_h.get(a.gen, 0.0) * 0.5
+                # BELOW the names, in the gap, never through them. At half
+                # the label height this ran straight through "Kathleen
+                # Holloway" -- the rule that means "married" was striking out
+                # the name it was about.
+                r = row_r(a) + reach(a.gen) + size * 0.55
                 plan.add(Element(kind="path", layer="ENGRAVE",
                                  d=G.short_arc(cx, cy, r, theta(a.tc),
                                                theta(b.tc)),
@@ -428,8 +485,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         for sl in members[:-1]:
             # in the GAP between two names, never through one of them: a rule
             # at the middle of the row pitch struck the dates out.
-            r = row_r(sl) + lab_h.get(sl.gen, 0.0) + \
-                (pitch[sl.gen] - lab_h.get(sl.gen, 0.0)) * 0.45
+            gap = max(pitch[sl.gen] - reach(sl.gen), size * 0.9)
+            r = row_r(sl) + reach(sl.gen) + gap * 0.45
             half = (t1 - t0) * 0.22
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.arc_path(cx, cy, r, mid - half, mid + half),
@@ -458,34 +515,46 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         anchor = max(parents, key=lambda p: g.slots[p].row)
         r_from = row_r(g.slots[anchor]) + pitch[g.slots[anchor].gen] * 0.55
         same = [p for p in parents if g.slots[p].cell == g.slots[anchor].cell]
-        if len(same) > 1 and all(g.slots[p].row == 0 for p in same):
-            # split leaves: the children hang from BETWEEN the two, which is
-            # what says they are the children of that marriage and not of one
-            # of the partners alone
-            t_head = sum(theta(g.slots[p].tc) for p in same) / len(same)
-            r_from = max(row_r(g.slots[p]) for p in same) + \
+
+        # WHERE THE STEM LEAVES FROM. Between the two people whose family it
+        # is -- literally between, when they have a leaf each, because that
+        # is what says the children are the children of that MARRIAGE and not
+        # of one of the partners alone.
+        #
+        # Clamping this to the anchor's own leaf, as an earlier attempt did,
+        # dragged it to one partner's name: on the owner's chart the stem
+        # under "PH | Kathleen Holloway" left from PH's end rather than from
+        # between them, and the same everywhere a couple had a leaf each.
+        pair = [p for p in same if g.slots[p].row == 0]
+        if len(same) > 1 and len(pair) == len(same):
+            t_head = sum(theta(g.slots[p].tc) for p in pair) / len(pair)
+            mouth = (min(theta(g.slots[p].t0) for p in pair),
+                     max(theta(g.slots[p].t1) for p in pair))
+            r_from = max(row_r(g.slots[p]) for p in pair) + \
                 lab_h.get(g.slots[anchor].gen, 0.0) * 0.7
         else:
             t_head = theta(g.slots[anchor].tc)
+            mouth = (theta(g.slots[anchor].t0), theta(g.slots[anchor].t1))
 
-        # AIM THE STEM AT THIS FAMILY'S OWN CHILDREN, and make sure it lands
-        # on their arc.
-        #
-        # A cell is centred over ALL its children, both marriages together.
-        # A stem drawn from the middle of the cell therefore points at the
-        # middle of BOTH families, which for either one of them on its own is
-        # off to one side -- five stems on the owner's tree ended up to 16
-        # degrees clear of the arc they were supposed to meet, hanging in
-        # space attached to nothing. That is what "stems that don't attach"
-        # was.
-        #
-        # So: leave from the point of the LEAF nearest these children, and if
-        # that is still short of their arc, turn the corner and run along to
-        # it. A stem that does not reach its own arc is not a shortcut, it is
-        # a lie about who somebody's parents are.
-        leaf0, leaf1 = theta(g.slots[anchor].t0), theta(g.slots[anchor].t1)
-        want = (ts[0] + ts[-1]) / 2
-        t_head = min(max(want, min(leaf0, leaf1)), max(leaf0, leaf1))
+        # Then aim it at THIS family's children, without ever leaving the
+        # names it belongs to: a cell is centred over all its children, both
+        # marriages together, so the middle of the cell points at the middle
+        # of both and for either family alone that is off to one side. Five
+        # stems ended up as much as 16 degrees clear of the arc they were
+        # supposed to meet, hanging in space attached to nothing.
+        # A couple with a leaf each keeps the midpoint BETWEEN their two
+        # names, whatever direction their children lie in -- that is the
+        # thing the split leaf exists to say. Aiming it at the children
+        # instead slid it to one partner's end, and the stem under
+        # "Kathleen Holloway | Peter Holloway" left from Kathleen rather
+        # than from between them. The elbow below carries it the rest of
+        # the way, which is what the elbow is for.
+        if len(pair) < 2:
+            want = (ts[0] + ts[-1]) / 2
+            t_head = min(max(want, min(mouth)), max(mouth))
+        # ...and if that is still short of the arc, turn the corner and run
+        # along to it. A stem that does not reach its own arc is not a
+        # shortcut, it is a lie about who somebody's parents are.
         t_foot = min(max(t_head, ts[0]), ts[-1])
 
         line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
@@ -549,8 +618,9 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         arc = abs(sl.t1 - sl.t0) * sweep * max(row_r(sl), 1e-3)
         lines = label_lines(style, person, sl.gen, sl.order)
         place_radial_label(plan, placer, person, lines, t, row_r(sl), cx, cy,
-                           style, flip=_flip(t),
-                           orientation="tangential" if tangential[sl.gen] else "radial",
+                           style, flip=_flip(t) and face != "outward",
+                           face=face,
+                           orientation=want_orient(sl.gen),
                            arc_available=arc)
 
     plan.meta.extra["labels_hidden"] = placer.dropped
