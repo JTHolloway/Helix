@@ -66,16 +66,28 @@ DEFAULTS: dict[str, Any] = {
              "colour": "#22201D", "case": "as_typed"},
     "labels": {"template": "{given_first} {surname}", "by_ring": {},
                "orientation": "auto", "show": True,
-               # outward | upright. Which way round every name reads.
-               # `outward` sets the chart as if you were standing outside
-               # the rim looking in: radial names run from the middle out,
-               # tangential names keep the tops of their letters pointing
-               # away from the centre, and the whole disc is consistent --
-               # you turn the chart, not your head. `upright` never sets a
-               # name upside down on the page, at the cost of the two halves
-               # reading in opposite directions.
-               "face": "outward"},
-    "thread": {"enabled": True, "colour": "#A3392B", "stroke_width_mm": 1.4,
+               # inward | outward | upright. WHICH WAY UP every name is set.
+               #
+               #   inward   tops of the letters point toward the centre, so
+               #            the BOTTOM half of the disc reads the right way
+               #            up and the top half is upside down. The default:
+               #            the newest generations are at the bottom rim and
+               #            that is the half you read first.
+               #   outward  tops point away from the centre, so the TOP half
+               #            reads the right way up. The same chart, turned.
+               #   upright  no name is ever upside down, at the cost of the
+               #            two halves reading in opposite directions.
+               #
+               # The first two are consistent all the way round: you turn
+               # the chart, not your head.
+               "face": "inward"},
+    # The direct line, picked out in colour. It is a HIGHLIGHT: it recolours
+    # lines the chart draws anyway, so it has to be findable across a metre
+    # of sheet without becoming the loudest thing on it. At three and a half
+    # times the weight of the linework it was -- every place it crossed
+    # another family's line shouted, and the chart read as a red diagram with
+    # a family tree behind it.
+    "thread": {"enabled": True, "colour": "#A3392B", "stroke_width_mm": 0.9,
                "layer": "ENGRAVE_DEEP", "node_marker": "diamond", "halo_mm": 0.0},
     "ornament": {"time_rings": True, "time_ring_colour": "#C9C0B0",
                  "era_bands": False, "border": True, "clock": False,

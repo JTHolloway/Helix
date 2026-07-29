@@ -834,8 +834,12 @@ def _ink(plan):
             pol = [(math.hypot(x - cx, y - cy), math.atan2(y - cy, x - cx))
                    for x, y in pts]
             runs, cur = [], [pol[0]]
-            for a, b in zip(pol, pol[1:]):
-                if abs(b[0] - a[0]) < 0.35:
+            for b in pol[1:]:
+                rs = [r for r, _ in cur] + [b[0]]
+                # measured over the RUN: a stem curving round a narrow band
+                # changes radius by a hair per step and by the whole band
+                # overall, and step by step it is indistinguishable from an arc
+                if max(rs) - min(rs) < 0.4:
                     cur.append(b)
                 else:
                     runs.append(cur)
@@ -845,11 +849,14 @@ def _ink(plan):
                 if len(run) < 2:
                     continue
                 turn = sum(_wrap(b[1] - a[1]) for a, b in zip(run, run[1:]))
-                if abs(turn) < 1e-4:
+                r = sum(p[0] for p in run) / len(run)
+                # long enough to read as a line: a stem curving across the
+                # band is very nearly tangential for a millimetre or two in
+                # the middle, and those scraps are not arcs
+                if abs(turn) * r < 4.0:
                     continue
                 lo, hi = ((run[0][1], run[0][1] + turn) if turn > 0
                           else (run[0][1] + turn, run[0][1]))
-                r = sum(p[0] for p in run) / len(run)
                 if r > 1.0:
                     out.append((r, lo % math.tau, hi % math.tau,
                                 abs(turn), key, el.role))

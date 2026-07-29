@@ -416,14 +416,20 @@ def _upright(rot: float, anchor: str) -> tuple[float, str]:
 
 def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
           orientation, total_h):
-    """`face` decides what a RADIAL name does on the left half of the disc.
+    """`face` decides which way up every name on the disc is set.
 
-    upright   turn it through 180 so it is never upside down on the page.
-              Conventional, but it means names read outward on one side of
-              the chart and inward on the other.
-    outward   always read from the middle outward, the way the family grows.
-              Half of them are then upside down if you hold the chart still,
-              which is the point: you turn the chart, not your head.
+    inward    the tops of the letters point toward the centre, so the BOTTOM
+              half of the disc reads the right way up and the top half is
+              upside down. The default, because the newest generations are
+              at the bottom rim and that is the half anyone reads first.
+    outward   the tops point away from the centre: the TOP half reads the
+              right way up instead. Same idea, chart turned through 180.
+    upright   turn each name through 180 wherever it would be upside down,
+              so no name ever is. Readable without moving the chart, at the
+              cost of the two halves reading in opposite directions --
+              which is exactly what the owner of this program did not want.
+
+    The first two are the consistent ones: you turn the chart, not your head.
     """
     from . import geometry as _G
     run = 0.0
@@ -436,20 +442,18 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
             # wherever it would be upside down on the page, which keeps it
             # readable without moving the chart but means the top half and
             # the bottom half read in opposite directions.
+            # Rotating text by r sends the tops of its letters in the
+            # direction r - 90. So r = theta + 90 points them straight OUT
+            # from the centre, and r = theta - 90 points them IN.
             if face == "outward":
-                # +90. Rotating text by r sends the tops of its letters in
-                # the direction r - 90, so r = theta + 90 points them along
-                # theta, which is straight out from the centre.
-                #
-                # This was -90 and every name on the chart faced INWARD:
-                # upright along the bottom of the disc and upside down along
-                # the top, which is the opposite of what it says on the tin
-                # and the opposite of what was asked for.
                 rot, anchor = _G.deg(theta) + 90, "middle"
                 # Lines stack outward along the radius -- and for a name
                 # facing outward, OUTWARD IS UP. Left stacking the same way
                 # round, a person's dates came out above their name.
                 r = r_start + (total_h - run - h) + h * 0.5
+            elif face == "inward":
+                rot, anchor = _G.deg(theta) - 90, "middle"
+                r = r_start + run + h * 0.5
             else:
                 rot, anchor = _upright(_G.deg(theta) + 90, "middle")
                 r = r_start + run + h * 0.5
@@ -463,6 +467,10 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
             x, y = _G.polar(cx, cy, r_start, t)
             if face == "outward":
                 rot, anchor = _G.deg(t), "start"
+            elif face == "inward":
+                # Same band of radius, read the other way round, so it tilts
+                # with its tangential neighbours instead of against them.
+                rot, anchor = _G.deg(t) + 180, "end"
             else:
                 rot, anchor = _upright(_G.deg(t) + (180 if flip else 0),
                                        "end" if flip else "start")

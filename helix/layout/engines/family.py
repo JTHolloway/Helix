@@ -40,6 +40,7 @@ from ..plan import Canvas, Element, FontSpec, PlanMeta, RenderPlan
 from ..registry import register
 
 TAU = math.tau
+_CURVE = 120        # samples along a stem that has to curve round
 
 
 def _wrapped(d: float) -> float:
@@ -68,6 +69,18 @@ def _near(t: float, to: float) -> float:
 def _mean_angle(seq: list[float]) -> float:
     u = _unwrap(seq)
     return sum(u) / len(u)
+
+
+def _seg_cross(p, q, r, s) -> bool:
+    """Do two segments cross, other than at an end?"""
+    d1 = (q[0] - p[0], q[1] - p[1])
+    d2 = (s[0] - r[0], s[1] - r[1])
+    den = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(den) < 1e-12:
+        return False
+    t = ((r[0] - p[0]) * d2[1] - (r[1] - p[1]) * d2[0]) / den
+    u = ((r[0] - p[0]) * d1[1] - (r[1] - p[1]) * d1[0]) / den
+    return 0.0 < t < 1.0 and 0.0 < u < 1.0
 
 
 def _ang_gap(a0: float, a1: float, b0: float, b1: float) -> float:
@@ -785,6 +798,13 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # exactly what it means, and it stops two names in one cell running
     # together when the type is small.
     rule_top: dict[str, float] = {}      # the outermost rule drawn in a cell
+    # AND WHERE EACH ONE IS, by the pair it joins. A stem starts on the rule
+    # that means "these two married" -- that rule is the line their children
+    # come from. Started at the outermost rule in the CELL instead, the stem
+    # for the first marriage of somebody who married twice began at the
+    # radius of the second one and hung a couple of millimetres above its
+    # own, attached to nothing.
+    rule_at: dict[frozenset, float] = {}
 
     for cid, members in cells.items():
         members.sort(key=lambda x: (x.row, x.tc))
@@ -810,6 +830,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                 # the name it was about.
                 r = rule_r(a) + k * step
                 rule_top[cid] = max(rule_top.get(cid, 0.0), r)
+                rule_at[frozenset((a.pid, b.pid))] = r
                 plan.add(Element(kind="path", layer="ENGRAVE",
                                  d=G.short_arc(cx, cy, r, theta(a.tc),
                                                theta(b.tc)),
@@ -819,7 +840,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             continue
         t0, t1 = theta(members[0].t0), theta(members[0].t1)
         mid = (t0 + t1) / 2
-        for sl in members[:-1]:
+        for k, sl in enumerate(members[:-1]):
             # in the GAP between two names, never through one of them: a rule
             # at the middle of the row pitch struck the dates out.
             gap = max(pitch[sl.gen] - reach(sl.gen), size * 0.9)
@@ -827,6 +848,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             r = max(floor_r, min(row_r(sl) + reach(sl.gen) + gap * 0.45,
                                  band_top(sl.gen)))
             rule_top[cid] = max(rule_top.get(cid, 0.0), r)
+            rule_at[frozenset((sl.pid, members[k + 1].pid))] = r
             half = (t1 - t0) * 0.22
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.arc_path(cx, cy, r, mid - half, mid + half),
@@ -862,15 +884,17 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         # land beyond the ring outside it, and a stem starting from them
         # began a hundred millimetres out with its elbow among somebody
         # else's names. A ring's linework stays in its own band.
-        cell_id = g.slots[anchor].cell or anchor
         gen_a = g.slots[anchor].gen
-        r_from = max([row_r(g.slots[anchor]) + pitch[gen_a] * 0.55,
-                      rule_top.get(cell_id, 0.0)]
-                     + [rule_r(g.slots[q]) for q in g.slots
-                        if (g.slots[q].cell or q) == cell_id
-                        and g.slots[q].gen == gen_a])
-        r_from = max(min(r_from, band_top(gen_a)),
-                     row_r(g.slots[anchor]) + size * 0.6)
+        r_from = rule_at.get(frozenset(parents))
+        if r_from is None:
+            # Nobody to marry, or a partner who is not on the chart. The
+            # dashed rule that names the partner nobody recorded is drawn at
+            # exactly this radius, so the stem starts on that instead.
+            r_from = rule_r(g.slots[anchor])
+        # ...but never INSIDE the anchor's own name. A stacked couple's rule
+        # sits BETWEEN their two names, so starting the stem on it would run
+        # it straight up through the outer one.
+        r_from = max(min(r_from, band_top(gen_a)), rule_r(g.slots[anchor]))
 
         line = (all(p in thr for p in parents[:1])
                 and any(c in thr for c in run))
@@ -934,32 +958,20 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # the line went through the type. Booking the corridor before any name is
     # placed makes the names move instead, which is the right way round: a
     # name can go somewhere else, a descent line cannot.
-    # Only the part in the OPEN GAP between the rings. Booked from the cell
-    # itself, the corridor swallowed the row the couple's own unrecorded
-    # partner is named on -- the stem starts among their names by design.
-    for job in jobs:
-        r0 = max(job["r_from"], r_top(job["gen"] - 1))
-        placer.take(job["head"], r0, max(job["r_arc"] - r0, 0.0), lw * 3.0)
-    for sl in sorted(g, key=lambda x: (x.gen, x.tc, x.row)):
-        person = graph.people[sl.pid]
-        t = theta(sl.tc)
-        arc = abs(sl.t1 - sl.t0) * sweep * max(row_r(sl), 1e-3)
-        lines = label_lines(style, person, sl.gen, sl.order)
-        place_radial_label(plan, placer, person, lines, t, row_r(sl), cx, cy,
-                           style, flip=_flip(t) and face != "outward",
-                           face=face,
-                           orientation=want_orient(sl.gen),
-                           arc_available=arc)
-
+    #
+    # ORDER OF PRECEDENCE, and it is deliberate. The name of a partner nobody
+    # recorded goes down FIRST: it sits in the couple's own cell, exactly
+    # where their stem starts, so a corridor booked ahead of it simply
+    # deleted it. Then the corridors. Then every other name, which moves.
     for cid, pid in unknown_at.items():
         sl = g.slots[pid]
         deep = max(g.slots[q].row for q in g.slots if (g.slots[q].cell or q) == cid)
         r_row = ring_r[sl.gen] + (deep + 1) * pitch[sl.gen]
         t0, t1 = theta(sl.t0), theta(sl.t1)
-        rule_r = ring_r[sl.gen] + deep * pitch[sl.gen] + reach(sl.gen) + size * 0.55
+        r_dash = ring_r[sl.gen] + deep * pitch[sl.gen] + reach(sl.gen) + size * 0.55
         half = abs(t1 - t0) * 0.22
         plan.add(Element(kind="path", layer="ENGRAVE",
-                         d=G.arc_path(cx, cy, rule_r, theta(sl.tc) - half,
+                         d=G.arc_path(cx, cy, r_dash, theta(sl.tc) - half,
                                       theta(sl.tc) + half),
                          stroke=style.get("lines.marriage_colour", col),
                          stroke_width=lw * 0.6, fill="none",
@@ -970,9 +982,23 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             [(style.get("labels.unknown", "Unknown"),
               size * 0.92, style.get("type.colour", col))],
             theta(sl.tc), r_row, cx, cy, style,
-            flip=_flip(theta(sl.tc)) and face != "outward", face=face,
+            flip=_flip(theta(sl.tc)) and face == "upright", face=face,
             orientation=want_orient(sl.gen),
             arc_available=sweep * (sl.t1 - sl.t0) * r_row)
+
+    for job in jobs:
+        placer.take(job["head"], job["r_from"],
+                    max(job["r_arc"] - job["r_from"], 0.0), lw * 3.0)
+    for sl in sorted(g, key=lambda x: (x.gen, x.tc, x.row)):
+        person = graph.people[sl.pid]
+        t = theta(sl.tc)
+        arc = abs(sl.t1 - sl.t0) * sweep * max(row_r(sl), 1e-3)
+        lines = label_lines(style, person, sl.gen, sl.order)
+        place_radial_label(plan, placer, person, lines, t, row_r(sl), cx, cy,
+                           style, flip=_flip(t) and face == "upright",
+                           face=face,
+                           orientation=want_orient(sl.gen),
+                           arc_available=arc)
 
     plan.meta.extra["labels_hidden"] = placer.dropped
 
@@ -1045,6 +1071,17 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             ring.append([(a, b)])
             job["lane"] = len(ring) - 1
 
+    # WHERE THE SPOKES ARE. A stem's spoke is the radial part, running from
+    # its couple straight out to its children; an elbow crossing the band has
+    # to get past every one of them that lies in its way. Where a family's
+    # children are directly outside them -- the ordinary case -- the whole
+    # stem is a spoke, and there are a great many of them.
+    spokes: dict[int, list[tuple[float, str]]] = {}
+    for job in jobs:
+        spokes.setdefault(job["gen"], []).append((job["head"], job["uid"]))
+        if job["lane"] >= 0:
+            spokes[job["gen"]].append((job["foot"], job["uid"]))
+
     for job in jobs:
         r_arc, head, foot = job["r_arc"], job["head"], job["foot"]
         if job["lane"] < 0:
@@ -1072,16 +1109,62 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # joining, with a line dragged back in to reach it. Crowding is a
             # crowded chart's problem. Inside-out is a broken one.
             ceil_r = r_arc - lane_gap
-            floor_r = min(floor_r, ceil_r - lane_gap * 0.1)
-            n = max(1, len(ring_lanes.get(job["gen"], [])))
-            span = ceil_r - floor_r
-            step = (lane_gap if span >= lane_gap * (n - 1)
-                    else span / max(1, n - 1))
-            r_lane = min(floor_r + job["lane"] * step, ceil_r)
-            d_stem = (G.polyline([G.polar(cx, cy, job["r_from"], head),
-                                  G.polar(cx, cy, r_lane, head)])
-                      + G.arc_path(cx, cy, r_lane, head, foot, move=False)
-                      + G.L(G.polar(cx, cy, r_arc, foot)))
+            floor_r = min(floor_r + job["lane"] * lane_gap * 0.7,
+                          ceil_r - lane_gap * 0.1)
+            # ---- AND IT IS A CURVE, NOT A BRACKET ------------------------
+            #
+            # Out radially, round, and out radially again is three straight
+            # runs and two right angles, and it encloses a great rectangle of
+            # empty sheet on the way. Sixteen of them on a 142-name chart put
+            # a metre of detour on a metre of panel and made the whole thing
+            # read like a wiring diagram.
+            #
+            # Instead: leave radially, arrive radially, and ease between the
+            # two. The ends still meet the rule and the arc square on -- a
+            # junction reads as a junction -- but there is no corner, no
+            # enclosed rectangle, and the curve says "this family is not
+            # directly outside its parents" in one glance, which is the only
+            # thing the detour is for.
+            #
+            # AND IT HOPS. Crossing the band it has to get past every other
+            # family's descent line, and nothing on this chart means "these
+            # two lines meet". So break it where it passes one: a gap reads
+            # as "goes behind", which is what a century of route maps settled
+            # on, and it costs the cutter nothing. The DETOUR gives way,
+            # never the descent line -- a stem straight out from a couple to
+            # their own children is the thing this chart is for.
+            mid_t = (head + foot) / 2
+            lo, hi = min(head, foot), max(head, foot)
+            skip = [x for x in (_near(t, mid_t)
+                                for t, uid2 in spokes.get(job["gen"], ())
+                                if uid2 != job["uid"])
+                    if lo + 1e-6 < x < hi - 1e-6]
+            turn = foot - head
+            gap_u = (lane_gap * 0.9) / max(abs(turn) * floor_r, 1e-6)
+
+            def _u_of(t: float) -> float:
+                """Where along the curve it is pointing at angle t. The ease
+                is monotonic, so bisection is exact enough and needs no
+                inverse."""
+                want = (t - head) / turn
+                a, b = 0.0, 1.0
+                for _ in range(24):
+                    m = (a + b) / 2
+                    if m * m * (3 - 2 * m) < want:
+                        a = m
+                    else:
+                        b = m
+                return (a + b) / 2
+
+            job["cuts"] = sorted(_u_of(t) for t in skip)
+            job["gap_u"] = gap_u
+            job["curve"] = [
+                G.polar(cx, cy, floor_r + (i / _CURVE) * (r_arc - floor_r),
+                        head + (i / _CURVE) ** 2
+                        * (3 - 2 * (i / _CURVE)) * turn)
+                for i in range(_CURVE + 1)]
+            job["floor_r"] = floor_r
+            continue
         plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
                          stroke=job["colour"], stroke_width=job["width"],
                          fill="none", person_id=job["anchor"],
@@ -1089,6 +1172,83 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         if len(job["run"]) > 1:
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.arc_path(cx, cy, r_arc, job["lo"], job["hi"]),
+                             stroke=job["colour"], stroke_width=job["width"],
+                             fill="none", union_id=job["uid"],
+                             role="siblings", z=10))
+
+    # AND IT GIVES WAY TO EVERYTHING ELSE. Hopping only the spokes on its own
+    # ring left curve over curve, and curve over the spokes of the ring
+    # inside -- the same fault wearing different hats. So test the finished
+    # curve against every other family's descent line, whatever shape it is
+    # and whichever ring it belongs to.
+    #
+    # ONE OF THEM GIVES WAY, NEVER BOTH. Breaking each line for the other
+    # left four stubs round a hole where two curves met, and no line running
+    # through it at all -- which reads as the family line stopping. A spoke
+    # never gives way; between two curves the one that comes later does.
+    curved = [j for j in jobs if j.get("curve")]
+    for n, j in enumerate(jobs):
+        j["seq"] = n
+    solid = [(j["uid"], j["seq"], j.get("curve") or
+              [G.polar(cx, cy, j["r_from"], j["head"]),
+               G.polar(cx, cy, j["r_arc"], j["head"])])
+             for j in jobs]
+    for a in curved:
+        for uid2, seq2, other in solid:
+            if uid2 == a["uid"]:
+                continue
+            if len(other) > 2 and seq2 > a["seq"]:
+                continue                  # the other curve gives way, not this
+            for ua, pa in enumerate(zip(a["curve"], a["curve"][1:])):
+                for pb in zip(other, other[1:]):
+                    if _seg_cross(pa[0], pa[1], pb[0], pb[1]):
+                        a["cuts"] = sorted(a["cuts"] + [(ua + 0.5) / _CURVE])
+                        break
+
+    # A HOP THE WIDTH OF A HOP. Sized as a fraction of the turn, a short
+    # curve lost a third of itself to one crossing and came out looking
+    # dashed -- which on this chart means something else entirely.
+    for job in curved:
+        length = sum(math.dist(p, q) for p, q in zip(job["curve"],
+                                                     job["curve"][1:]))
+        # ...and never narrower than the sampling. A gap thinner than one
+        # step falls between two points and removes nothing, so the line
+        # crossed anyway -- with the break dutifully recorded.
+        w = max(min(0.10, lane_gap * 0.8 / max(length, 1e-6)), 1.2 / _CURVE)
+        # Two crossings close together become ONE wider gap. Kept as separate
+        # cuts and then thinned to stop the line looking dashed, whichever
+        # was dropped went back to crossing.
+        gaps: list[list[float]] = []
+        for c in job["cuts"]:
+            if gaps and c - w <= gaps[-1][1]:
+                gaps[-1][1] = max(gaps[-1][1], c + w)
+            else:
+                gaps.append([c - w, c + w])
+        job["gaps"] = gaps
+
+    for job in curved:
+        pts, cur = [], []
+        for i, p in enumerate(job["curve"]):
+            if any(lo <= i / _CURVE <= hi for lo, hi in job["gaps"]):
+                if len(cur) > 1:
+                    pts.append(cur)
+                cur = []
+                continue
+            cur.append(p)
+        if len(cur) > 1:
+            pts.append(cur)
+        d_stem = G.polyline([G.polar(cx, cy, job["r_from"], job["head"]),
+                             G.polar(cx, cy, job["floor_r"], job["head"])])
+        for run_pts in pts:
+            d_stem += " " + G.polyline(run_pts)
+        plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
+                         stroke=job["colour"], stroke_width=job["width"],
+                         fill="none", person_id=job["anchor"],
+                         union_id=job["uid"], role="stem", z=10))
+        if len(job["run"]) > 1:
+            plan.add(Element(kind="path", layer="ENGRAVE",
+                             d=G.arc_path(cx, cy, job["r_arc"],
+                                          job["lo"], job["hi"]),
                              stroke=job["colour"], stroke_width=job["width"],
                              fill="none", union_id=job["uid"],
                              role="siblings", z=10))

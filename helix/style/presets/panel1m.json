@@ -52,7 +52,7 @@
     "max_width_mm": 46
   },
   "thread": {
-    "stroke_width_mm": 1.8
+    "stroke_width_mm": 1.1
   },
   "production": {
     "material": "birch_ply_3mm"

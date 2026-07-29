@@ -71,10 +71,14 @@ def arc_gap(a0: float, a1: float, b0: float, b1: float) -> float:
     return min(norm(b0 - a1), norm(a0 - b1))
 
 
-def runs_of(pts, cx, cy, flat_mm=0.35):
+def runs_of(pts, cx, cy, flat_mm=0.4):
     """Split a polyline into TANGENTIAL runs -- the stretches that follow a
-    circle about the centre. A stem is a radial line and an elbow; only the
-    elbow can merge with somebody else's arc, so only the elbow is measured.
+    circle about the centre, and ONLY those. The tolerance is tight on
+    purpose: an arc is sampled exactly on its circle, so a genuine one has
+    no radial change at all, while a stem curving round the band changes
+    radius steadily all the way. Loose enough to admit the second, this
+    reported every curve as an arc at its own mean radius and found it
+    "merging" with whatever real arc happened to be at that radius.
 
     Yields (r_mean, t_start, t_end, sweep) with t_start->t_end anticlockwise.
     """
@@ -82,10 +86,15 @@ def runs_of(pts, cx, cy, flat_mm=0.35):
         return
     pol = [(math.hypot(x - cx, y - cy), math.atan2(y - cy, x - cx))
            for x, y in pts]
-    cur = [pol[0]]
-    out = []
-    for prev, now in zip(pol, pol[1:]):
-        if abs(now[0] - prev[0]) < flat_mm:
+    cur, out = [pol[0]], []
+    for now in pol[1:]:
+        rs = [r for r, _ in cur] + [now[0]]
+        # The test is on the RUN, not on the step. A stem curving round a
+        # narrow band changes radius by a hair per sample and by the width of
+        # the band overall; step by step it looked exactly like an arc, and
+        # every curve was reported as merging with whatever real arc happened
+        # to lie at its mean radius.
+        if max(rs) - min(rs) < flat_mm:
             cur.append(now)
         else:
             out.append(cur)
@@ -107,9 +116,16 @@ def runs_of(pts, cx, cy, flat_mm=0.35):
             turn += d
         if abs(turn) < 1e-4:
             continue
+        r = sum(rs) / len(rs)
+        # LONG ENOUGH TO READ AS A LINE. A stem curving across the band is
+        # very nearly tangential for a millimetre or two in the middle, and
+        # counting those scraps as arcs had every curve "merging" with
+        # whatever real arc it happened to pass.
+        if abs(turn) * r < 4.0:
+            continue
         t1 = t0 + turn
         lo, hi = (t0, t1) if turn > 0 else (t1, t0)
-        yield (sum(rs) / len(rs), norm(lo), norm(hi), abs(turn))
+        yield (r, norm(lo), norm(hi), abs(turn))
 
 
 def label_boxes(plan):
@@ -130,6 +146,21 @@ def label_boxes(plan):
                        (dx + w, h / 2), (dx, h / 2)):
             pts.append((el.x + lx * ca - ly * sa, el.y + lx * sa + ly * ca))
         yield el, pts
+
+
+def _cross_point(p, q, r, s):
+    """Where two segments cross, or None. Touching at an end does not count:
+    that is a junction, and the chart is full of them by design."""
+    d1 = (q[0] - p[0], q[1] - p[1])
+    d2 = (s[0] - r[0], s[1] - r[1])
+    den = d1[0] * d2[1] - d1[1] * d2[0]
+    if abs(den) < 1e-12:
+        return None
+    t = ((r[0] - p[0]) * d2[1] - (r[1] - p[1]) * d2[0]) / den
+    u = ((r[0] - p[0]) * d1[1] - (r[1] - p[1]) * d1[0]) / den
+    if 0.02 < t < 0.98 and 0.02 < u < 0.98:
+        return (p[0] + t * d1[0], p[1] + t * d1[1])
+    return None
 
 
 def seg_box_hit(p, q, box) -> bool:
@@ -314,6 +345,103 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
                         break
     crossed = sorted(set(crossed))
 
+    # 4 ------------------------------------------------------------ crossings
+    #
+    # One line passing THROUGH another. Nothing on this chart means "these
+    # two lines meet"; a crossing is always an accident of routing, and at
+    # the width the direct line is drawn it is the loudest thing on the
+    # sheet. Counted between different families only -- a stem meeting its
+    # own arc is a junction, which is the whole point of it.
+    segs = []
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in LINEWORK or not el.d:
+            continue
+        key = el.union_id or el.person_id or str(id(el))
+        for pts, _c in flatten(el, 0.4):
+            for p, q in zip(pts, pts[1:]):
+                segs.append((p, q, key, el.role))
+    grid: dict = {}
+    for i, (p, q, _k, _r) in enumerate(segs):
+        for gx in range(int(min(p[0], q[0]) // 12), int(max(p[0], q[0]) // 12) + 1):
+            for gy in range(int(min(p[1], q[1]) // 12),
+                            int(max(p[1], q[1]) // 12) + 1):
+                grid.setdefault((gx, gy), []).append(i)
+    crossings = set()
+    for cell in grid.values():
+        for ai in range(len(cell)):
+            for bi in range(ai + 1, len(cell)):
+                a, b = segs[cell[ai]], segs[cell[bi]]
+                if a[2] == b[2]:
+                    continue
+                x = _cross_point(a[0], a[1], b[0], b[1])
+                if x:
+                    crossings.add((round(x[0], 1), round(x[1], 1),
+                                   *sorted((a[3], b[3]))))
+
+    # 5 ----------------------------------------------------------- loose ends
+    #
+    # A line that stops in mid-air. Every end of every line on this chart
+    # belongs to something: a stem ends on an arc, an arc ends on a tick, a
+    # tick ends at a name. An end with nothing within a millimetre of it is
+    # a branch that appears to come from nowhere.
+    ends, body = [], []
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in LINEWORK or not el.d:
+            continue
+        if el.role in ("marriage", "unknown_partner", "chord"):
+            # something to LAND on, never something with a loose end of its
+            # own: a rule is a tie between two names and ends at each of them
+            for pts, _c in flatten(el, 0.4):
+                body += [(p, id(el)) for p in pts]
+            continue
+        key = id(el)                 # THE PATH, not the family: a tick
+        # ONLY THE ENDS THAT MUST JOIN SOMETHING, and measured over the WHOLE
+        # path. A tick ends at the name it points at and a stem begins at the
+        # name it comes from -- names are not lines, and an end resting on
+        # one is not adrift. Nor is either side of a deliberate hop, which is
+        # why this counts subpaths together: what must never happen is the
+        # far end of a stem, or either end of an arc, finding nothing.
+        subs = [pts for pts, _c in flatten(el, 0.4) if len(pts) >= 2]
+        if not subs:
+            continue
+        allp = [p for pts in subs for p in pts]
+        far = max(math.hypot(q[0] - cx, q[1] - cy) for q in allp)
+        near = min(math.hypot(q[0] - cx, q[1] - cy) for q in allp)
+        for pts in subs:
+            for p in (pts[0], pts[-1]):
+                rp = math.hypot(p[0] - cx, p[1] - cy)
+                if el.role in ("branch", "thread"):
+                    if rp >= far - 0.01:
+                        continue
+                elif el.role == "stem":
+                    if rp < far - 0.01:      # a hop, or the name it leaves
+                        continue
+                ends.append((p, key, el.role))
+            body += [(p, key) for p in pts]
+    bgrid: dict = {}
+    for p, key in body:
+        bgrid.setdefault((int(p[0] // 4), int(p[1] // 4)), []).append((p, key))
+    loose = []
+    for p, key, role in ends:
+        near = False
+        for gx in (-1, 0, 1):
+            for gy in (-1, 0, 1):
+                for q, k2 in bgrid.get((int(p[0] // 4) + gx,
+                                        int(p[1] // 4) + gy), ()):
+                    if k2 == key:
+                        continue
+                    if math.hypot(p[0] - q[0], p[1] - q[1]) < 1.2:
+                        near = True
+                        break
+                if near:
+                    break
+            if near:
+                break
+        if not near:
+            loose.append((p, role,
+                          math.hypot(p[0] - cx, p[1] - cy),
+                          norm(math.atan2(p[1] - cy, p[0] - cx))))
+
     if not quiet:
         print(f"{db}  engine {engine}  style {style_name or 'default'}  "
               f"{plan.canvas.width_mm:.0f}x{plan.canvas.height_mm:.0f} mm")
@@ -338,10 +466,25 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
         for t, role in crossed[:10]:
             print(f"     {t[:34]:<34} crossed by {role}")
 
-        print("\nAll three should be ZERO.")
+        print(f"\n4. LINES CROSSING          {len(crossings)}"
+              f"   (two families' linework, passing through)")
+        tally: dict = {}
+        for _x, _y, r1, r2 in crossings:
+            tally[(r1, r2)] = tally.get((r1, r2), 0) + 1
+        for (r1, r2), n in sorted(tally.items(), key=lambda kv: -kv[1])[:8]:
+            print(f"     {n:4d}   {r1} x {r2}")
+
+        print(f"\n5. LOOSE ENDS              {len(loose)}"
+              f"   (a line stopping in mid-air)")
+        for p, role, r, t in loose[:8]:
+            print(f"     {role:<9} r={r:6.1f} at {math.degrees(t):6.1f} deg"
+                  f"   {', '.join(joins(r, t - 0.02, t + 0.02))[:36]}")
+
+        print("\nAll five should be ZERO.")
 
     return {"touching": len(hits), "long_way": len(long_way),
-            "text_on_line": len(crossed), "hits": hits}
+            "text_on_line": len(crossed), "crossings": len(crossings),
+            "loose": len(loose), "hits": hits}
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1189mm" height="420mm" viewBox="0 0 1189 420">
-<!-- helix | engine=arc_diagram style=default people=31 hash=e1e3b23574ab -->
+<!-- helix | engine=arc_diagram style=default people=31 hash=d6de8c265465 -->
 <rect x="0" y="0" width="1189" height="420" fill="#FBF8F2"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
 <path d="M26,366L1163,366" fill="none" stroke="#C9C0B0" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
@@ -83,10 +83,10 @@
 <text x="1163" y="369" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(90,1163,369)">Beatrice Pargeter</text>
 <text x="215.5" y="369" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(90,215.5,369)">Joseph Pargeter</text>
 <text x="291.3" y="369" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(90,291.3,369)">Florence Cadogan</text>
-<path d="M215.5,366A170.55,150 0 0,1 556.6,366" fill="none" stroke="#A3392B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M556.6,366A75.8,75.8 0 0,1 708.2,366" fill="none" stroke="#A3392B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M708.2,366A227.4,150 0 0,1 1163,366" fill="none" stroke="#A3392B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M26,366A94.75,94.75 0 0,1 215.5,366" fill="none" stroke="#A3392B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M215.5,366A170.55,150 0 0,1 556.6,366" fill="none" stroke="#A3392B" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M556.6,366A75.8,75.8 0 0,1 708.2,366" fill="none" stroke="#A3392B" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M708.2,366A227.4,150 0 0,1 1163,366" fill="none" stroke="#A3392B" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M26,366A94.75,94.75 0 0,1 215.5,366" fill="none" stroke="#A3392B" stroke-width="0.9" stroke-linecap="round" stroke-linejoin="round"/>
 <text x="594.5" y="24" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
 </g>
 </svg>
