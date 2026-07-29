@@ -767,3 +767,42 @@ def test_no_two_sibling_arcs_on_a_ring_overlap(graph, focus):
             assert not (a0 < b1 and b0 < a1), (
                 f"{focus}: two sibling arcs on ring {ga} overlap "
                 f"({a0:.3f}-{a1:.3f} and {b0:.3f}-{b1:.3f})")
+
+
+def test_a_partner_nobody_recorded_is_named_unknown(tmp_path):
+    """Every set of children has two parents. A union with children and only
+    one partner recorded is not somebody who had children alone, it is
+    somebody whose partner is not known YET -- and one name with a blank
+    beside it reads as though there never was one.
+
+    Dashed, and never written to the file: the gap is a gap in the research.
+    """
+    from helix.graph import build
+    from helix.store import records
+    from helix.store.db import connect, set_setting
+    con = connect(tmp_path / "u.helix")
+
+    def add(given, surname, to=None, how=None, **kw):
+        body = {"given": given, "surname": surname, **kw}
+        if to:
+            body["attach"] = {"to": to, "as": how}
+        return records.add_person(con, body)["id"]
+
+    dad = add("Michael", "Pargeter", birth="1930")
+    add("James", "Pargeter", dad, "child", birth="1960")
+    add("Claire", "Pargeter", dad, "child", birth="1962")
+    set_setting(con, "subject_person_id", dad)
+    graph = build.load(con)
+
+    style = Style.load("panel1m")
+    plan = registry.run("radial_family", graph,
+                        LayoutSettings(engine="radial_family", focus="all",
+                                       subject_id=dad), style)
+    marks = [e for e in plan.elements if e.role == "unknown_partner"]
+    assert marks, "two children and one parent, and nothing said so"
+    assert all(e.dash for e in marks), "an unrecorded partner is dashed"
+    said = [e for e in plan.elements
+            if e.kind == "text" and (e.text or "").lower() == "unknown"]
+    assert said, "the word itself should be on the chart"
+    # and nothing was invented in the file
+    assert len(build.load(con).people) == 3

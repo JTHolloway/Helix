@@ -440,7 +440,11 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
             # readable without moving the chart but means the top half and
             # the bottom half read in opposite directions.
             if face == "outward":
-                rot, anchor = _G.deg(theta) + 90, "middle"
+                # -90, not +90. The tops of the letters point INWARD, which
+                # is how you read a chart held the right way up: the names
+                # along the bottom of the disc are the right way round and
+                # you turn it to follow a line up the far side.
+                rot, anchor = _G.deg(theta) - 90, "middle"
             else:
                 rot, anchor = _upright(_G.deg(theta) + 90, "middle")
             add_label(plan, txt, x, y, style, rotate=rot, size=size,

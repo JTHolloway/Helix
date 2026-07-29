@@ -86,13 +86,11 @@ def cells_report(g, grid, name, args) -> None:
         # whose children are not side by side gets one arc per run, never one
         # arc across the gap. Measuring the whole span counted strangers as
         # swept who have no arc over them at all.
-        ring = sorted({(S[p].tc, S[p].cell or p)
-                       for p in grid.by_gen.get(S[kids[0]].gen, [])
-                       if S[p].row == 0})
-        own = {S[c].cell or c for c in kids}
+        ring = sorted((S[p].tc, p) for p in grid.by_gen.get(S[kids[0]].gen, [])
+                      if S[p].row == 0)
         runs, cur = [], []
-        for tc, cid in ring:
-            if cid in own:
+        for tc, pid in ring:
+            if pid in ks:
                 cur.append(tc)
             elif cur:
                 runs.append(cur)

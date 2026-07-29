@@ -145,6 +145,34 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             seen_cell.add(key)
             cells_in[sl.gen] = cells_in.get(sl.gen, 0) + 1
 
+    # ---- 1a. the partner nobody recorded ---------------------------------
+    #
+    # Every set of children has two parents. A union with children and only
+    # one partner recorded is not somebody who had children alone, it is
+    # somebody whose partner is not known YET -- and drawing one name with a
+    # blank beside it reads as though there never was one.
+    #
+    # So the chart says "Unknown", dashed, in the row below. It is never
+    # written to the file and never becomes a person: the existing
+    # `unknown_partner` mark on the older design set that rule and this
+    # follows it. The gap is a gap in the research, and a chart should show
+    # it rather than hide it.
+    unknown_at: dict[str, str] = {}
+    for uid, u in graph.unions.items():
+        if len([p for p in u.partners if p in g.slots]) >= 2:
+            continue
+        here = [p for p in u.partners if p in g.slots]
+        kids_here = [c for c in u.children if c in g.slots]
+        if not here or not kids_here:
+            continue
+        cid = g.slots[here[0]].cell or here[0]
+        unknown_at.setdefault(cid, here[0])
+    for cid, pid in unknown_at.items():
+        gen = g.slots[pid].gen
+        rows_in[gen] = max(rows_in.get(gen, 1),
+                           max(g.slots[q].row for q in g.slots
+                               if (g.slots[q].cell or q) == cid) + 2)
+
     # How much room a name really has: the distance to the NEXT couple along
     # the ring, not the width of its own cell. Every cell is one unit wide by
     # construction, so cell width says only how many cells the chart has --
@@ -574,24 +602,19 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         # This is what was drawing Paul's wife and his half-brother as his
         # siblings, and Rosie, James, Heather and Anthony -- two marriages --
         # as one family of four.
-        seen_c: set[str] = set()
-        ring_order = []
-        for p in g.by_gen.get(gen_k, []):
-            if g.slots[p].row:
-                continue
-            cid = g.slots[p].cell or p
-            if cid in seen_c:
-                continue
-            seen_c.add(cid)
-            ring_order.append((g.slots[p].tc, cid))
-        ring_order.sort()
-        mine = {g.slots[c].cell or c: [] for c in kids}
-        for c in kids:
-            mine[g.slots[c].cell or c].append(c)
+        # Contiguity is judged LEAF BY LEAF, not cell by cell. A couple with
+        # a leaf each puts the husband and the wife at two different angles
+        # on the same ring, so a run measured in whole cells swallowed the
+        # wife -- and the arc over "Peter and his brother Richard" ran over
+        # Kathleen, who is Peter's WIFE. She sits under the marriage rule
+        # below, which is the only line that should ever join them.
+        ring_order = sorted((g.slots[p].tc, p) for p in g.by_gen.get(gen_k, [])
+                            if not g.slots[p].row)
+        ks = set(kids)
         runs, cur = [], []
-        for _, cid in ring_order:
-            if cid in mine:
-                cur += mine[cid]
+        for _, pid in ring_order:
+            if pid in ks:
+                cur.append(pid)
             elif cur:
                 runs.append(cur)
                 cur = []
@@ -665,6 +688,29 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                            face=face,
                            orientation=want_orient(sl.gen),
                            arc_available=arc)
+
+    for cid, pid in unknown_at.items():
+        sl = g.slots[pid]
+        deep = max(g.slots[q].row for q in g.slots if (g.slots[q].cell or q) == cid)
+        r_row = ring_r[sl.gen] + (deep + 1) * pitch[sl.gen]
+        t0, t1 = theta(sl.t0), theta(sl.t1)
+        rule_r = ring_r[sl.gen] + deep * pitch[sl.gen] + reach(sl.gen) + size * 0.55
+        half = abs(t1 - t0) * 0.22
+        plan.add(Element(kind="path", layer="ENGRAVE",
+                         d=G.arc_path(cx, cy, rule_r, theta(sl.tc) - half,
+                                      theta(sl.tc) + half),
+                         stroke=style.get("lines.marriage_colour", col),
+                         stroke_width=lw * 0.6, fill="none",
+                         dash=style.get("lines.marriage_dash", "1.6,1.2"),
+                         person_id=pid, role="unknown_partner", z=8))
+        place_radial_label(
+            plan, placer, graph.people[pid],
+            [(style.get("labels.unknown", "Unknown"),
+              size * 0.92, style.get("type.colour", col))],
+            theta(sl.tc), r_row, cx, cy, style,
+            flip=_flip(theta(sl.tc)) and face != "outward", face=face,
+            orientation=want_orient(sl.gen),
+            arc_available=sweep * (sl.t1 - sl.t0) * r_row)
 
     plan.meta.extra["labels_hidden"] = placer.dropped
 
