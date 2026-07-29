@@ -1,0 +1,363 @@
+#!/usr/bin/env python3
+"""Measure the DRAWN CHART, not the grid behind it.
+
+    python3 tools/ink_check.py my-family.helix --style panel1m
+
+Every other check in this repository asks the layout what it intended.
+This one asks the plan what it actually put on the sheet, because the
+faults the owner keeps finding are not errors of intent -- the grid was
+right every time -- they are two correct lines that happen to land close
+enough together to read as one.
+
+Three questions, all of them about ink:
+
+  1. TOUCHING ARCS   two tangential lines belonging to different families,
+     at almost the same radius, whose angles meet or overlap. On the page
+     that is ONE line, and it says the two families are one family. This is
+     what put "four children with different mothers on the same branch".
+
+  2. LONG WAY ROUND  an arc that sweeps further than the names it gathers
+     up. A wrap bug: the children straddle the seam at the start angle, the
+     angles get sorted numerically, and the arc is drawn between the two
+     extremes the long way instead of across the seam. NOT the same thing as
+     a long arc -- the founders' children really can be spread over most of
+     the disc, and an arc that spans them honestly is not a fault.
+
+  3. TEXT ON A LINE  a name whose box a line passes through.
+
+Numbers going down is the only evidence a change helped.
+"""
+from __future__ import annotations
+
+import argparse
+import math
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from helix.graph import build                        # noqa: E402
+from helix.layout import registry                    # noqa: E402
+from helix.layout.base import LayoutSettings         # noqa: E402
+from helix.layout.engines import family              # noqa: E402,F401
+from helix.render.pathflatten import flatten         # noqa: E402
+from helix.store.db import connect                   # noqa: E402
+from helix.style.tokens import Style                 # noqa: E402
+
+TAU = math.tau
+LINEWORK = {"siblings", "stem", "branch", "thread", "marriage",
+            "unknown_partner", "chord"}
+
+
+def norm(a: float) -> float:
+    """Into 0..TAU."""
+    return a % TAU
+
+
+def arc_gap(a0: float, a1: float, b0: float, b1: float) -> float:
+    """Angular gap between two arcs [a0,a1] and [b0,b1], each given
+    anticlockwise from its first to its second angle. Zero if they overlap.
+
+    Cyclic: an arc from 350 to 10 degrees is twenty degrees long and does
+    contain zero. Doing this with plain comparisons is what let a family
+    straddling the seam be measured as if it spanned the whole circle.
+    """
+    def inside(x, lo, hi):
+        return norm(x - lo) <= norm(hi - lo) + 1e-12
+
+    if (inside(b0, a0, a1) or inside(b1, a0, a1)
+            or inside(a0, b0, b1) or inside(a1, b0, b1)):
+        return 0.0
+    return min(norm(b0 - a1), norm(a0 - b1))
+
+
+def runs_of(pts, cx, cy, flat_mm=0.35):
+    """Split a polyline into TANGENTIAL runs -- the stretches that follow a
+    circle about the centre. A stem is a radial line and an elbow; only the
+    elbow can merge with somebody else's arc, so only the elbow is measured.
+
+    Yields (r_mean, t_start, t_end, sweep) with t_start->t_end anticlockwise.
+    """
+    if len(pts) < 2:
+        return
+    pol = [(math.hypot(x - cx, y - cy), math.atan2(y - cy, x - cx))
+           for x, y in pts]
+    cur = [pol[0]]
+    out = []
+    for prev, now in zip(pol, pol[1:]):
+        if abs(now[0] - prev[0]) < flat_mm:
+            cur.append(now)
+        else:
+            out.append(cur)
+            cur = [now]
+    out.append(cur)
+    for run in out:
+        if len(run) < 2:
+            continue
+        rs = [r for r, _ in run]
+        # accumulate the turn so a run that wraps is measured as it is drawn
+        t0 = run[0][1]
+        turn = 0.0
+        for a, b in zip(run, run[1:]):
+            d = b[1] - a[1]
+            while d > math.pi:
+                d -= TAU
+            while d < -math.pi:
+                d += TAU
+            turn += d
+        if abs(turn) < 1e-4:
+            continue
+        t1 = t0 + turn
+        lo, hi = (t0, t1) if turn > 0 else (t1, t0)
+        yield (sum(rs) / len(rs), norm(lo), norm(hi), abs(turn))
+
+
+def label_boxes(plan):
+    """Rough oriented box for each name, as four corners in mm."""
+    for el in plan.elements:
+        if el.kind != "text" or not el.text:
+            continue
+        f = el.font
+        size = getattr(f, "size_mm", 3.0) if f else 3.0
+        w = len(el.text) * size * 0.52
+        h = size * 1.05
+        anchor = getattr(f, "anchor", "middle") if f else "middle"
+        dx = {"start": 0.0, "middle": -w / 2, "end": -w}.get(anchor, -w / 2)
+        a = math.radians(el.rotate)
+        ca, sa = math.cos(a), math.sin(a)
+        pts = []
+        for lx, ly in ((dx, -h / 2), (dx + w, -h / 2),
+                       (dx + w, h / 2), (dx, h / 2)):
+            pts.append((el.x + lx * ca - ly * sa, el.y + lx * sa + ly * ca))
+        yield el, pts
+
+
+def seg_box_hit(p, q, box) -> bool:
+    """Does segment p-q pass through the quadrilateral `box`?"""
+    def cross(o, a, b):
+        return ((a[0] - o[0]) * (b[1] - o[1])
+                - (a[1] - o[1]) * (b[0] - o[0]))
+
+    for i in range(4):
+        r, s = box[i], box[(i + 1) % 4]
+        d1, d2 = cross(p, q, r), cross(p, q, s)
+        d3, d4 = cross(r, s, p), cross(r, s, q)
+        if ((d1 > 0) != (d2 > 0)) and ((d3 > 0) != (d4 > 0)):
+            return True
+    return False
+
+
+def _coerce(v: str):
+    low = v.strip().lower()
+    if low in ("true", "false"):
+        return low == "true"
+    try:
+        return int(v)
+    except ValueError:
+        pass
+    try:
+        return float(v)
+    except ValueError:
+        return v
+
+
+def report(db, style_name, focus, engine, gap_mm, quiet=False,
+           panel=None, sets=()) -> dict:
+    g = build.load(connect(db, create=False, backup_daily=False))
+    style = Style.load(style_name) if style_name else Style.load()
+    if panel:
+        w, _, h = panel.partition("x")
+        style.set("canvas.width_mm", float(w))
+        style.set("canvas.height_mm", float(h or w))
+    for s in sets:
+        k, _, v = s.partition("=")
+        style.set(k.strip(), _coerce(v))
+    st = LayoutSettings(engine=engine, subject_id=g.subject_id, focus=focus,
+                        cells=True)
+    plan = registry.get(engine).fn(g, st, style)
+    # NOT the middle of the sheet. A fan is recentred on the box round its
+    # own sector; measuring from the sheet centre put every radius tens of
+    # millimetres out and had this file reporting faults that were not there
+    # while missing the ones that were.
+    cx, cy = plan.meta.extra.get(
+        "centre_mm", [plan.canvas.width_mm / 2, plan.canvas.height_mm / 2])
+    name = {p: g.people[p].full_name.strip() for p in g.people}
+
+    # WHERE EVERY NAME IS. A line is reported by the names it appears to
+    # join, not by the union it belongs to: the union knows children who
+    # were never placed, and the whole point of this file is to describe
+    # what somebody looking at the sheet would say.
+    at: list[tuple[float, float, str]] = []
+    seen_p: set[str] = set()
+    for el in plan.elements:
+        if el.kind != "text" or not el.person_id or el.person_id in seen_p:
+            continue
+        seen_p.add(el.person_id)
+        at.append((norm(math.atan2(el.y - cy, el.x - cx)),
+                   math.hypot(el.x - cx, el.y - cy),
+                   name.get(el.person_id, "?")))
+    at.sort()
+    # The rows of names, found from the names themselves rather than from a
+    # fixed distance: on a metre panel the rings are further apart than the
+    # 34 mm this first assumed, and half of every family fell outside the
+    # window and was not counted.
+    rows: list[list[float]] = []
+    for rr in sorted(x[1] for x in at):
+        if rows and rr - rows[-1][-1] < 6.0:
+            rows[-1].append(rr)
+        else:
+            rows.append([rr])
+    bands = [(min(x) - 1.0, max(x) + 1.0) for x in rows]
+
+    def joins(r, t0, t1) -> list[str]:
+        """The names a line at this radius and span appears to gather up:
+        the nearest row of names outside it, as far as it reaches."""
+        band = next((b for b in bands if b[0] > r), None)
+        if band is None:
+            return []
+        return [n for a, rr, n in at
+                if band[0] <= rr <= band[1] and arc_gap(t0, t1, a, a) == 0.0]
+
+    # ---------------------------------------------------- collect the ink
+    arcs = []          # (r, t0, t1, sweep, key, role, el)
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in LINEWORK or not el.d:
+            continue
+        key = el.union_id or el.person_id or id(el)
+        for pts, _closed in flatten(el, 0.25):
+            for r, t0, t1, sweep in runs_of(pts, cx, cy):
+                if r < 1.0:
+                    continue
+                arcs.append((r, t0, t1, sweep, key, el.role, el))
+
+    # 1 ------------------------------------------------------ touching arcs
+    hits = []
+    arcs.sort(key=lambda a: a[0])
+    for i, a in enumerate(arcs):
+        for b in arcs[i + 1:]:
+            if b[0] - a[0] > gap_mm:
+                break
+            if a[4] == b[4]:
+                continue
+            dt = arc_gap(a[1], a[2], b[1], b[2])
+            # a gap of a millimetre or less at this radius reads as joined
+            if dt * max(a[0], 1.0) <= gap_mm:
+                hits.append((abs(a[0] - b[0]), dt * a[0], a, b))
+    hits.sort(key=lambda h: (h[0], h[1]))
+
+    # 2 ----------------------------------------------------- long way round
+    #
+    # Measured against the TICKS -- the little radial marks dropping from an
+    # arc to each child -- because they sit at exactly the angle the layout
+    # gave that person. Names cannot be used: the label placer nudges them
+    # aside to stop them colliding, and an arc was reported as overshooting
+    # by the width of the nudge.
+    #
+    # An arc should be the tightest span that holds its own children. A
+    # sibling group really can be spread over most of the disc, so a long
+    # arc is not in itself a fault; an arc longer than the children it
+    # covers went round the outside to reach them, and that is.
+    ticks: dict[str, list[float]] = {}
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in ("branch", "thread") or not el.d:
+            continue
+        for pts, _c in flatten(el, 1.0):
+            if len(pts) >= 2:
+                mx = (pts[0][0] + pts[-1][0]) / 2, (pts[0][1] + pts[-1][1]) / 2
+                ticks.setdefault(el.union_id or "", []).append(
+                    norm(math.atan2(mx[1] - cy, mx[0] - cx)))
+    t_start = plan.meta.extra.get("start_rad", 0.0)
+    closed = plan.meta.extra.get("sweep_rad", TAU) >= TAU - 1e-9
+    long_way = []
+    pad = math.radians(0.5)      # an arc END and its own tick round differently
+    for a in arcs:
+        if a[5] != "siblings":
+            continue
+        angs = sorted(x for x in ticks.get(a[4], ())
+                      if arc_gap(a[1] - pad, a[2] + pad, x, x) == 0.0)
+        if len(angs) < 2:
+            continue
+        if closed:
+            gaps = [b - x for x, b in zip(angs, angs[1:])]
+            gaps.append(TAU - (angs[-1] - angs[0]))
+            need = TAU - max(gaps)                   # the tightest cover
+        else:
+            # A FAN IS NOT A CIRCLE. The tightest span holding these
+            # children may only be measured inside the chart's own sweep --
+            # going round the outside crosses the empty sector the chart
+            # does not occupy, and calling that "tighter" reported an
+            # honest 273-degree arc over six Pargeters as a wrap bug.
+            us = sorted((x - t_start) % TAU for x in angs)
+            need = us[-1] - us[0]
+        if a[3] > need + math.radians(2):
+            long_way.append(a)
+
+    # 3 ------------------------------------------------------ text on lines
+    boxes = list(label_boxes(plan))
+    crossed = []
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in LINEWORK or not el.d:
+            continue
+        for pts, _c in flatten(el, 0.4):
+            for p, q in zip(pts, pts[1:]):
+                # Which PART of the line: a stem is a radial run out from
+                # its couple and a tangential elbow carrying it round, and
+                # the two are fixed in completely different places.
+                dr = abs(math.hypot(q[0] - cx, q[1] - cy)
+                         - math.hypot(p[0] - cx, p[1] - cy))
+                part = "elbow" if dr < 0.35 else "spoke"
+                for tel, box in boxes:
+                    if tel.person_id and tel.person_id == el.person_id:
+                        continue
+                    if seg_box_hit(p, q, box):
+                        crossed.append((tel.text, f"{el.role} ({part})"))
+                        break
+    crossed = sorted(set(crossed))
+
+    if not quiet:
+        print(f"{db}  engine {engine}  style {style_name or 'default'}  "
+              f"{plan.canvas.width_mm:.0f}x{plan.canvas.height_mm:.0f} mm")
+        print(f"{len(arcs)} tangential runs of ink\n")
+
+        print(f"1. TOUCHING ARCS           {len(hits)}"
+              f"   (different families, reads as one line)")
+        for dr, dtmm, a, b in hits[:10]:
+            print(f"     r={a[0]:6.1f} {a[5]:<9} "
+                  f"{', '.join(joins(*a[:3]))[:46]}")
+            print(f"     r={b[0]:6.1f} {b[5]:<9} "
+                  f"{', '.join(joins(*b[:3]))[:46]}"
+                  f"   dr={dr:.2f}mm gap={dtmm:.2f}mm")
+
+        print(f"\n2. LONG WAY ROUND          {len(long_way)}"
+              f"   (an arc more than half the disc)")
+        for a in long_way[:6]:
+            print(f"     r={a[0]:6.1f} {a[5]:<9} {math.degrees(a[3]):6.1f} deg"
+                  f"  {', '.join(joins(*a[:3]))[:44]}")
+
+        print(f"\n3. TEXT ON A LINE          {len(crossed)}")
+        for t, role in crossed[:10]:
+            print(f"     {t[:34]:<34} crossed by {role}")
+
+        print("\nAll three should be ZERO.")
+
+    return {"touching": len(hits), "long_way": len(long_way),
+            "text_on_line": len(crossed), "hits": hits}
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("db")
+    ap.add_argument("--style", default=None)
+    ap.add_argument("--focus", default="bloodline")
+    ap.add_argument("--engine", default="radial_family")
+    ap.add_argument("--gap-mm", type=float, default=1.6,
+                    help="how close two lines have to be to read as one")
+    ap.add_argument("--panel", default=None, help="finished size, e.g. 700x700")
+    ap.add_argument("--set", action="append", default=[], metavar="NAME=VALUE")
+    a = ap.parse_args()
+    report(a.db, a.style, a.focus, a.engine, a.gap_mm,
+           panel=a.panel, sets=getattr(a, "set"))
+
+
+if __name__ == "__main__":
+    main()

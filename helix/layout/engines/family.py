@@ -39,6 +39,191 @@ from ..common import (PolarLabelPlacer, add_border, add_title, colour_for,
 from ..plan import Canvas, Element, FontSpec, PlanMeta, RenderPlan
 from ..registry import register
 
+TAU = math.tau
+
+
+def _wrapped(d: float) -> float:
+    """An angular difference brought into -pi..pi."""
+    return (d + math.pi) % TAU - math.pi
+
+
+def _unwrap(seq: list[float]) -> list[float]:
+    """Angles carried past the seam instead of jumping back across it.
+
+    Two children either side of the start angle are neighbours. Sorted as
+    plain numbers they are 359.7 degrees apart, and the arc joining them
+    gets drawn round the whole disc.
+    """
+    out = [seq[0]]
+    for a, b in zip(seq, seq[1:]):
+        out.append(out[-1] + _wrapped(b - a))
+    return out
+
+
+def _near(t: float, to: float) -> float:
+    """The turn of `t` that lies closest to `to`."""
+    return to + _wrapped(t - to)
+
+
+def _mean_angle(seq: list[float]) -> float:
+    u = _unwrap(seq)
+    return sum(u) / len(u)
+
+
+def _ang_gap(a0: float, a1: float, b0: float, b1: float) -> float:
+    """Angle between two spans going round the circle; zero if they meet."""
+    def inside(x, lo, hi):
+        return (x - lo) % TAU <= (hi - lo) % TAU + 1e-12
+
+    if (inside(b0, a0, a1) or inside(b1, a0, a1)
+            or inside(a0, b0, b1) or inside(a1, b0, b1)):
+        return 0.0
+    return min((b0 - a1) % TAU, (a0 - b1) % TAU)
+
+
+def _stem_runs(graph, g, wraps: bool):
+    """Every stem the chart will draw, in grid coordinates.
+
+    One definition, used TWICE: once before the rings are sized, to work out
+    how much room between them the elbows are going to need, and again when
+    they are drawn. Written out separately the two disagreed, and the rings
+    were sized for fewer lanes than the drawing then asked for.
+
+    Yields (uid, gen_k, anchor, parents, head_t, run) where `head_t` is
+    where the stem leaves its couple and `run` is one group of that
+    marriage's children who are actually side by side.
+    """
+    for uid, union in graph.unions.items():
+        # THE UNION A CHILD BELONGS TO, and only that one. Somebody adopted,
+        # fostered, or whose parentage is in doubt is a child of two unions
+        # in the file, and drawing an arc from each put them in two families
+        # as a full sibling of both -- Essie Sell was under the McGiverns'
+        # arc and the Sells', which is exactly the "wrong people on the same
+        # branch" the owner kept finding. `schema.sql` is explicit: the
+        # layout follows the union marked primary, and the others are drawn
+        # as a chord across the disc.
+        kids = [c for c in union.children
+                if c in g.slots and g.slots[c].row == 0
+                and (graph.people[c].child_of or uid) == uid]
+        parents = [p for p in union.partners if p in g.slots]
+        if not kids or not parents:
+            continue
+        gen_k = g.slots[kids[0]].gen
+        # the stem leaves from the row of the partner this family belongs to,
+        # so a second marriage is visibly a second marriage
+        anchor = max(parents, key=lambda p: g.slots[p].row)
+
+        # WHERE THE STEM LEAVES FROM. Between the two people whose family it
+        # is -- literally between, when they have a leaf each, because that
+        # is what says the children are the children of that MARRIAGE and not
+        # of one of the partners alone.
+        #
+        # Clamping this to the anchor's own leaf, as an earlier attempt did,
+        # dragged it to one partner's name: on the owner's chart the stem
+        # under "PH | Kathleen Holloway" left from PH's end rather than from
+        # between them, and the same everywhere a couple had a leaf each.
+        same = [p for p in parents if g.slots[p].cell == g.slots[anchor].cell]
+        pair = [p for p in same if g.slots[p].row == 0]
+        if len(same) > 1 and len(pair) == len(same):
+            head_t = sum(g.slots[p].tc for p in pair) / len(pair)
+        else:
+            head_t = g.slots[anchor].tc
+
+        # ---- ONE ARC PER CONTIGUOUS RUN OF THEM, NEVER ONE ARC OVER ALL ---
+        #
+        # THE RULE, and it is absolute: an arc may only ever cover children
+        # of this marriage. Not a cousin, not a spouse, not a half-brother by
+        # the other marriage.
+        #
+        # Drawn as a single arc from the first child to the last, it covers
+        # whoever the layout put in between -- and the layout cannot always
+        # avoid putting somebody there, because a couple belongs to two
+        # sibling groups at once and can only be nested in one. So the chart
+        # stopped promising what the layout cannot deliver: the children are
+        # split into runs that ARE side by side, and each run gets its own
+        # arc and its own stem. Two arcs off one couple say "two of them are
+        # over here and two over there", which is true; one arc across the
+        # gap says they are all brothers and sisters with strangers among
+        # them, which is not.
+        #
+        # This is what was drawing Paul's wife and his half-brother as his
+        # siblings, and Rosie, James, Heather and Anthony -- two marriages --
+        # as one family of four.
+        #
+        # Contiguity is judged LEAF BY LEAF, not cell by cell. A couple with
+        # a leaf each puts the husband and the wife at two different angles
+        # on the same ring, so a run measured in whole cells swallowed the
+        # wife -- and the arc over "Peter and his brother Richard" ran over
+        # Kathleen, who is Peter's WIFE. She sits under the marriage rule
+        # below, which is the only line that should ever join them.
+        #
+        # And A RING IS A CIRCLE: on a chart that goes the whole way round,
+        # the last leaf on a ring is the neighbour of the first. Judged as a
+        # straight list the seam cut families in half, and the arc over the
+        # halves was then drawn between 0.2 degrees and 359.9 -- the entire
+        # disc, the long way.
+        order = [p for _, p in
+                 sorted((g.slots[p].tc, p) for p in g.by_gen.get(gen_k, [])
+                        if not g.slots[p].row)]
+        if wraps and len(order) > 2:
+            # A CLOSED RING HAS NO BEGINNING, so start reading it at its
+            # widest hole. Read from the seam instead, a family lying across
+            # the seam is cut in half; read from anywhere else, an arc can
+            # end up spanning the widest empty stretch on the ring to reach
+            # its own last child -- six Pargeters got one arc 273 degrees
+            # long when 232 the other way round would have held them all.
+            # Rotating first makes both faults impossible, and there is no
+            # seam left to special-case.
+            tcs = [g.slots[p].tc for p in order]
+            gaps = [(b - a, i + 1) for i, (a, b) in enumerate(zip(tcs, tcs[1:]))]
+            gaps.append(((1.0 - tcs[-1]) + tcs[0], 0))
+            k = max(gaps)[1]
+            order = order[k:] + order[:k]
+        ks = set(kids)
+        runs, cur = [], []
+        for pid in order:
+            if pid in ks:
+                cur.append(pid)
+            elif cur:
+                runs.append(cur)
+                cur = []
+        if cur:
+            runs.append(cur)
+        for run in runs or [kids]:
+            yield uid, gen_k, anchor, parents, head_t, run
+
+
+def _elbow_lanes(graph, g, wraps: bool) -> dict[int, int]:
+    """How many separate radii the elbows on each ring are going to need.
+
+    An ELBOW is the tangential part of a stem: the bit that carries it round
+    to children lying off to one side. Two of them at one radius, or one of
+    them beside a sibling arc, and the eye joins them into a single line
+    running from one family straight into the next. Keeping them apart costs
+    radius, and the ring spacing has to be told about it BEFORE the rings
+    are placed -- squeezed in afterwards they collapse back onto each other,
+    which is what the `rings` preset was doing at four places.
+    """
+    spans: dict[int, list[tuple[float, float]]] = {}
+    for _uid, gen_k, _a, _p, head_t, run in _stem_runs(graph, g, wraps):
+        ts = [g.slots[c].tc for c in run]
+        foot = min(max(head_t, min(ts)), max(ts))
+        if abs(foot - head_t) > 1e-9:
+            spans.setdefault(gen_k, []).append(
+                (min(head_t, foot), max(head_t, foot)))
+    out: dict[int, int] = {}
+    for gen, xs in spans.items():
+        lanes: list[list[tuple[float, float]]] = []
+        for a, b in sorted(xs):
+            for lane in lanes:
+                if all(b < x or a > y for x, y in lane):
+                    lane.append((a, b))
+                    break
+            else:
+                lanes.append([(a, b)])
+        out[gen] = len(lanes)
+    return out
+
 
 @register("radial_family", "Family Rings", "radial",
           "One cell per couple, one ring per generation, founders at the centre.",
@@ -201,12 +386,39 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # is the name's LENGTH, not its height. Spacing rows by height while
     # setting them radially printed a wife straight through her husband --
     # the two rows of a couple overlapped by most of a name.
-    pitch = {gen: max(lab_h.get(gen, size * 1.16) * 1.5,
-                      widest.get(gen, 0.0) + size * 1.3
-                      if orient == "radial" and rows_in[gen] > 1 else 0.0)
-             for gen in rows_in}
+    # And `auto` is not an exception. Which way a ring is set is decided per
+    # ring in 1a and, for one name that will not fit, per NAME by the placer;
+    # a row pitch worked out from the global setting was right for a chart
+    # told "radial" and wrong for the same chart told "auto", where a stacked
+    # couple on a ring that came out radial had a name's length of overlap,
+    # the marriage rule landed past the next ring, and the stem for their
+    # children started a hundred millimetres outside the band it belongs to.
+    def _pitch(gen: int, radial: bool) -> float:
+        deep = radial and rows_in[gen] > 1
+        return max(lab_h.get(gen, size * 1.16) * 1.5,
+                   widest.get(gen, 0.0) + size * 1.3 if deep else 0.0)
+
+    # A first guess only. The fit in 1a settles which rings end up radial and
+    # replaces this with the pitch those rings actually need.
+    base_pitch = {gen: _pitch(gen, orient == "radial") for gen in rows_in}
     stem = max(size * 2.2, style.get("layout.min_ring_gap_mm", 6.0))
     gens = sorted(rows_in)
+
+    # How far apart two lines have to be before the eye stops joining them
+    # up. One number, used by every rule and every elbow, because "far
+    # enough apart" is one question however many places it gets asked. It
+    # goes with the TYPE, not with the millimetre: two millimetres reads as
+    # a gap on a postcard and as one thick line on a metre panel, and the
+    # type size is the one thing that already tracks how big the chart is
+    # meant to be looked at.
+    lane_gap = max(2.4, lw * 4.0, size * 1.1)
+    # And how many of those the gap above each ring has to hold. Reserved
+    # here, before any radius is chosen, because there is no squeezing an
+    # elbow in afterwards: it collapses onto the sibling arc beside it and
+    # the two read as one line over two families.
+    lanes_for = _elbow_lanes(graph, g, full >= TAU - 1e-9)
+    lane_room = {gen: (lanes_for.get(gen + 1, 0) + 1) * lane_gap
+                 if lanes_for.get(gen + 1) else 0.0 for gen in gens}
 
     # ---- 1a. how far round to go, and how big the hole is ----------------
     #
@@ -250,7 +462,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # what reaches past the outermost ring, radially
     pad_r = (size * 2.6) if orient == "radial" else size * 0.9
 
-    def solve(sweep: float, tighten: float = 1.0) -> dict:
+    def solve(sweep: float, tighten: float = 1.0, deep: bool = True) -> dict:
         """Lay the whole chart out at one sweep and hole size, and report.
 
         Returns everything the drawing needs, so the search can try a shape
@@ -319,7 +531,9 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
 
         # A first guess, then grow to fill the sheet, then let any ring that
         # cannot read around the circle claim the depth a radial name needs.
-        band = {gen: rows_in[gen] * pitch[gen] + stem for gen in gens}
+        pitch = dict(base_pitch)      # each candidate settles its own
+        band = {gen: rows_in[gen] * pitch[gen] + stem + lane_room[gen]
+                for gen in gens}
         tang = {gen: True for gen in gens}
         for _ in range(4):
             band = fill(band)
@@ -334,14 +548,23 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                 # which sits past the end of the name -- fell outside the cut.
                 if orient in ("radial", "tangential"):
                     fits = orient == "tangential"
-                floor = rows_in[gen] * pitch[gen] + stem
+                # And the ROW PITCH with it. A radial name is as deep as it
+                # is long, so a ring with a couple stacked in it needs a
+                # name-length per row, not a line-height per row. Worked out
+                # once from the global setting, `auto` charts overlapped the
+                # two rows of every stacked couple on any ring that came out
+                # radial -- and their marriage rule and their children's stem
+                # went with it, out past the ring beyond.
+                pit = _pitch(gen, deep and not fits)
+                floor = rows_in[gen] * pit + stem + lane_room[gen]
                 if not fits:
                     # the name, plus the marriage rule that sits past its end
-                    floor = max(floor,
-                                widest.get(gen, 0.0) + stem + size * 1.2)
-                if tang[gen] != fits or band[gen] < floor - 0.01:
+                    floor = max(floor, widest.get(gen, 0.0) + stem
+                                + size * 1.2 + lane_room[gen])
+                if (tang[gen] != fits or band[gen] < floor - 0.01
+                        or abs(pitch[gen] - pit) > 0.01):
                     changed = True
-                tang[gen] = fits
+                tang[gen], pitch[gen] = fits, pit
                 band[gen] = max(band[gen], floor)
             if not changed:
                 break
@@ -353,12 +576,21 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         tight = min(sweep * thin_in[gen] * ring_r[gen] for gen in gens)
         return {"sweep": sweep, "start": start, "inner": inner, "band": band,
                 "ring_r": ring_r, "R": R, "tangential": tang, "box": box(R),
+                "pitch": pitch,
                 "read": tight / min_arc if min_arc > 0 else 1.0,
                 "tang": sum(tang.values()) / len(gens),
                 # How much of the sheet the RINGS cover. The hole in the
                 # middle counts for nothing, which is what stops a narrow
                 # fan winning by pushing everything out to the rim.
-                "area": 0.5 * sweep * (R * R - inner * inner)}
+                "area": 0.5 * sweep * (R * R - inner * inner),
+                # HOW FAR OVER THE SHEET, in millimetres. Nothing used to
+                # ask: `fill` shrinks a chart to the panel but cannot go
+                # below the depth its own rings need, so a chart that
+                # genuinely did not fit was returned anyway and no
+                # candidate that DID fit was preferred to it.
+                "over": (max(0.0, (box(R)[2] - box(R)[0]) + 2 * margin - sheet_w,
+                             (box(R)[3] - box(R)[1]) + 2 * margin - sheet_h)
+                         if panel else 0.0)}
 
     # The cap is the user's own upper bound on how wide one couple may get:
     # it is what keeps three brothers close together instead of a third of a
@@ -378,15 +610,23 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     best = None
     for sw in tries:
         for hole in holes:
-            got = solve(sw, hole)
-            key = (round(min(got["read"], 1.0), 2), round(got["tang"], 3),
-                   round(got["area"], 0))
-            if best is None or key > best[0]:
-                best = (key, got)
+            # `deep` gives a ring set radially a full name-length per row so
+            # a stacked couple cannot overlap. It costs depth, and on a
+            # small sheet there may not be any -- so try it, and let a
+            # shallow candidate that FITS beat a deep one that does not.
+            for deep in (True, False):
+                got = solve(sw, hole, deep)
+                key = (-round(got["over"], 1),
+                       round(min(got["read"], 1.0), 2), round(got["tang"], 3),
+                       round(got["area"], 0))
+                if best is None or key > best[0]:
+                    best = (key, got)
+                if got["over"] <= 0.0:
+                    break
     fit = best[1]
     sweep, start, inner = fit["sweep"], fit["start"], fit["inner"]
     band, ring_r, R = fit["band"], fit["ring_r"], fit["R"]
-    tangential = fit["tangential"]
+    tangential, pitch = fit["tangential"], fit["pitch"]
 
     # Put the sector where it belongs. A fan is not centred on the middle of
     # its own bounding box, so centring it as if it were leaves the chart
@@ -433,6 +673,41 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             return widest.get(gen, 0.0)
         return lab_h.get(gen, 0.0)
 
+    # A chart that goes the whole way round has no ends: the last leaf on a
+    # ring is the neighbour of the first, and every span has to be measured
+    # the short way across the seam rather than the long way back.
+    wraps = sweep >= TAU - 1e-9
+
+    def band_top(gen: int) -> float:
+        """The furthest out a ring's own linework may reach.
+
+        Past this it is in the band where the NEXT ring's sibling arcs live,
+        and a rule that lands beside one of those touches it. Fred Sell's
+        marriage rule came within a millimetre of the arc over Winnie and
+        Theresa McGivern, which on the sheet made him one of them.
+        """
+        nxt = ring_r.get(gen + 1)
+        if nxt is None:
+            return math.inf
+        return max(r_top(gen), nxt - stem * 0.55 - lane_gap * 1.6)
+
+    def r_top(gen: int) -> float:
+        """Where a ring's own ink ends and the clear gap begins.
+
+        How far the names actually reach, which depends on WHICH WAY THEY
+        ARE SET: a ring set radially is as deep as a name is long, and
+        sizing it from the label height alone said the clear gap started a
+        whole name earlier than it does.
+
+        Not the depth the ring was allotted in 1a. That grows to fill the
+        sheet, so it says the ink runs right up to the next ring and leaves
+        no gap at all -- and elbows placed from it were pushed out over the
+        names of the ring they were meant to be clearing.
+        """
+        rows = max(1, rows_in.get(gen, 1))
+        return (ring_r[gen] + (rows - 1) * pitch[gen]
+                + reach(gen) + size * 1.4)
+
     def want_orient(gen: int) -> str:
         if orient in ('radial', 'tangential'):
             return orient
@@ -443,7 +718,16 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         meta=PlanMeta(engine="radial_family", style=style.get("id", ""),
                       people=len(g.slots), generations=g.max_gen + 1,
                       year_min=int(g.year_min), year_max=int(g.year_max),
-                      warnings=list(g.warnings)))
+                      warnings=list(g.warnings),
+                      # WHERE THE MIDDLE IS. A fan is recentred on the box
+                      # round its own sector, so it is not the middle of the
+                      # sheet, and anything measuring the chart in radius and
+                      # angle has to be told. Assuming the sheet centre made
+                      # `tools/ink_check.py` report radii forty millimetres
+                      # out on any chart that was not a full disc.
+                      extra={"centre_mm": [cx, cy], "outer_r_mm": R,
+                             "start_rad": start, "sweep_rad": sweep,
+                             "ring_r_mm": {str(k): v for k, v in ring_r.items()}}))
     # What the chart NEEDS is the box round its sector, not the diameter of
     # the disc it was cut from -- a fan asked for a metre of sheet it was
     # never going to touch, and then reported itself over the panel by it.
@@ -500,6 +784,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # A hairline under every row but the last: it reads as "and", which is
     # exactly what it means, and it stops two names in one cell running
     # together when the type is small.
+    rule_top: dict[str, float] = {}      # the outermost rule drawn in a cell
+
     for cid, members in cells.items():
         members.sort(key=lambda x: (x.row, x.tc))
         split = len(members) > 1 and all(m.row == 0 for m in members)
@@ -507,12 +793,23 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # TWO leaves, one per partner, so each ancestry sits inside the
             # partner it belongs to. The marriage is the tie between them --
             # the one place this design has to draw a line for it.
-            for a, b in zip(members, members[1:]):
+            #
+            # Where somebody married twice there are three names in the cell
+            # and two rules, and each gets ITS OWN RADIUS. Drawn at one
+            # radius they met end to end at the person they have in common
+            # and read as a single line under all three -- which is the
+            # shape of a sibling arc, saying the two spouses were brother
+            # and sister.
+            base = rule_r(members[0])
+            room = max(0.0, band_top(members[0].gen) - base)
+            step = min(size * 0.7, room / max(1, len(members) - 2))
+            for k, (a, b) in enumerate(zip(members, members[1:])):
                 # BELOW the names, in the gap, never through them. At half
                 # the label height this ran straight through "Kathleen
                 # Holloway" -- the rule that means "married" was striking out
                 # the name it was about.
-                r = rule_r(a)
+                r = rule_r(a) + k * step
+                rule_top[cid] = max(rule_top.get(cid, 0.0), r)
                 plan.add(Element(kind="path", layer="ENGRAVE",
                                  d=G.short_arc(cx, cy, r, theta(a.tc),
                                                theta(b.tc)),
@@ -526,7 +823,10 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # in the GAP between two names, never through one of them: a rule
             # at the middle of the row pitch struck the dates out.
             gap = max(pitch[sl.gen] - reach(sl.gen), size * 0.9)
-            r = row_r(sl) + reach(sl.gen) + gap * 0.45
+            floor_r = row_r(sl) + reach(sl.gen) + size * 0.3
+            r = max(floor_r, min(row_r(sl) + reach(sl.gen) + gap * 0.45,
+                                 band_top(sl.gen)))
+            rule_top[cid] = max(rule_top.get(cid, 0.0), r)
             half = (t1 - t0) * 0.22
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.arc_path(cx, cy, r, mid - half, mid + half),
@@ -540,129 +840,56 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # a second path laid over the first -- it is the SAME stem, arc and tick,
     # in a different colour. A highlight drawn on top of the linework is
     # exactly the doubled-up clutter this chart exists to avoid.
-    for uid, union in graph.unions.items():
-        kids = [c for c in union.children if c in g.slots and g.slots[c].row == 0]
-        parents = [p for p in union.partners if p in g.slots]
-        if not kids or not parents:
-            continue
-        gen_k = g.slots[kids[0]].gen
+    # Nothing is drawn in this pass. Every stem is worked out first, because
+    # the tangential part of one -- the ELBOW, which carries it round to
+    # children lying off to one side -- has to be given a radius no other
+    # line on that ring is using, and that cannot be settled one family at a
+    # time. See 4b.
+    jobs: list[dict] = []
+    seen_kids: set[str] = set()
+    for uid, gen_k, anchor, parents, head_t, run in _stem_runs(graph, g, wraps):
         if gen_k - 1 not in ring_r:
             continue
-        ts = sorted(theta(g.slots[c].tc) for c in kids)
         r_arc = ring_r[gen_k] - stem * 0.55
-        # the stem leaves from the row of the partner this family belongs to,
-        # so a second marriage is visibly a second marriage
-        anchor = max(parents, key=lambda p: g.slots[p].row)
-        r_from = row_r(g.slots[anchor]) + pitch[g.slots[anchor].gen] * 0.55
-        same = [p for p in parents if g.slots[p].cell == g.slots[anchor].cell]
 
-        # WHERE THE STEM LEAVES FROM. Between the two people whose family it
-        # is -- literally between, when they have a leaf each, because that
-        # is what says the children are the children of that MARRIAGE and not
-        # of one of the partners alone.
-        #
-        # Clamping this to the anchor's own leaf, as an earlier attempt did,
-        # dragged it to one partner's name: on the owner's chart the stem
-        # under "PH | Kathleen Holloway" left from PH's end rather than from
-        # between them, and the same everywhere a couple had a leaf each.
-        pair = [p for p in same if g.slots[p].row == 0]
-        ts = sorted(theta(g.slots[c].tc) for c in kids)
-        if len(same) > 1 and len(pair) == len(same):
-            t_head = sum(theta(g.slots[p].tc) for p in pair) / len(pair)
-            mouth = (min(theta(g.slots[p].t0) for p in pair),
-                     max(theta(g.slots[p].t1) for p in pair))
-            # start ON the marriage rule, not inside it
-            r_from = max(rule_r(g.slots[p]) for p in pair)
-        else:
-            t_head = theta(g.slots[anchor].tc)
-            mouth = (theta(g.slots[anchor].t0), theta(g.slots[anchor].t1))
-
-        # Then aim it at THIS family's children, without ever leaving the
-        # names it belongs to: a cell is centred over all its children, both
-        # marriages together, so the middle of the cell points at the middle
-        # of both and for either family alone that is off to one side. Five
-        # stems ended up as much as 16 degrees clear of the arc they were
-        # supposed to meet, hanging in space attached to nothing.
-        # A couple with a leaf each keeps the midpoint BETWEEN their two
-        # names, whatever direction their children lie in -- that is the
-        # thing the split leaf exists to say. Aiming it at the children
-        # instead slid it to one partner's end, and the stem under
-        # "Kathleen Holloway | Peter Holloway" left from Kathleen rather
-        # than from between them. The elbow below carries it the rest of
-        # the way, which is what the elbow is for.
         # WHATEVER the cell looks like, the stem starts outside every rule
         # drawn in it. Worked out per case it was right for a couple with a
         # leaf each and wrong for a stacked one and for a partner nobody
         # recorded, and a stem crossing the rule that means "married" is two
         # lines meaning different things, crossing.
+        # ...and never past the end of its OWN RING. On a sheet too small to
+        # give a radial ring a name-length per row, the rules in a deep cell
+        # land beyond the ring outside it, and a stem starting from them
+        # began a hundred millimetres out with its elbow among somebody
+        # else's names. A ring's linework stays in its own band.
         cell_id = g.slots[anchor].cell or anchor
-        r_from = max([r_from] + [rule_r(g.slots[q]) for q in g.slots
-                                 if (g.slots[q].cell or q) == cell_id
-                                 and g.slots[q].gen == g.slots[anchor].gen])
+        gen_a = g.slots[anchor].gen
+        r_from = max([row_r(g.slots[anchor]) + pitch[gen_a] * 0.55,
+                      rule_top.get(cell_id, 0.0)]
+                     + [rule_r(g.slots[q]) for q in g.slots
+                        if (g.slots[q].cell or q) == cell_id
+                        and g.slots[q].gen == gen_a])
+        r_from = max(min(r_from, band_top(gen_a)),
+                     row_r(g.slots[anchor]) + size * 0.6)
 
-        line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
-        c_line = tcol if line else col
-        w_line = tw if line else lw
-
-        # ---- ONE ARC PER CONTIGUOUS RUN OF THEM, NEVER ONE ARC OVER ALL ---
-        #
-        # THE RULE, and it is absolute: an arc may only ever cover children of
-        # this marriage. Not a cousin, not a spouse, not a half-brother by the
-        # other marriage.
-        #
-        # Drawn as a single arc from the first child to the last, it covers
-        # whoever the layout put in between -- and the layout cannot always
-        # avoid putting somebody there, because a couple belongs to two
-        # sibling groups at once and can only be nested in one. So the chart
-        # stopped promising what the layout cannot deliver: the children are
-        # split into runs that ARE side by side, and each run gets its own
-        # arc and its own stem. Two arcs off one couple say "two of them are
-        # over here and two over there", which is true; one arc across the
-        # gap says they are all brothers and sisters with strangers among
-        # them, which is not.
-        #
-        # This is what was drawing Paul's wife and his half-brother as his
-        # siblings, and Rosie, James, Heather and Anthony -- two marriages --
-        # as one family of four.
-        # Contiguity is judged LEAF BY LEAF, not cell by cell. A couple with
-        # a leaf each puts the husband and the wife at two different angles
-        # on the same ring, so a run measured in whole cells swallowed the
-        # wife -- and the arc over "Peter and his brother Richard" ran over
-        # Kathleen, who is Peter's WIFE. She sits under the marriage rule
-        # below, which is the only line that should ever join them.
-        ring_order = sorted((g.slots[p].tc, p) for p in g.by_gen.get(gen_k, [])
-                            if not g.slots[p].row)
-        ks = set(kids)
-        runs, cur = [], []
-        for _, pid in ring_order:
-            if pid in ks:
-                cur.append(pid)
-            elif cur:
-                runs.append(cur)
-                cur = []
-        if cur:
-            runs.append(cur)
-        if not runs:
-            runs = [kids]
-
-        for run in runs:
-            rts = sorted(theta(g.slots[c].tc) for c in run)
-            # the stem reaches THIS run; a run beyond the couple's own leaf
-            # gets the elbow, which is what the elbow is for
-            t_foot = min(max(t_head, rts[0]), rts[-1])
-            d_stem = G.polyline([G.polar(cx, cy, r_from, t_head),
-                                 G.polar(cx, cy, r_arc, t_head)])
-            if abs(t_foot - t_head) > 1e-9:
-                d_stem += G.arc_path(cx, cy, r_arc, t_head, t_foot, move=False)
-            plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
-                             stroke=c_line, stroke_width=w_line, fill="none",
-                             person_id=anchor, union_id=uid, role="stem", z=10))
-            if len(run) > 1:
-                plan.add(Element(kind="path", layer="ENGRAVE",
-                                 d=G.short_arc(cx, cy, r_arc, rts[0], rts[-1]),
-                                 stroke=c_line, stroke_width=w_line, fill="none",
-                                 union_id=uid, role="siblings", z=10))
-        for c in kids:
+        line = (all(p in thr for p in parents[:1])
+                and any(c in thr for c in run))
+        # Carried past the seam rather than jumped back across it, so a span
+        # is measured the way it is drawn.
+        rt = _unwrap([theta(g.slots[c].tc) for c in run])
+        lo, hi = min(rt), max(rt)
+        head = _near(theta(head_t), (lo + hi) / 2)
+        # the stem reaches THIS run; a run beyond the couple's own leaf gets
+        # the elbow, which is what the elbow is for
+        jobs.append(dict(gen=gen_k, uid=uid, anchor=anchor, run=run,
+                         r_from=r_from, r_arc=r_arc, head=head,
+                         foot=min(max(head, lo), hi), lo=lo, hi=hi,
+                         colour=tcol if line else col,
+                         width=tw if line else lw))
+        for c in run:
+            if c in seen_kids:
+                continue
+            seen_kids.add(c)
             tc = theta(g.slots[c].tc)
             person = graph.people[c]
             on = c in thr and line
@@ -675,6 +902,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              dash=dash_for(person, style),
                              fill="none", person_id=c, union_id=uid,
                              role="thread" if on else "branch", z=10))
+
 
     # ---- 5. a cousin marriage, drawn as a chord --------------------------
     #
@@ -700,6 +928,18 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
 
     # ---- 6. names ---------------------------------------------------------
     placer = PolarLabelPlacer()
+    # THE STEMS GO DOWN FIRST -- not drawn, reserved. A stem leaves its couple
+    # along a radius and crosses the whole gap to the next ring; the placer
+    # knew nothing about it and set a neighbour's dates in the corridor, so
+    # the line went through the type. Booking the corridor before any name is
+    # placed makes the names move instead, which is the right way round: a
+    # name can go somewhere else, a descent line cannot.
+    # Only the part in the OPEN GAP between the rings. Booked from the cell
+    # itself, the corridor swallowed the row the couple's own unrecorded
+    # partner is named on -- the stem starts among their names by design.
+    for job in jobs:
+        r0 = max(job["r_from"], r_top(job["gen"] - 1))
+        placer.take(job["head"], r0, max(job["r_arc"] - r0, 0.0), lw * 3.0)
     for sl in sorted(g, key=lambda x: (x.gen, x.tc, x.row)):
         person = graph.people[sl.pid]
         t = theta(sl.tc)
@@ -735,6 +975,123 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             arc_available=sweep * (sl.t1 - sl.t0) * r_row)
 
     plan.meta.extra["labels_hidden"] = placer.dropped
+
+    # ---- 4b. a lane of its own for every elbow ----------------------------
+    #
+    # LAST, after the names, because an elbow has to go round where they
+    # ACTUALLY LANDED. `reach` is one estimate for a whole ring and the
+    # placer works name by name: on a ring the fit called tangential, a name
+    # that will not fit is set radially instead and runs a whole name-length
+    # further out than the estimate said. Nine elbows were routed straight
+    # through nine names on exactly that difference.
+    ink_top: dict[int, float] = {}
+    for el in plan.elements:
+        if el.kind != "text" or not el.text:
+            continue
+        sz = el.font.size_mm if el.font else size
+        w, h = est_text_width(el.text, sz), sz * 1.15
+        anc = el.font.anchor if el.font else "middle"
+        dx = {"start": 0.0, "middle": -w / 2, "end": -w}.get(anc, -w / 2)
+        a = math.radians(el.rotate)
+        ca, sa = math.cos(a), math.sin(a)
+        far = max(math.hypot(el.x + lx * ca - ly * sa - cx,
+                             el.y + lx * sa + ly * ca - cy)
+                  for lx, ly in ((dx, -h / 2), (dx + w, -h / 2),
+                                 (dx + w, h / 2), (dx, h / 2)))
+        base = math.hypot(el.x - cx, el.y - cy)
+        own = [k for k, rr in ring_r.items() if rr <= base + 0.5]
+        if own:
+            k = max(own, key=lambda i: ring_r[i])
+            ink_top[k] = max(ink_top.get(k, 0.0), far)
+
+    # TWO LINES THAT TOUCH ARE ONE LINE. That sentence is the whole of this
+    # section, and it is the fault the owner kept finding and I kept saying
+    # was fixed.
+    #
+    # An elbow used to be drawn at `r_arc` -- the exact radius of the sibling
+    # arcs on that ring. Every check passed, because every check asked
+    # whether two arcs OVERLAP. These did not overlap. They ABUTTED, end to
+    # end, at the same radius, and on the sheet that is a single unbroken
+    # line running from one family straight into the next:
+    #
+    #   * Paul, Derek and Gorden's arc ran on into the stem carrying Barry
+    #     Viney, their HALF-brother by a different mother -- four children on
+    #     one branch, which is what the owner photographed;
+    #   * the arc over Peter and his brother Richard ran on into the stem
+    #     bringing Kathleen down from her own parents, putting a man and his
+    #     WIFE on one parental branch;
+    #   * James and Rosie's stem met Anthony and Heather's, drawing two
+    #     marriages as one family of four.
+    #
+    # So an elbow now travels in the clear band between the two rings, in a
+    # lane no other elbow on that ring is using, and drops out to `r_arc`
+    # only at the point it is joining. A radial line crossing an arc at right
+    # angles reads as a junction, which is what it is. Two arcs at one radius
+    # read as a claim about a family, which is not.
+    ring_lanes: dict[int, list[list[tuple[float, float]]]] = {}
+    for job in sorted(jobs, key=lambda j: (j["gen"], min(j["head"], j["foot"]))):
+        if abs(job["foot"] - job["head"]) < 1e-9:
+            job["lane"] = -1                    # straight out; no elbow at all
+            continue
+        a, b = sorted((job["head"], job["foot"]))
+        clear = lane_gap / max(job["r_arc"], 1.0)
+        ring = ring_lanes.setdefault(job["gen"], [])
+        for k, lane in enumerate(ring):
+            if all(_ang_gap(a, b, x, y) > clear for x, y in lane):
+                lane.append((a, b))
+                job["lane"] = k
+                break
+        else:
+            ring.append([(a, b)])
+            job["lane"] = len(ring) - 1
+
+    for job in jobs:
+        r_arc, head, foot = job["r_arc"], job["head"], job["foot"]
+        if job["lane"] < 0:
+            d_stem = G.polyline([G.polar(cx, cy, job["r_from"], head),
+                                 G.polar(cx, cy, r_arc, head)])
+        else:
+            # AN ELBOW HUGS THE RING IT LEAVES, not the one it is going to.
+            # Stacked inward from `r_arc` the first lane sat two millimetres
+            # off the sibling arcs, and at metre scale two lines two
+            # millimetres apart are one thick line -- the fault back again,
+            # passing the check by a fraction of a millimetre. Run out from
+            # just above the parents instead and the whole gap between the
+            # rings separates an elbow from any arc it must not touch.
+            #
+            # Lanes are `lane_gap` apart where there is room and evenly
+            # spread across whatever there is where there is not. Two must
+            # never land on one radius: letting them collapse when the band
+            # is tight brought the fault straight back on the inner rings.
+            floor_r = max(r_top(job["gen"] - 1), job["r_from"],
+                          ink_top.get(job["gen"] - 1, 0.0) + size * 0.4) + lane_gap
+            # ALWAYS INSIDE THE ARC IT FEEDS. Where a sheet is too small for
+            # the family on it, a ring's names run out over the ring beyond
+            # and there is no clear band left; taking the floor at face value
+            # then put the elbow a hundred millimetres OUTSIDE the arc it was
+            # joining, with a line dragged back in to reach it. Crowding is a
+            # crowded chart's problem. Inside-out is a broken one.
+            ceil_r = r_arc - lane_gap
+            floor_r = min(floor_r, ceil_r - lane_gap * 0.1)
+            n = max(1, len(ring_lanes.get(job["gen"], [])))
+            span = ceil_r - floor_r
+            step = (lane_gap if span >= lane_gap * (n - 1)
+                    else span / max(1, n - 1))
+            r_lane = min(floor_r + job["lane"] * step, ceil_r)
+            d_stem = (G.polyline([G.polar(cx, cy, job["r_from"], head),
+                                  G.polar(cx, cy, r_lane, head)])
+                      + G.arc_path(cx, cy, r_lane, head, foot, move=False)
+                      + G.L(G.polar(cx, cy, r_arc, foot)))
+        plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
+                         stroke=job["colour"], stroke_width=job["width"],
+                         fill="none", person_id=job["anchor"],
+                         union_id=job["uid"], role="stem", z=10))
+        if len(job["run"]) > 1:
+            plan.add(Element(kind="path", layer="ENGRAVE",
+                             d=G.arc_path(cx, cy, r_arc, job["lo"], job["hi"]),
+                             stroke=job["colour"], stroke_width=job["width"],
+                             fill="none", union_id=job["uid"],
+                             role="siblings", z=10))
 
     # ---- 7. the line the machine cuts ------------------------------------
     #

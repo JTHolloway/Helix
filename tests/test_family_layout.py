@@ -806,3 +806,247 @@ def test_a_partner_nobody_recorded_is_named_unknown(tmp_path):
     assert said, "the word itself should be on the chart"
     # and nothing was invented in the file
     assert len(build.load(con).people) == 3
+
+
+# ---------------------------------------------- two lines that touch are one --
+#
+# Everything above measures what the layout MEANT. These measure the ink,
+# because every fault the owner of this program found in a fortnight was two
+# correct lines that happened to land close enough together to read as one,
+# and no check that asks the layout a question can ever see that.
+#
+# `tools/ink_check.py` reports the same three numbers on any file.
+def _ink(plan):
+    """Every tangential run of ink on the chart, with the family it belongs
+    to: (radius, from, to, sweep, family, role)."""
+    import math
+
+    from helix.render import pathflatten
+    cx, cy = plan.meta.extra["centre_mm"]
+    roles = {"siblings", "stem", "branch", "thread", "marriage",
+             "unknown_partner", "chord"}
+    out = []
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in roles or not el.d:
+            continue
+        key = el.union_id or el.person_id or id(el)
+        for pts, _closed in pathflatten.flatten(el, 0.25):
+            pol = [(math.hypot(x - cx, y - cy), math.atan2(y - cy, x - cx))
+                   for x, y in pts]
+            runs, cur = [], [pol[0]]
+            for a, b in zip(pol, pol[1:]):
+                if abs(b[0] - a[0]) < 0.35:
+                    cur.append(b)
+                else:
+                    runs.append(cur)
+                    cur = [b]
+            runs.append(cur)
+            for run in runs:
+                if len(run) < 2:
+                    continue
+                turn = sum(_wrap(b[1] - a[1]) for a, b in zip(run, run[1:]))
+                if abs(turn) < 1e-4:
+                    continue
+                lo, hi = ((run[0][1], run[0][1] + turn) if turn > 0
+                          else (run[0][1] + turn, run[0][1]))
+                r = sum(p[0] for p in run) / len(run)
+                if r > 1.0:
+                    out.append((r, lo % math.tau, hi % math.tau,
+                                abs(turn), key, el.role))
+    return out
+
+
+def _wrap(d):
+    import math
+    return (d + math.pi) % math.tau - math.pi
+
+
+def _apart(a0, a1, b0, b1):
+    """Angle between two spans, going round; zero if they meet or overlap."""
+    import math
+
+    def inside(x, lo, hi):
+        return (x - lo) % math.tau <= (hi - lo) % math.tau + 1e-12
+
+    if (inside(b0, a0, a1) or inside(b1, a0, a1)
+            or inside(a0, b0, b1) or inside(a1, b0, b1)):
+        return 0.0
+    return min((b0 - a1) % math.tau, (a0 - b1) % math.tau)
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_no_two_families_are_drawn_as_one_line(graph, focus):
+    """THE one that kept coming back, and the reason this file now measures
+    ink instead of intent.
+
+    An elbow -- the tangential part of a stem, carrying it round to children
+    lying off to one side -- used to be drawn at the radius of the sibling
+    arcs. It never OVERLAPPED one, so every check passed. It ABUTTED them,
+    end to end, at the same radius, which on the sheet is a single unbroken
+    line running out of one family and into the next:
+
+      * Paul, Derek and Gorden's arc ran on into the stem carrying Barry
+        Viney, their half-brother by a different mother -- four children of
+        two mothers on one branch;
+      * the arc over Peter and his brother Richard ran on into the stem
+        bringing Kathleen down from her own parents, which drew a man and
+        his WIFE as brother and sister.
+
+    Two millimetres is not a gap. Nothing else on this chart means "these
+    people are one family" except a continuous line, so nothing else may
+    look like one.
+    """
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    ink = sorted(_ink(plan))
+    for i, a in enumerate(ink):
+        for b in ink[i + 1:]:
+            if b[0] - a[0] > 1.6:
+                break
+            if a[4] == b[4]:
+                continue
+            gap = _apart(a[1], a[2], b[1], b[2]) * a[0]
+            assert gap > 1.6 or abs(a[0] - b[0]) > 1.6, (
+                f"{focus}: a {a[5]} and a {b[5]} of two different families "
+                f"run into each other at r={a[0]:.0f} mm "
+                f"({abs(a[0] - b[0]):.2f} mm apart, {gap:.2f} mm end to end)")
+
+
+@pytest.mark.parametrize("focus", ["bloodline", "all"])
+def test_an_arc_never_sweeps_further_than_its_own_children(graph, focus):
+    """A sibling group really can be spread over most of the disc, so a long
+    arc is not a fault in itself. An arc LONGER THAN THE CHILDREN IT HOLDS
+    is: it went round the outside of the circle to reach its own last child,
+    which happens when the family straddles the seam at the start angle and
+    the angles are sorted as plain numbers.
+    """
+    import math
+
+    from helix.render import pathflatten
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    cx, cy = plan.meta.extra["centre_mm"]
+    t_start = plan.meta.extra["start_rad"]
+    closed = plan.meta.extra["sweep_rad"] >= math.tau - 1e-9
+    ticks: dict = {}
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in ("branch", "thread") or not el.d:
+            continue
+        for pts, _c in pathflatten.flatten(el, 1.0):
+            mx = (pts[0][0] + pts[-1][0]) / 2, (pts[0][1] + pts[-1][1]) / 2
+            ticks.setdefault(el.union_id or "", []).append(
+                math.atan2(mx[1] - cy, mx[0] - cx) % math.tau)
+    pad = math.radians(0.5)          # an arc end and its own tick round apart
+    for r, t0, t1, sweep, key, role in _ink(plan):
+        if role != "siblings":
+            continue
+        angs = sorted(x for x in ticks.get(key, ())
+                      if _apart(t0 - pad, t1 + pad, x, x) == 0.0)
+        if len(angs) < 2:
+            continue
+        if closed:
+            gaps = [b - a for a, b in zip(angs, angs[1:])]
+            gaps.append(math.tau - (angs[-1] - angs[0]))
+            need = math.tau - max(gaps)
+        else:
+            us = sorted((x - t_start) % math.tau for x in angs)
+            need = us[-1] - us[0]
+        assert sweep <= need + math.radians(2), (
+            f"{focus}: an arc sweeps {math.degrees(sweep):.0f} deg to hold "
+            f"children {math.degrees(need):.0f} deg apart -- it went the "
+            f"long way round")
+
+
+@pytest.mark.parametrize("focus", ["bloodline", "all"])
+def test_no_line_is_drawn_through_a_name(graph, focus):
+    """A name with a line through it is unreadable, and this chart's whole
+    claim is that you can read it. The elbows are routed LAST, after the
+    placer has settled where every name went, for exactly this reason."""
+    import math
+
+    from helix.layout.common import est_text_width
+    from helix.render import pathflatten
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    boxes = []
+    for el in plan.elements:
+        if el.kind != "text" or not el.text:
+            continue
+        sz = el.font.size_mm if el.font else 3.0
+        w, h = est_text_width(el.text, sz), sz * 1.05
+        dx = {"start": 0.0, "end": -w}.get(
+            el.font.anchor if el.font else "middle", -w / 2)
+        a = math.radians(el.rotate)
+        ca, sa = math.cos(a), math.sin(a)
+        boxes.append((el, [(el.x + lx * ca - ly * sa, el.y + lx * sa + ly * ca)
+                           for lx, ly in ((dx, -h / 2), (dx + w, -h / 2),
+                                          (dx + w, h / 2), (dx, h / 2))]))
+
+    def crosses(p, q, box):
+        def side(o, a, b):
+            return ((a[0] - o[0]) * (b[1] - o[1])
+                    - (a[1] - o[1]) * (b[0] - o[0]))
+        for i in range(4):
+            r, s = box[i], box[(i + 1) % 4]
+            if (((side(p, q, r) > 0) != (side(p, q, s) > 0))
+                    and ((side(r, s, p) > 0) != (side(r, s, q) > 0))):
+                return True
+        return False
+
+    for el in plan.elements:
+        if el.kind != "path" or el.role not in ("stem", "siblings") or not el.d:
+            continue
+        for pts, _c in pathflatten.flatten(el, 0.4):
+            for p, q in zip(pts, pts[1:]):
+                for tel, box in boxes:
+                    if tel.person_id and tel.person_id == el.person_id:
+                        continue
+                    assert not crosses(p, q, box), (
+                        f"{focus}: a {el.role} is drawn through "
+                        f"'{tel.text}'")
+
+
+@pytest.mark.parametrize("focus", ["bloodline", "all"])
+def test_a_child_of_two_unions_is_under_one_arc_only(graph, focus):
+    """Somebody adopted, fostered, or whose parentage is in doubt is a child
+    of two unions in the file. Drawing an arc from each puts them in two
+    families as a full sibling of both -- which is what had Essie Sell under
+    the McGiverns' arc AND the Sells'.
+
+    `schema.sql` is explicit: the layout follows the union marked primary,
+    and the other link is drawn as a chord across the disc.
+    """
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    owners: dict = {}
+    for el in plan.elements:
+        if el.role == "branch" and el.person_id and el.union_id:
+            owners.setdefault(el.person_id, set()).add(el.union_id)
+    for pid, uids in owners.items():
+        assert len(uids) == 1, (
+            f"{focus}: {graph.people[pid].full_name} hangs off "
+            f"{len(uids)} sibling arcs")
+
+
+def test_every_name_reads_outward(graph):
+    """`labels.face = outward` sets the chart as if you were standing outside
+    the rim looking in: the tops of the letters point AWAY from the centre,
+    the whole way round, and you turn the chart rather than your head.
+
+    It was 180 degrees out -- every name faced inward, upright along the
+    bottom of the disc and upside down along the top, which is the opposite
+    of what the token says and of what was asked for.
+    """
+    import math
+    plan = _panelled(graph, 1000, 1000, labels__orientation="tangential",
+                     labels__face="outward")
+    cx, cy = plan.meta.extra["centre_mm"]
+    seen = 0
+    for el in plan.elements:
+        # NAMES. The legend and the title are set on the page, not on a ring.
+        if el.kind != "text" or not el.text or not el.person_id:
+            continue
+        # the tops of the letters, after the rotation the renderer applies
+        up = (math.sin(math.radians(el.rotate)), -math.cos(math.radians(el.rotate)))
+        out = (el.x - cx, el.y - cy)
+        n = math.hypot(*out) or 1.0
+        assert (up[0] * out[0] + up[1] * out[1]) / n > 0.7, (
+            f"'{el.text}' faces inward")
+        seen += 1
+    assert seen > 20, "no names to check"

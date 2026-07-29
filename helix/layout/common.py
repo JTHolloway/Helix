@@ -430,9 +430,6 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
     for txt, size, col in var:
         h = size * 1.16
         if orientation == "tangential":
-            # lines stack outward along the radius; text follows the arc
-            r = r_start + run + h * 0.5
-            x, y = _G.polar(cx, cy, r, theta)
             # `outward` reads the ring as if you were standing OUTSIDE it
             # looking in: the tops of the letters point away from the centre,
             # all the way round. `_upright` instead turns a name through 180
@@ -440,13 +437,23 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
             # readable without moving the chart but means the top half and
             # the bottom half read in opposite directions.
             if face == "outward":
-                # -90, not +90. The tops of the letters point INWARD, which
-                # is how you read a chart held the right way up: the names
-                # along the bottom of the disc are the right way round and
-                # you turn it to follow a line up the far side.
-                rot, anchor = _G.deg(theta) - 90, "middle"
+                # +90. Rotating text by r sends the tops of its letters in
+                # the direction r - 90, so r = theta + 90 points them along
+                # theta, which is straight out from the centre.
+                #
+                # This was -90 and every name on the chart faced INWARD:
+                # upright along the bottom of the disc and upside down along
+                # the top, which is the opposite of what it says on the tin
+                # and the opposite of what was asked for.
+                rot, anchor = _G.deg(theta) + 90, "middle"
+                # Lines stack outward along the radius -- and for a name
+                # facing outward, OUTWARD IS UP. Left stacking the same way
+                # round, a person's dates came out above their name.
+                r = r_start + (total_h - run - h) + h * 0.5
             else:
                 rot, anchor = _upright(_G.deg(theta) + 90, "middle")
+                r = r_start + run + h * 0.5
+            x, y = _G.polar(cx, cy, r, theta)
             add_label(plan, txt, x, y, style, rotate=rot, size=size,
                       anchor=anchor, person_id=person.id, colour=col)
         else:
