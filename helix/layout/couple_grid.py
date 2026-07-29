@@ -130,6 +130,15 @@ def _clear(acc: dict, other: dict, gap: float) -> float:
     return max(0.0, need)
 
 
+def _cells_in(cell: _Cell) -> int:
+    """How many leaves a block holds, counted before it is placed.
+
+    Used only to decide which of a couple's two ancestral lines sits nearer
+    them: the one that has to be reached ACROSS should be the narrow one.
+    """
+    return (1 if cell.members else 0) + sum(_cells_in(k) for k in cell.kids)
+
+
 def _span(cell: _Cell) -> tuple[float, float]:
     lo = min(v[0] for v in cell.contour.values()) + cell.rel
     hi = max(v[1] for v in cell.contour.values()) + cell.rel
@@ -348,18 +357,36 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
 
     # ---- both lines running back, meeting at the marriage ----------------
     #
-    # A couple's cell is flanked by the two families it joins: his behind
-    # him on one side, hers behind her on the other, with their own children
-    # in the middle and one ring further out. So each parent's brothers and
-    # sisters butt straight up against the cell, the arc over them ends
-    # there, and the two lines visibly converge on the marriage.
+    # A couple's cell is flanked by the two families it joins: his behind him
+    # on one side, hers behind her on the other, with their own children in
+    # the middle and one ring further out.
     #
     #    [ his parents ][ his brothers ][ HIM | HER ][ her sisters ][ her parents ]
     #                                   [   their children   ]
-    def ancestry(pid: str, depth: int) -> Optional[_Cell]:
-        """The cell of `pid`'s parents. `pid` is NOT in it -- he is in the
-        cell one ring further out -- so this holds his brothers and sisters
-        and the two families behind his parents."""
+    #
+    # WHICH WAY ROUND MATTERS, and getting it wrong is what put a mother 89
+    # degrees from her own brother. `pid` is not in the block this builds --
+    # he is in the couple's cell outside it -- so his brothers and sisters
+    # have to end up at the edge of the block NEAREST that cell, or the arc
+    # over "him and his brothers" has to sweep across everything between.
+    # Built one fixed way round, the block on the right came out as
+    #
+    #    [ her grandparents ][ her uncles ][ HER SISTERS ]   <- couple is left
+    #
+    # and the arc from her parents down to her and her sister crossed two
+    # whole families. Mirrored, it is
+    #
+    #    [ HER SISTERS ][ her uncles ][ her grandparents ]
+    #
+    # and the arc is as short as it can be. 25 sweeping arcs on the owner's
+    # tree, all of them this.
+    def ancestry(pid: str, depth: int, side: int = -1) -> Optional[_Cell]:
+        """The cell of `pid`'s parents, and everything behind them.
+
+        `side` is which way this block lies from the couple that `pid` is in:
+        -1 to its left, +1 to its right. It decides only the order of the
+        blocks inside, never their content.
+        """
         if s.max_generations is not None and depth > s.max_generations:
             return None
         pars = line_first([x for x in in_scope(graph.parents(pid, primary_only=True))
@@ -367,20 +394,29 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         if not pars:
             return None
         cell = new_cell(pars[0], depth, extra=list(pars[1:2]))
-        kids: list[_Cell] = []
-        up_a = ancestry(cell.members[0], depth + 1)
+        ups: list[_Cell] = []
+        up_a = ancestry(cell.members[0], depth + 1, side)
         if up_a:
-            kids.append(up_a)
+            ups.append(up_a)
         groups = child_groups(cell, depth - 1)
-        cell.over = len(kids) if groups else -1
-        cell.over_n = len(groups)
-        kids += groups
         for m in cell.members[1:]:
-            up_b = ancestry(m, depth + 1)
+            up_b = ancestry(m, depth + 1, side)
             if up_b:
-                kids.append(up_b)
+                ups.append(up_b)
                 break
-        cell.kids = kids
+        # BOTH of this couple's own lines are on this same side, and only one
+        # of them can be next to the couple. Whichever is further away has to
+        # reach its own children across the other, so put the NARROWER of the
+        # two in between: the reach is then as short as it can be. On the
+        # owner's tree that is the difference between an arc crossing seven
+        # cells and one crossing two.
+        if len(ups) > 1:
+            ups.sort(key=_cells_in, reverse=True)
+        # Siblings nearest the couple; the generations behind them, further
+        # away. The cell sits over the siblings either way.
+        cell.kids = (ups + groups) if side < 0 else (groups + ups[::-1])
+        cell.over = (len(ups) if side < 0 else 0) if groups else -1
+        cell.over_n = len(groups)
         return cell
 
     me = descend(subj, 0)
@@ -390,7 +426,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     if pars and me is not None:
         parents_cell = new_cell(pars[0], 1, extra=list(pars[1:2]))
         kids: list[_Cell] = []
-        up_a = ancestry(parents_cell.members[0], 2)
+        up_a = ancestry(parents_cell.members[0], 2, side=-1)
         if up_a:
             kids.append(up_a)
         # my generation: me and my brothers and sisters, then any half
@@ -419,7 +455,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         parents_cell.over_n = len(groups)
         kids += groups
         for m in parents_cell.members[1:]:
-            up_b = ancestry(m, 2)
+            up_b = ancestry(m, 2, side=+1)
             if up_b:
                 kids.append(up_b)
                 break

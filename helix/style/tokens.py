@@ -44,9 +44,14 @@ DEFAULTS: dict[str, Any] = {
                # where sharing would be ambiguous -- both partners
                # having parents on the chart.
                "leaf": "auto"},
-    # The tinted ground behind each family. Off the cutter's layer, so it
-    # costs nothing on plywood and shows the shape of the tree on screen.
-    "family": {"wedges": True, "wedge_opacity": 0.13,
+    # The tinted ground behind each family: which branch is which, and where
+    # two of them married. It answers a question the linework cannot -- a
+    # stem to a couple looks the same whether the partner brought a
+    # documented line with them or married in from nowhere -- but it is a
+    # READING aid, not part of the chart. It lives on PRINT_ONLY so no
+    # cutter ever sees it, and it is OFF by default so a rendered file is
+    # the chart and nothing else. The control panel turns it on.
+    "family": {"wedges": False, "wedge_opacity": 0.13,
                "wedge_min_cells": 3, "wedge_max": 10,
                "wedge_max_share": 0.95},
     "cells": {"shape": "annular_sector", "fill": "none", "stroke": "#22201D",

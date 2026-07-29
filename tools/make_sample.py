@@ -17,7 +17,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from helix.model.gendate import parse as gdparse          # noqa: E402
-from helix.store.db import connect, new_id, set_setting    # noqa: E402
+from uuid import UUID as _UUID                            # noqa: E402
+from helix.store.db import connect, set_setting           # noqa: E402
 
 SURNAMES = ["Whitcombe", "Hallam", "Pargeter", "Boyce", "Threlfall", "Kentish",
             "Marlow", "Vasey", "Ashworth", "Cadogan", "Rennick", "Salter",
@@ -51,6 +52,15 @@ def main() -> None:
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
+    # `--seed` has to mean it. Ids came from uuid4, which ignores the seed, so
+    # two runs at the same seed produced different families -- and the test
+    # suite, which generates its fixture per session, was quietly testing a
+    # different family every time. It passed three runs in four and the
+    # fourth failure was real. Seed the ids too and the whole thing is
+    # reproducible: same seed, same file, same bug, every time.
+    import helix.store.db as _db
+    _uuid = random.Random(args.seed ^ 0x5EED)
+    _db.new_id = lambda: str(_UUID(int=_uuid.getrandbits(128), version=4))
     out = Path(args.out)
     if out.exists():
         out.unlink()
@@ -58,12 +68,12 @@ def main() -> None:
 
     places = {}
     for name, lat, lon in PLACES:
-        pid = new_id()
+        pid = _db.new_id()
         places[name] = pid
         con.execute("INSERT INTO place(id,name,type,lat,lon) VALUES(?,?,?,?,?)",
                     (pid, name, "parish", lat, lon))
 
-    src = new_id()
+    src = _db.new_id()
     con.execute("INSERT INTO source(id,title,repository,type,quality) "
                 "VALUES(?,?,?,?,?)",
                 (src, "Sample data (not a real source)", "generated",
@@ -74,7 +84,7 @@ def main() -> None:
 
     def add_person(sex, surname, year, gen, confidence=2, living=None,
                    placeholder=False):
-        pid = new_id()
+        pid = _db.new_id()
         given = " ".join(rng.sample(MALE if sex == "M" else FEMALE,
                                     rng.choice([1, 1, 2])))
         con.execute("INSERT INTO person(id,sex,confidence,living,is_placeholder)"
@@ -83,7 +93,7 @@ def main() -> None:
         con.execute(
             "INSERT INTO person_name(id,person_id,type,is_primary,given,"
             "surname,sort_key) VALUES(?,?,?,1,?,?,?)",
-            (new_id(), pid, "birth", given, surname, f"{surname.upper()}, {given}"))
+            (_db.new_id(), pid, "birth", given, surname, f"{surname.upper()}, {given}"))
         # birth
         if rng.random() > 0.06:                      # 6% have no birth date
             txt = str(year) if rng.random() > 0.4 else \
@@ -111,12 +121,12 @@ def main() -> None:
         return pid
 
     def add_union(a, b, year):
-        uid = new_id()
+        uid = _db.new_id()
         con.execute("INSERT INTO union_(id,type) VALUES(?,?)", (uid, "marriage"))
         for i, x in enumerate((a, b)):
             con.execute("INSERT INTO union_partner(union_id,person_id,seq) "
                         "VALUES(?,?,?)", (uid, x, i))
-        eid = new_id()
+        eid = _db.new_id()
         d = gdparse(str(year))
         con.execute("INSERT INTO event(id,type,date_json,date_earliest,"
                     "date_latest,date_sort,place_id) VALUES(?,?,?,?,?,?,?)",

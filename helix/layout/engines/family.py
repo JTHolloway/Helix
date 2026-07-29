@@ -467,13 +467,37 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                 lab_h.get(g.slots[anchor].gen, 0.0) * 0.7
         else:
             t_head = theta(g.slots[anchor].tc)
+
+        # AIM THE STEM AT THIS FAMILY'S OWN CHILDREN, and make sure it lands
+        # on their arc.
+        #
+        # A cell is centred over ALL its children, both marriages together.
+        # A stem drawn from the middle of the cell therefore points at the
+        # middle of BOTH families, which for either one of them on its own is
+        # off to one side -- five stems on the owner's tree ended up to 16
+        # degrees clear of the arc they were supposed to meet, hanging in
+        # space attached to nothing. That is what "stems that don't attach"
+        # was.
+        #
+        # So: leave from the point of the LEAF nearest these children, and if
+        # that is still short of their arc, turn the corner and run along to
+        # it. A stem that does not reach its own arc is not a shortcut, it is
+        # a lie about who somebody's parents are.
+        leaf0, leaf1 = theta(g.slots[anchor].t0), theta(g.slots[anchor].t1)
+        want = (ts[0] + ts[-1]) / 2
+        t_head = min(max(want, min(leaf0, leaf1)), max(leaf0, leaf1))
+        t_foot = min(max(t_head, ts[0]), ts[-1])
+
         line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
         c_line = tcol if line else col
         w_line = tw if line else lw
 
-        plan.add(Element(kind="path", layer="ENGRAVE",
-                         d=G.polyline([G.polar(cx, cy, r_from, t_head),
-                                       G.polar(cx, cy, r_arc, t_head)]),
+        d_stem = G.polyline([G.polar(cx, cy, r_from, t_head),
+                             G.polar(cx, cy, r_arc, t_head)])
+        if abs(t_foot - t_head) > 1e-9:
+            # out along the radius, then round to meet the arc
+            d_stem += G.arc_path(cx, cy, r_arc, t_head, t_foot, move=False)
+        plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
                          stroke=c_line, stroke_width=w_line, fill="none",
                          person_id=anchor, union_id=uid, role="stem", z=10))
         if len(kids) > 1:

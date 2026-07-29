@@ -120,7 +120,80 @@ def cells_report(g, grid, name, args) -> None:
             if abs(a - b) * 360 < 0.5:
                 coll += 1
     print(f"\n4. CELLS ON TOP OF EACH OTHER  {coll}   (closer than 0.5deg)")
-    print("\nAll four should be ZERO on a chart that reads properly.")
+
+    # 5 ------------------------------------------------- scattered children
+    #
+    # A couple is centred over their children, and one arc is drawn across
+    # them. Both of those assume the children are SIDE BY SIDE. When they are
+    # not, the arc spans whatever got in between and the stem cannot reach
+    # all of it -- which is what "branches that stem from nothing" looks
+    # like. This is the layout fault behind it, not the drawing.
+    loose = []
+    for u in g.unions.values():
+        kids = [c for c in u.children if c in S and S[c].row == 0]
+        if len(kids) < 2:
+            continue
+        gen = S[kids[0]].gen
+        mine = {S[c].cell or c for c in kids}
+        lo = min(S[c].tc for c in kids)
+        hi = max(S[c].tc for c in kids)
+        between = {S[p].cell or p for p in grid.by_gen.get(gen, [])
+                   if lo < S[p].tc < hi and (S[p].cell or p) not in mine
+                   and not S[p].row}
+        if between:
+            loose.append(((hi - lo) * 360, len(between),
+                          [name[c] for c in kids[:3]]))
+    loose.sort(reverse=True)
+    print(f"\n5. CHILDREN NOT SIDE BY SIDE  {len(loose)}   "
+          f"(somebody else's cell sits in the middle of a sibling group)")
+    for d, n, ks in loose[:4]:
+        print(f"     {d:5.0f}deg apart, {n} cell(s) in between: {ks}")
+
+    # 6 ---------------------------------------------------- discontinuities
+    #
+    # It is one family, so every person must be reachable from every other by
+    # following lines that are actually DRAWN. Anything else is a chart with
+    # a piece of somebody's family floating unattached.
+    adj: dict = {}
+
+    def link(a, b):
+        adj.setdefault(a, set()).add(b)
+        adj.setdefault(b, set()).add(a)
+
+    bycell: dict = {}
+    for pid in S:
+        bycell.setdefault(S[pid].cell or pid, []).append(pid)
+    for m in bycell.values():
+        for a, b in zip(m, m[1:]):
+            link(a, b)
+    for u in g.unions.values():
+        ps = [p for p in u.partners if p in S]
+        for c in u.children:
+            if c in S and ps:
+                link(ps[0], c)
+        for a, b in zip(ps, ps[1:]):
+            link(a, b)
+    seen_p, comps = set(), []
+    for p in S:
+        if p in seen_p:
+            continue
+        stack, comp = [p], set()
+        while stack:
+            q = stack.pop()
+            if q in comp:
+                continue
+            comp.add(q)
+            seen_p.add(q)
+            stack += [x for x in adj.get(q, ()) if x not in comp]
+        comps.append(comp)
+    comps.sort(key=len, reverse=True)
+    print(f"\n6. SEPARATE PIECES  {len(comps)}   "
+          f"(should be 1 -- it is one family)")
+    for c in comps[1:4]:
+        print(f"     {len(c)} people adrift: "
+              f"{[name[x] for x in list(c)[:4]]}")
+
+    print("\nAll six should be ZERO -- except 6, which should be ONE.")
 
 
 def main() -> None:

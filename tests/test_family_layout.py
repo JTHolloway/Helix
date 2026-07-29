@@ -381,7 +381,7 @@ def test_every_family_gets_ground_of_its_own(graph, focus):
 
     `thread` is left out on purpose. It is one line of descent, every couple
     on it married in from off the chart, and one family is the truth."""
-    plan = _panelled(graph, 1000, 1000, focus=focus)
+    plan = _panelled(graph, 1000, 1000, focus=focus, family__wedges=True)
     fills = {e.fill for e in _wedges(plan)}
     assert len(fills) >= 2, f"{focus}: {len(fills)} family colour(s) on the chart"
 
@@ -389,14 +389,16 @@ def test_every_family_gets_ground_of_its_own(graph, focus):
 def test_the_wedges_never_reach_the_cutter(graph):
     """They are ink on paper, not a cut. `PRINT_ONLY` is the layer that says
     so, and every writer drops it in production."""
-    plan = _panelled(graph, 1000, 1000)
+    plan = _panelled(graph, 1000, 1000, family__wedges=True)
     assert _wedges(plan), "no wedges were drawn at all"
     assert all(e.layer == "PRINT_ONLY" for e in _wedges(plan))
 
 
-def test_the_wedges_can_be_turned_off(graph):
-    plan = _panelled(graph, 1000, 1000, family__wedges=False)
-    assert not _wedges(plan)
+def test_the_wedges_are_off_unless_asked_for(graph):
+    """A reading aid, not part of the chart. A rendered file is the chart and
+    nothing else; the control panel is where you turn them on."""
+    assert not _wedges(_panelled(graph, 1000, 1000))
+    assert _wedges(_panelled(graph, 1000, 1000, family__wedges=True))
 
 
 def test_two_lines_that_marry_share_their_descendants(graph):
@@ -405,7 +407,7 @@ def test_two_lines_that_marry_share_their_descendants(graph):
     tints lie on top of each other and the blend IS the marriage. If no two
     wedges ever overlap, that has stopped working."""
     import math
-    plan = _panelled(graph, 1000, 1000, focus="bloodline")
+    plan = _panelled(graph, 1000, 1000, focus="bloodline", family__wedges=True)
     cx, cy = plan.canvas.width_mm / 2, plan.canvas.height_mm / 2
     spans = {}
     for e in _wedges(plan):
@@ -562,3 +564,93 @@ def test_the_direct_line_highlight_is_a_setting(graph):
     tcol = Style.load("panel1m").get("thread.colour", "#9B3A2E")
     assert [e for e in on.elements if e.stroke == tcol]
     assert not [e for e in off.elements if e.stroke == tcol]
+
+
+# ------------------------------------------ every line reaches what it means --
+def _paths_by_union(plan):
+    from helix.render import pathflatten
+    out = {}
+    for e in plan.elements:
+        if e.role not in ("stem", "siblings", "branch") or not e.union_id:
+            continue
+        pts = [p for pp, _ in pathflatten.flatten(e) for p in pp]
+        out.setdefault(e.union_id, {}).setdefault(e.role, []).extend(pts)
+    return out
+
+
+@pytest.mark.parametrize("focus", ["thread", "bloodline", "all"])
+def test_every_stem_reaches_its_own_children(graph, focus):
+    """A stem that stops short of the arc it belongs to is not a shortcut,
+    it is a lie about who somebody's parents are -- and it is what "branches
+    that stem from nothing" looks like.
+
+    A cell is centred over ALL its children, both marriages together, so a
+    stem drawn from the middle of the cell points at the middle of both. For
+    either family on its own that is off to one side: five stems on a real
+    142-person tree ended up as much as 16 mm clear of the arc they were
+    supposed to meet.
+    """
+    import math
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    for uid, d in _paths_by_union(plan).items():
+        if "stem" not in d:
+            continue
+        others = d.get("siblings", []) + d.get("branch", [])
+        if not others:
+            continue
+        tip = d["stem"][-1]
+        gap = min(math.hypot(tip[0] - q[0], tip[1] - q[1]) for q in others)
+        assert gap < 1.5, (
+            f"{focus}: a stem ends {gap:.0f} mm from the arc over its own "
+            f"children: {[graph.people[c].full_name for c in graph.unions[uid].children][:3]}")
+
+
+def _components(pairs, everyone):
+    adj: dict = {}
+    for a, b in pairs:
+        adj.setdefault(a, set()).add(b)
+        adj.setdefault(b, set()).add(a)
+    seen, out = set(), []
+    for p in everyone:
+        if p in seen:
+            continue
+        stack, comp = [p], set()
+        while stack:
+            q = stack.pop()
+            if q in comp:
+                continue
+            comp.add(q)
+            seen.add(q)
+            stack += [x for x in adj.get(q, ()) if x not in comp]
+        out.append(comp)
+    return out
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_the_chart_never_splits_a_family_that_is_joined(graph, focus):
+    """Whoever is related in the FILE must be joined on the CHART.
+
+    Stated relative to the data on purpose. A chart cannot join two families
+    that have no relation to each other -- the shipped sample file happens to
+    hold 97 unrelated groups, which is a fault in the generator and not in
+    the layout -- but it must never take a family that IS connected and draw
+    it in pieces. That is what "branches disconnected from any previous ring"
+    would be, and it is the thing to hold at zero.
+    """
+    g = cellgrid(graph, focus)
+    want = []
+    for u in graph.unions.values():
+        ps = [p for p in u.partners if p in g.slots]
+        want += list(zip(ps, ps[1:]))
+        want += [(ps[0], c) for c in u.children if c in g.slots and ps]
+    in_data = _components(want, list(g.slots))
+    drawn = list(want)
+    bycell: dict = {}
+    for pid in g.slots:
+        bycell.setdefault(g.slots[pid].cell or pid, []).append(pid)
+    for m in bycell.values():
+        drawn += list(zip(m, m[1:]))
+    in_chart = _components(drawn, list(g.slots))
+    assert len(in_chart) <= len(in_data), (
+        f"{focus}: the file holds {len(in_data)} related groups but the chart "
+        f"draws {len(in_chart)} -- it has split a family that is joined")
