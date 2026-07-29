@@ -368,7 +368,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         "people": len(g.slots),
     }
 
-    thr = _thread(graph, s)
+    # The direct line, picked out in colour. It is a highlight and not a
+    # relationship -- every line it recolours is drawn either way -- so it is
+    # a setting, and turning it off leaves the chart complete rather than
+    # missing something. `thread.enabled`, off by default in `plain`.
+    thr = _thread(graph, s) if style.get("thread.enabled", True) else set()
     tcol = style.get("thread.colour", "#9B3A2E")
     tw = style.get("thread.stroke_width_mm", 1.2)
 

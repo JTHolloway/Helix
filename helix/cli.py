@@ -71,6 +71,12 @@ def cmd_render(a):
         style.set("layout.min_ring_pitch_mm", a.ring_pitch)
     if a.title:
         style.set("ornament.title", a.title)
+    for pair in getattr(a, "set", None) or []:
+        if "=" not in pair:
+            raise SystemExit(f"--set wants name=value, not '{pair}'. "
+                             f"Try --set thread.enabled=false")
+        k, v = pair.split("=", 1)
+        style.set(k.strip(), _coerce(v.strip()))
     graph = gbuild.load(con)
     subject = a.subject or get_setting(con, "subject_person_id")
     engine = style.get("layout.engine", "radial_sunburst")
@@ -96,6 +102,28 @@ def cmd_render(a):
               f"({fit['ring_pitch_mm'] / 25.4:.1f} inch)")
     for w in plan.meta.warnings:
         print("  ! " + w)
+
+
+def _coerce(v: str):
+    """`--set` values arrive as text. A token that wants a number or a flag
+    must not silently receive the string "false", which is true."""
+    low = v.lower()
+    if low in ("true", "yes", "on"):
+        return True
+    if low in ("false", "no", "off"):
+        return False
+    for cast in (int, float):
+        try:
+            return cast(v)
+        except ValueError:
+            pass
+    if v[:1] in "[{":
+        import json
+        try:
+            return json.loads(v)
+        except ValueError:
+            pass
+    return v
 
 
 def _production_report(plan, style) -> None:
@@ -444,6 +472,10 @@ def main(argv=None):
     p.add_argument("--panel", help="finished size in mm, e.g. 1000x1000")
     p.add_argument("--ring-pitch", type=float,
                    help="minimum gap between rings in mm (default 25.4, one inch)")
+    p.add_argument("--set", action="append", metavar="NAME=VALUE",
+                   help="any style token, repeatable. docs/OPTIONS.md lists "
+                        "them all. e.g. --set thread.enabled=false "
+                        "--set family.wedges=false --set couple.leaf=split")
     p.add_argument("--production", action="store_true")
     p.set_defaults(f=cmd_render)
     p.description = ("Output format follows the file extension: .svg, .pdf, "

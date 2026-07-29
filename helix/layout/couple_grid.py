@@ -257,24 +257,50 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             out.append(q)
         return out
 
+    def has_line(pid: str) -> bool:
+        """Is this person's own ancestry drawn on the chart?
+
+        That is the whole question a shared leaf turns on. Somebody who
+        married in from off the chart brings no line inward, so stacking
+        their name under their partner's cannot be misread. Somebody whose
+        parents ARE here does bring one, and it has to be visibly theirs.
+        """
+        return bool(in_scope(graph.parents(pid, primary_only=False)))
+
+    def line_first(pids: list[str]) -> list[str]:
+        """Whoever brings a line back goes at the TOP of the leaf.
+
+        A cell is anchored on its first member and the stem inward reads as
+        that person's. Ordering father-then-mother regardless meant that a
+        wife with three recorded generations behind her sat on row 1, under
+        a husband who married in from nowhere, and her whole ancestry
+        appeared to be his. Three couples on the owner's own tree.
+        """
+        return sorted(pids, key=lambda p: not has_line(p))
+
     def wants_split(members: list[str]) -> bool:
         """Shared is better until it becomes ambiguous.
 
-        The moment BOTH partners have parents on the chart, a shared leaf
-        holds two ancestries with nothing to say which is whose. Splitting
-        the leaf puts each ancestry directly inside the partner it belongs
-        to. Everywhere else shared wins: it is half the width and the
-        marriage cannot be misread.
+        The moment more than one person in a leaf has parents on the chart,
+        the leaf holds two ancestries with nothing to say which is whose.
+        Splitting puts each line directly inside the partner it belongs to.
+        Everywhere else shared wins: it is half the width, and a marriage
+        drawn as two names in one cell cannot be misread.
         """
         mode = (s.couple_leaf or "auto").lower()
         if mode == "split":
             return len(members) > 1
         if mode == "shared":
             return False
-        with_parents = sum(
-            1 for m in members
-            if in_scope(graph.parents(m, primary_only=False)))
-        return len(members) > 1 and with_parents > 1
+        if len(members) < 2:
+            return False
+        # ONE line in a leaf is fine, because `line_first` has already put
+        # the person it belongs to on top of it. Splitting on that as well
+        # was tried and cost more than it bought: a split leaf puts the
+        # spouse back on row 0 at their own angle, where they can land under
+        # another couple's sibling arc -- which is the one thing this layout
+        # exists to prevent.
+        return sum(1 for m in members if has_line(m)) > 1
 
     def new_cell(anchor: str, depth: int, extra: list[str] = ()) -> _Cell:
         used.add(anchor)
@@ -336,8 +362,8 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         and the two families behind his parents."""
         if s.max_generations is not None and depth > s.max_generations:
             return None
-        pars = [x for x in in_scope(graph.parents(pid, primary_only=True))
-                if x not in used]
+        pars = line_first([x for x in in_scope(graph.parents(pid, primary_only=True))
+                           if x not in used])
         if not pars:
             return None
         cell = new_cell(pars[0], depth, extra=list(pars[1:2]))
@@ -359,8 +385,8 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
 
     me = descend(subj, 0)
     root = me
-    pars = [x for x in in_scope(graph.parents(subj, primary_only=True))
-            if x not in used]
+    pars = line_first([x for x in in_scope(graph.parents(subj, primary_only=True))
+                       if x not in used])
     if pars and me is not None:
         parents_cell = new_cell(pars[0], 1, extra=list(pars[1:2]))
         kids: list[_Cell] = []

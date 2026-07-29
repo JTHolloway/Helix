@@ -51,6 +51,20 @@ a sparse chart where legibility beats completeness.
 
 ---
 
+## Setting any of these from the command line
+
+```bash
+python3 -m helix.cli render my.helix --design radial_family --panel 900x900 \
+    --set thread.enabled=false --set couple.leaf=split \
+    --set family.wedge_opacity=0.2 -o chart.svg
+```
+
+`--set NAME=VALUE` is repeatable and takes any token on this page. `true`,
+`false` and numbers are read as such, so `--set thread.enabled=false` turns
+the highlight off rather than setting it to the string "false".
+
+---
+
 ## layout — density and geometry
 
 | Token | Default | What it does |
@@ -64,10 +78,11 @@ a sparse chart where legibility beats completeness.
 | `layout.max_ring_pitch_mm` ★ | `0` (none) | Cap, so a sparse chart on a big panel does not end up with absurd voids. |
 | `layout.ring_pad_mm` ★ | `5` | Breathing space at the outer edge of each band. |
 | `layout.min_entry_gap_mm` ★ | `0` | **Density along a ring.** The arc each person is entitled to. Raise it and the ring staggers sooner, thinning out; leave at `0` and it uses the text height. |
-| `couple.leaf` ★ | `auto` | **How a married couple is drawn.** `shared` stacks both names in one leaf — compact, and the marriage cannot be misread. `split` gives each partner their own leaf side by side with a tie between them, so each partner's own ancestry sits directly inside them; costs twice the width. `auto` splits only where sharing is genuinely ambiguous — both partners having parents on the chart — which on a real tree is the handful of places two families actually meet. |
+| `couple.leaf` ★ | `auto` | **How a married couple is drawn.** `shared` stacks both names in one leaf — compact, and the marriage cannot be misread. `split` gives each partner their own leaf side by side with a tie between them; costs twice the width. `auto` does the right thing: **whoever brings a line back goes on top of the leaf**, and the leaf only splits when BOTH partners have parents on the chart, because then there is no top name that could own both. Somebody who married in from off the chart brings no line, so stacking them under their partner cannot be misread. |
 | `layout.sibling_gap_cells` ★ | `0.10` | **How close brothers and sisters sit**, in cells (one cell = one couple). The first thing to turn if a family reads as scattered. Three siblings at `0.10` are a couple of cells apart; at `1.0` they are twice that and stop reading as one family. |
 | `layout.family_gap_cells` ★ | `0.60` | Space between two FAMILIES. Wants to stay several times `sibling_gap_cells` — the contrast between the two is what makes a family read as a cluster rather than as part of the row. |
 | `layout.max_cell_deg` ★ | `12` | **No couple may own more than this much of the disc.** A small family cannot fill a circle; stretched round it, three siblings end up forty degrees apart. Capped, the chart is drawn as a FAN of whatever angle it needs, centred, with the names the same size. It is an upper bound: the chart may choose tighter, never wider. Set `0` to allow the full sweep. |
+| `thread.enabled` ★ | `true` | **The direct line, picked out in colour.** It is a highlight, not a relationship — every line it recolours is drawn either way — so turning it off leaves the chart complete rather than missing something. |
 | `family.wedges` ★ | `true` | **Tint the ground under each family.** A wedge runs outward from each founding couple, widening as the family grows. Two families that marry share their descendants from that ring out, so their wedges cover the same ground and the two tints blend — the blend is the marriage. Print only; it never reaches the cutter. |
 | `family.wedge_opacity` ★ | `0.13` | How strong the tint is. Wedges overlap where families meet, so this compounds; above about `0.2` a chart with four lines going back goes muddy. |
 | `family.wedge_min_cells` | `3` | Families smaller than this get no wedge. Every married-in spouse without recorded parents founds a family of one, and eighty tints is a smear. |

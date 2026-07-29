@@ -507,3 +507,58 @@ def test_a_split_couple_still_hangs_its_children_from_between_them(graph):
     assert any(e.role == "marriage" for e in plan.elements), \
         "a split couple needs a tie -- it is the one line this design must draw"
     assert any(e.role == "stem" for e in plan.elements)
+
+
+# ------------------------------------------- whose line is it, in a leaf --
+@pytest.mark.parametrize("focus", ["thread", "bloodline", "all"])
+def test_a_stacked_name_never_owns_somebody_elses_ancestry(graph, focus):
+    """The rule the shared leaf turns on.
+
+    Two names in one leaf are read as "this couple, and the line inward is
+    the top one's". So the only person who may be stacked UNDER is somebody
+    who married in from off the chart and brings no line with them. A wife
+    with three recorded generations behind her sitting on row 1, under a
+    husband who married in from nowhere, hands her whole ancestry to him --
+    three couples on the owner's own tree did exactly that.
+    """
+    g, cells = _leaves(graph, "auto", focus)
+    scope = set(g.slots)
+    for members in cells.values():
+        if len(members) < 2 or _is_split(members):
+            continue
+        members.sort(key=lambda m: m.row)
+        for under in members[1:]:
+            line = [p for p in graph.parents(under.pid, primary_only=False)
+                    if p in scope]
+            assert not line, (
+                f"{focus}: {graph.people[under.pid].full_name} is stacked "
+                f"under {graph.people[members[0].pid].full_name} but has "
+                f"parents on this chart")
+
+
+@pytest.mark.parametrize("focus", ["bloodline", "all"])
+def test_two_lines_meeting_get_a_leaf_each(graph, focus):
+    """When BOTH partners have parents on the chart there is no top name that
+    could own both, so the leaf has to split."""
+    g, cells = _leaves(graph, "auto", focus)
+    scope = set(g.slots)
+    for members in cells.values():
+        if len(members) < 2:
+            continue
+        lines = sum(1 for m in members
+                    if any(p in scope
+                           for p in graph.parents(m.pid, primary_only=False)))
+        if lines > 1:
+            assert _is_split(members), (
+                f"{focus}: {lines} ancestries sharing one leaf")
+
+
+def test_the_direct_line_highlight_is_a_setting(graph):
+    """It is a highlight, not a relationship: every line it recolours is
+    drawn either way. So turning it off has to leave the chart complete."""
+    on = _panelled(graph, 800, 800)
+    off = _panelled(graph, 800, 800, thread__enabled=False)
+    assert len(on.elements) == len(off.elements), "the chart lost something"
+    tcol = Style.load("panel1m").get("thread.colour", "#9B3A2E")
+    assert [e for e in on.elements if e.stroke == tcol]
+    assert not [e for e in off.elements if e.stroke == tcol]
