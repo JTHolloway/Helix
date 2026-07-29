@@ -250,7 +250,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                 x0, y0, x1, y1 = box(r_now)
                 k = min((W - 2 * margin) / max(x1 - x0, 1e-6),
                         (H - 2 * margin) / max(y1 - y0, 1e-6))
-                if abs(k - 1.0) < 0.002:
+                # Only ever stop with room to spare. `abs(k - 1) < tol`
+                # stopped on either side of the mark, and a fifth of a per
+                # cent of a 1200 mm panel is 2 mm -- which the chart then
+                # reported itself over by, correctly.
+                if 1.0 <= k < 1.002:
                     break
                 grow = ((inner + (r_now - inner) * k) - inner) / (r_now - inner)
                 bands = {gen: bands[gen] * grow for gen in gens}
