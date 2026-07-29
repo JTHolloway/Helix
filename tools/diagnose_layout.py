@@ -82,13 +82,32 @@ def cells_report(g, grid, name, args) -> None:
         if len(kids) < 2:
             continue
         ks = set(kids)
-        lo = min(S[c].tc for c in kids)
-        hi = max(S[c].tc for c in kids)
+        # Per contiguous RUN, because that is what the chart draws: a couple
+        # whose children are not side by side gets one arc per run, never one
+        # arc across the gap. Measuring the whole span counted strangers as
+        # swept who have no arc over them at all.
+        ring = sorted({(S[p].tc, S[p].cell or p)
+                       for p in grid.by_gen.get(S[kids[0]].gen, [])
+                       if S[p].row == 0})
+        own = {S[c].cell or c for c in kids}
+        runs, cur = [], []
+        for tc, cid in ring:
+            if cid in own:
+                cur.append(tc)
+            elif cur:
+                runs.append(cur)
+                cur = []
+        if cur:
+            runs.append(cur)
+        if not runs:
+            runs = [sorted(S[c].tc for c in kids)]
         odd = [p for p in grid.by_gen.get(S[kids[0]].gen, [])
-               if p not in ks and S[p].row == 0 and lo <= S[p].tc <= hi]
+               if p not in ks and S[p].row == 0
+               and any(r[0] <= S[p].tc <= r[-1] for r in runs)]
         strangers += len(odd)
         if odd:
-            worst.append(((hi - lo) * 360, [name[c] for c in kids[:3]],
+            worst.append((max(r[-1] - r[0] for r in runs) * 360,
+                          [name[c] for c in kids[:3]],
                           [name[o] for o in odd[:4]]))
     worst.sort(reverse=True)
     print(f"\n2. ARC SWEEPS PAST OTHERS   {strangers}   "

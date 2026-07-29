@@ -526,6 +526,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         # under "PH | Kathleen Holloway" left from PH's end rather than from
         # between them, and the same everywhere a couple had a leaf each.
         pair = [p for p in same if g.slots[p].row == 0]
+        ts = sorted(theta(g.slots[c].tc) for c in kids)
         if len(same) > 1 and len(pair) == len(same):
             t_head = sum(theta(g.slots[p].tc) for p in pair) / len(pair)
             mouth = (min(theta(g.slots[p].t0) for p in pair),
@@ -549,31 +550,73 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         # "Kathleen Holloway | Peter Holloway" left from Kathleen rather
         # than from between them. The elbow below carries it the rest of
         # the way, which is what the elbow is for.
-        if len(pair) < 2:
-            want = (ts[0] + ts[-1]) / 2
-            t_head = min(max(want, min(mouth)), max(mouth))
-        # ...and if that is still short of the arc, turn the corner and run
-        # along to it. A stem that does not reach its own arc is not a
-        # shortcut, it is a lie about who somebody's parents are.
-        t_foot = min(max(t_head, ts[0]), ts[-1])
-
         line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
         c_line = tcol if line else col
         w_line = tw if line else lw
 
-        d_stem = G.polyline([G.polar(cx, cy, r_from, t_head),
-                             G.polar(cx, cy, r_arc, t_head)])
-        if abs(t_foot - t_head) > 1e-9:
-            # out along the radius, then round to meet the arc
-            d_stem += G.arc_path(cx, cy, r_arc, t_head, t_foot, move=False)
-        plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
-                         stroke=c_line, stroke_width=w_line, fill="none",
-                         person_id=anchor, union_id=uid, role="stem", z=10))
-        if len(kids) > 1:
-            plan.add(Element(kind="path", layer="ENGRAVE",
-                             d=G.short_arc(cx, cy, r_arc, ts[0], ts[-1]),
+        # ---- ONE ARC PER CONTIGUOUS RUN OF THEM, NEVER ONE ARC OVER ALL ---
+        #
+        # THE RULE, and it is absolute: an arc may only ever cover children of
+        # this marriage. Not a cousin, not a spouse, not a half-brother by the
+        # other marriage.
+        #
+        # Drawn as a single arc from the first child to the last, it covers
+        # whoever the layout put in between -- and the layout cannot always
+        # avoid putting somebody there, because a couple belongs to two
+        # sibling groups at once and can only be nested in one. So the chart
+        # stopped promising what the layout cannot deliver: the children are
+        # split into runs that ARE side by side, and each run gets its own
+        # arc and its own stem. Two arcs off one couple say "two of them are
+        # over here and two over there", which is true; one arc across the
+        # gap says they are all brothers and sisters with strangers among
+        # them, which is not.
+        #
+        # This is what was drawing Paul's wife and his half-brother as his
+        # siblings, and Rosie, James, Heather and Anthony -- two marriages --
+        # as one family of four.
+        seen_c: set[str] = set()
+        ring_order = []
+        for p in g.by_gen.get(gen_k, []):
+            if g.slots[p].row:
+                continue
+            cid = g.slots[p].cell or p
+            if cid in seen_c:
+                continue
+            seen_c.add(cid)
+            ring_order.append((g.slots[p].tc, cid))
+        ring_order.sort()
+        mine = {g.slots[c].cell or c: [] for c in kids}
+        for c in kids:
+            mine[g.slots[c].cell or c].append(c)
+        runs, cur = [], []
+        for _, cid in ring_order:
+            if cid in mine:
+                cur += mine[cid]
+            elif cur:
+                runs.append(cur)
+                cur = []
+        if cur:
+            runs.append(cur)
+        if not runs:
+            runs = [kids]
+
+        for run in runs:
+            rts = sorted(theta(g.slots[c].tc) for c in run)
+            # the stem reaches THIS run; a run beyond the couple's own leaf
+            # gets the elbow, which is what the elbow is for
+            t_foot = min(max(t_head, rts[0]), rts[-1])
+            d_stem = G.polyline([G.polar(cx, cy, r_from, t_head),
+                                 G.polar(cx, cy, r_arc, t_head)])
+            if abs(t_foot - t_head) > 1e-9:
+                d_stem += G.arc_path(cx, cy, r_arc, t_head, t_foot, move=False)
+            plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
                              stroke=c_line, stroke_width=w_line, fill="none",
-                             union_id=uid, role="siblings", z=10))
+                             person_id=anchor, union_id=uid, role="stem", z=10))
+            if len(run) > 1:
+                plan.add(Element(kind="path", layer="ENGRAVE",
+                                 d=G.short_arc(cx, cy, r_arc, rts[0], rts[-1]),
+                                 stroke=c_line, stroke_width=w_line, fill="none",
+                                 union_id=uid, role="siblings", z=10))
         for c in kids:
             tc = theta(g.slots[c].tc)
             person = graph.people[c]

@@ -688,3 +688,82 @@ def test_the_chart_never_splits_a_family_that_is_joined(graph, focus):
     assert len(in_chart) <= len(in_data), (
         f"{focus}: the file holds {len(in_data)} related groups but the chart "
         f"draws {len(in_chart)} -- it has split a family that is joined")
+
+
+def _runs_of(graph, g, uid, kids):
+    """The contiguous runs a couple's children fall into on their ring --
+    which is what the chart draws an arc over, one arc each."""
+    S = g.slots
+    ring = sorted({(S[p].tc, S[p].cell or p)
+                   for p in g.by_gen.get(S[kids[0]].gen, []) if S[p].row == 0})
+    own = {S[c].cell or c for c in kids}
+    runs, cur = [], []
+    for tc, cid in ring:
+        if cid in own:
+            cur.append(tc)
+        elif cur:
+            runs.append(cur)
+            cur = []
+    if cur:
+        runs.append(cur)
+    return runs or [sorted(S[c].tc for c in kids)]
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_an_arc_never_covers_a_stranger(graph, focus):
+    """THE rule, and it is absolute: an arc may only ever cover children of
+    that marriage, or one of those children's own husbands or wives.
+
+    Never a cousin, never a half-brother by the other marriage, never a
+    spouse of one of the parents. Drawn as a single arc from the first child
+    to the last it covered whoever the layout put in between, and the layout
+    cannot always avoid putting somebody there -- a couple belongs to two
+    sibling groups at once and can be nested in only one. So the chart stopped
+    promising what the layout cannot deliver: the children are split into runs
+    that ARE side by side and each run gets its own arc. Two arcs off one
+    couple say "two of them here and two there", which is true; one arc across
+    the gap says they are all brothers and sisters with strangers among them.
+    """
+    g = cellgrid(graph, focus)
+    for uid, u in graph.unions.items():
+        kids = [c for c in u.children
+                if c in g.slots and graph.people[c].child_of == uid]
+        if len(kids) < 2:
+            continue
+        ks = set(kids)
+        runs = _runs_of(graph, g, uid, kids)
+        for pid in g.by_gen.get(g.slots[kids[0]].gen, []):
+            if pid in ks or g.slots[pid].row:
+                continue
+            if not any(r[0] <= g.slots[pid].tc <= r[-1] for r in runs):
+                continue
+            assert any(x in ks for x in graph.partners(pid)), (
+                f"{focus}: {graph.people[pid].full_name} is under the arc over "
+                f"{[graph.people[c].full_name for c in kids[:3]]} and is not "
+                f"one of them, nor married to one of them")
+
+
+@pytest.mark.parametrize("focus", ["bloodline", "all"])
+def test_no_two_sibling_arcs_on_a_ring_overlap(graph, focus):
+    """Two arcs at the same radius that overlap draw as ONE ring, which says
+    the people at both ends are brothers and sisters. Michaela's arc to her
+    brother and David's to his were half a millimetre apart in radius and
+    overlapped by thirteen degrees, so a husband and wife appeared to be
+    siblings as well as spouses."""
+    g = cellgrid(graph, focus)
+    spans = []
+    for uid, u in graph.unions.items():
+        kids = [c for c in u.children
+                if c in g.slots and graph.people[c].child_of == uid]
+        if len(kids) < 2:
+            continue
+        gen = g.slots[kids[0]].gen
+        for r in _runs_of(graph, g, uid, kids):
+            spans.append((gen, r[0], r[-1], uid))
+    for i, (ga, a0, a1, ua) in enumerate(spans):
+        for gb, b0, b1, ub in spans[i + 1:]:
+            if ga != gb or ua == ub:
+                continue
+            assert not (a0 < b1 and b0 < a1), (
+                f"{focus}: two sibling arcs on ring {ga} overlap "
+                f"({a0:.3f}-{a1:.3f} and {b0:.3f}-{b1:.3f})")
