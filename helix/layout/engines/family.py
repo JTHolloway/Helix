@@ -410,6 +410,18 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     def theta(t: float) -> float:
         return start + t * sweep
 
+    def rule_r(sl) -> float:
+        """The radius of the rule that means "married", for this row.
+
+        Past the end of the name, in the gap before the next row. Defined
+        once and used by BOTH the rule and the stem, because the stem for a
+        couple with a leaf each has to START on that rule -- it is the line
+        their children come from. Computed separately, the stem began inside
+        it and crossed it at right angles, which is the one shape a chart
+        must never make: two lines that mean different things, crossing.
+        """
+        return row_r(sl) + reach(sl.gen) + size * 0.55
+
     def reach(gen: int) -> float:
         """How far a name actually extends along the radius.
 
@@ -500,7 +512,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                 # the label height this ran straight through "Kathleen
                 # Holloway" -- the rule that means "married" was striking out
                 # the name it was about.
-                r = row_r(a) + reach(a.gen) + size * 0.55
+                r = rule_r(a)
                 plan.add(Element(kind="path", layer="ENGRAVE",
                                  d=G.short_arc(cx, cy, r, theta(a.tc),
                                                theta(b.tc)),
@@ -559,8 +571,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             t_head = sum(theta(g.slots[p].tc) for p in pair) / len(pair)
             mouth = (min(theta(g.slots[p].t0) for p in pair),
                      max(theta(g.slots[p].t1) for p in pair))
-            r_from = max(row_r(g.slots[p]) for p in pair) + \
-                lab_h.get(g.slots[anchor].gen, 0.0) * 0.7
+            # start ON the marriage rule, not inside it
+            r_from = max(rule_r(g.slots[p]) for p in pair)
         else:
             t_head = theta(g.slots[anchor].tc)
             mouth = (theta(g.slots[anchor].t0), theta(g.slots[anchor].t1))
@@ -578,6 +590,16 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         # "Kathleen Holloway | Peter Holloway" left from Kathleen rather
         # than from between them. The elbow below carries it the rest of
         # the way, which is what the elbow is for.
+        # WHATEVER the cell looks like, the stem starts outside every rule
+        # drawn in it. Worked out per case it was right for a couple with a
+        # leaf each and wrong for a stacked one and for a partner nobody
+        # recorded, and a stem crossing the rule that means "married" is two
+        # lines meaning different things, crossing.
+        cell_id = g.slots[anchor].cell or anchor
+        r_from = max([r_from] + [rule_r(g.slots[q]) for q in g.slots
+                                 if (g.slots[q].cell or q) == cell_id
+                                 and g.slots[q].gen == g.slots[anchor].gen])
+
         line = all(p in thr for p in parents[:1]) and any(c in thr for c in kids)
         c_line = tcol if line else col
         w_line = tw if line else lw
