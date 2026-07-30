@@ -105,6 +105,13 @@ class _Cell:
     # block lies on. The couple leans that way over their children, because
     # the line to that child is the only long one they have.
     lean: int = 0
+    # WHICH WAY ROUND THE LEAVES GO, when the search has an opinion. `outward`
+    # decides it greedily from where each partner's kin ended up, which is
+    # right on its own but cannot see that swapping the leaves AND moving a
+    # block would clear a crossing that neither does alone. The search sets
+    # this; 0 means "no opinion, let `outward` choose".
+    flip: int = 0
+    ups_n: int = 0                             # how many kids are ancestral
     rel: float = 0.0
     x: float = 0.0
     contour: dict[int, tuple[float, float]] = field(default_factory=dict)
@@ -529,6 +536,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             cell.kids = (ups + groups) if side < 0 else (groups + ups[::-1])
             cell.over = (len(ups) if side < 0 else 0) if groups else -1
         cell.over_n = len(groups)
+        cell.ups_n = len(ups)
         # WHICH WAY THIS COUPLE LEANS OVER THEIR CHILDREN. `pid` is one of
         # them and is NOT in this block -- he is out in the cell this block
         # hangs from -- so the line to him is the long one, and every
@@ -651,6 +659,8 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             base = xs[c.members[0]]
             if c.split and len(c.members) > 1:
                 order = pairs_adjacent(c.members)
+                if c.flip < 0:
+                    order = order[::-1]
                 at[p] = base - c.width / 2 + order.index(p) + 0.5
             else:
                 at[p] = base
@@ -714,21 +724,83 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             if (i + 1 < o0) or (i > o1) or (o0 <= i and i + 1 <= o1):
                 k = list(cell.kids)
                 k[i], k[i + 1] = k[i + 1], k[i]
-                yield k, cell.over
+                yield k, cell.over, cell.flip
+        # ...reverse the leaves of a couple, so each partner faces their own
+        # family. On its own it moves a name by one leaf and changes nothing;
+        # combined with moving the block wedged between them it is what puts
+        # a wife back beside her own brothers and sisters.
+        if cell.split and len(cell.members) > 1:
+            yield list(cell.kids), cell.over, -cell.flip if cell.flip else -1
         # ...and the one that matters: take the block wedged between the
         # couple and the family beyond it, and put it on the other side.
         if cell.members and cell.over > 0:
             k = list(cell.kids)
             moved = k.pop(o0 - 1)
             k.insert(o1, moved)
-            yield k, cell.over - 1
+            yield k, cell.over - 1, cell.flip
         if cell.members and 0 <= cell.over and o1 < n - 1:
             k = list(cell.kids)
             moved = k.pop(o1 + 1)
             k.insert(o0, moved)
-            yield k, cell.over + 1
+            yield k, cell.over + 1, cell.flip
 
     best = cost(place())
+
+    # ---- THE HINGES, TRIED EXHAUSTIVELY ----------------------------------
+    #
+    # A hinge is a couple with a documented family behind EACH of them: the
+    # place two lines meet. There are only a few on any chart -- three on the
+    # owner's -- and they are where the crossings come from, because each has
+    # to decide which line sits nearer and which way round its own two leaves
+    # go. Those two choices are not independent: reversing the leaves alone
+    # moves a name by one leaf and changes nothing, and moving the block alone
+    # puts the wrong partner beside the wrong family. Only TOGETHER do they
+    # put a wife back beside her own brothers and sisters.
+    #
+    # A hill-climb cannot find that -- neither half is an improvement on its
+    # own -- so the hinges are enumerated instead: four arrangements each,
+    # every combination, best kept. Few enough that it is cheap and complete.
+    hinges = [c for c in every(root, [])
+              if c.split and len(c.members) > 1 and c.ups_n > 1
+              and 0 <= c.over]
+    if hinges and best[0]:
+        import itertools
+        state = [(list(c.kids), c.over, c.flip) for c in hinges]
+
+        def variants(c: _Cell):
+            # FOUR DECISIONS, all of them free, none of them any use alone:
+            #   which of the two lines sits nearer the couple
+            #   whether the couple sits beyond both or BETWEEN them
+            #   which way round the couple's own two leaves go
+            # Eight arrangements. Every combination across every hinge.
+            lo = c.over - c.ups_n            # where this cell's ups start
+            base = []
+            k0 = list(c.kids)
+            base.append((k0, c.over))
+            if lo >= 0 and c.ups_n >= 2:
+                sw = list(k0)
+                sw[lo], sw[lo + 1] = sw[lo + 1], sw[lo]
+                base.append((sw, c.over))
+            for kids, over in list(base):
+                if over > 0:                 # the couple, moved BETWEEN them
+                    k = list(kids)
+                    moved = k.pop(over - 1)
+                    k.insert(over - 1 + c.over_n, moved)
+                    base.append((k, over - 1))
+            for kids, over in base:
+                for flip in (1, -1):
+                    yield kids, over, flip
+
+        for combo in itertools.product(*(list(variants(c)) for c in hinges)):
+            for c, (kids, over, flip) in zip(hinges, combo):
+                c.kids, c.over, c.flip = list(kids), over, flip
+            got = cost(place())
+            if got < best:
+                best = got
+                state = [(list(c.kids), c.over, c.flip) for c in hinges]
+        for c, st in zip(hinges, state):
+            c.kids, c.over, c.flip = st
+
     if best[0]:
         for _round in range(8):
             moved = False
@@ -738,14 +810,14 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             for cell in sorted(pool, key=lambda c: (c.depth, len(c.kids))):
                 if best[0] == 0:
                     break
-                keep, keep_over = list(cell.kids), cell.over
-                for kids, over in list(options(cell)):
-                    cell.kids, cell.over = kids, over
+                keep = (list(cell.kids), cell.over, cell.flip)
+                for kids, over, flip in list(options(cell)):
+                    cell.kids, cell.over, cell.flip = kids, over, flip
                     got = cost(place())
                     if got < best:
-                        best, keep, keep_over = got, kids, over
+                        best, keep = got, (kids, over, flip)
                         moved = True
-                cell.kids, cell.over = keep, keep_over
+                cell.kids, cell.over, cell.flip = keep
             if not moved or best[0] == 0:
                 break
 
@@ -805,6 +877,8 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         if not cell.split or len(cell.members) < 2:
             return cell.members
         order = pairs_adjacent(cell.members)
+        if cell.flip:
+            return order[::-1] if cell.flip < 0 else order
         here = xs[anchor]
 
         def score(seq: list[str]) -> float:
