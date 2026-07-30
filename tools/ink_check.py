@@ -357,16 +357,30 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
     # the width the direct line is drawn it is the loudest thing on the
     # sheet. Counted between different families only -- a stem meeting its
     # own arc is a junction, which is the whole point of it.
+    # NAMED, not tallied. This counted the Kathleen/Peter crossing all along
+    # and reported it as "5 stem x stem", which told nobody anything: the
+    # owner found it by eye in a picture. A crossing is only actionable if
+    # you can see WHOSE branches they are.
+    def _who(el):
+        if el.union_id and el.union_id in g.unions:
+            u = g.unions[el.union_id]
+            ps = " + ".join(name.get(x, "?").split()[0] for x in u.partners)
+            return f"{ps or '?'} to their children"
+        if el.person_id in name:
+            return name[el.person_id]
+        return el.role
+
     segs = []
     for el in plan.elements:
         if el.kind != "path" or el.role not in LINEWORK or not el.d:
             continue
-        key = el.union_id or el.person_id or str(id(el))
+        key = el.union_id or el.line_id or el.person_id or str(id(el))
         for pts, _c in flatten(el, 0.4):
             for p, q in zip(pts, pts[1:]):
-                segs.append((p, q, key, el.role))
+                segs.append((p, q, key, el.role, _who(el)))
     grid: dict = {}
-    for i, (p, q, _k, _r) in enumerate(segs):
+    for i, seg in enumerate(segs):
+        p, q = seg[0], seg[1]
         for gx in range(int(min(p[0], q[0]) // 12), int(max(p[0], q[0]) // 12) + 1):
             for gy in range(int(min(p[1], q[1]) // 12),
                             int(max(p[1], q[1]) // 12) + 1):
@@ -381,7 +395,7 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
                 x = _cross_point(a[0], a[1], b[0], b[1])
                 if x:
                     crossings.add((round(x[0], 1), round(x[1], 1),
-                                   *sorted((a[3], b[3]))))
+                                   *sorted(((a[3], a[4]), (b[3], b[4])))))
 
     # 5 ----------------------------------------------------------- loose ends
     #
@@ -559,11 +573,13 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
 
         print(f"\n4. LINES CROSSING          {len(crossings)}"
               f"   (two families' linework, passing through)")
-        tally: dict = {}
-        for _x, _y, r1, r2 in crossings:
-            tally[(r1, r2)] = tally.get((r1, r2), 0) + 1
-        for (r1, r2), n in sorted(tally.items(), key=lambda kv: -kv[1])[:8]:
-            print(f"     {n:4d}   {r1} x {r2}")
+        seen_pairs = set()
+        for _x, _y, (r1, w1), (r2, w2) in sorted(crossings, key=lambda c: c[2]):
+            if (w1, w2) in seen_pairs:
+                continue
+            seen_pairs.add((w1, w2))
+            print(f"     {r1:<8} {w1[:34]:<34}")
+            print(f"     {r2:<8} {w2[:34]:<34}  cross here")
 
         print(f"\n5. LOOSE ENDS              {len(loose)}"
               f"   (a line stopping in mid-air)")

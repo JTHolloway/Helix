@@ -600,16 +600,156 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             blocks.append(b)
 
     # ---- lay it out ------------------------------------------------------
-    acc: dict[int, tuple[float, float]] = {}
-    xs: dict[str, float] = {}
     sib = max(0.0, float(s.sibling_gap))
     fam = max(sib, float(s.family_gap))
-    for b in blocks:
-        _tidy(b, sib, fam)
-        b.rel = _clear(acc, b.contour, fam)
-        _merge(acc, b.contour, b.rel)
-    for b in blocks:
-        _assign(b, b.rel, xs)
+
+    def place() -> dict[str, float]:
+        acc: dict[int, tuple[float, float]] = {}
+        out: dict[str, float] = {}
+        for b in blocks:
+            _tidy(b, sib, fam)
+            b.rel = _clear(acc, b.contour, fam)
+            _merge(acc, b.contour, b.rel)
+        for b in blocks:
+            _assign(b, b.rel, out)
+        return out
+
+    # ---- IS THIS THE BEST ORDER? -----------------------------------------
+    #
+    # Everything above builds ONE arrangement, following the walk out from
+    # the subject. Nothing asked whether a different order of the same blocks
+    # would read better, and one of them always does: the number of branches
+    # that cross depends entirely on which side of a couple each family sits.
+    #
+    # The fault that made this necessary: Kathleen's parents' branch, holding
+    # all seven of her brothers and sisters, ran straight through Thomas and
+    # Florence's branch down to Peter -- her husband. Two families crossing
+    # at the very point they marry, which reads as though she married her own
+    # cousin. Swapping the two blocks either side of that couple fixes it and
+    # costs nothing, and nothing in the code was looking.
+    #
+    # HOW MANY CROSS, from the positions alone: a family whose children are
+    # not beside them needs a bracket, and that bracket crosses the descent
+    # line of every couple it passes on its own ring. Count those. It needs
+    # no drawing and no geometry, so it is cheap enough to run inside a
+    # search.
+    def cost(xs: dict[str, float]) -> tuple[int, float]:
+        # PER LEAF, not per cell. `xs` gives one x to a whole cell, so a
+        # couple with a leaf each collapsed to a single point and the run
+        # detection below could never see anybody standing between two of a
+        # union's children -- the cost came out zero on a chart with five
+        # crossings on it, and the search never ran.
+        # EVERY PERSON, not every anchor. `_assign` records one x per CELL,
+        # under its first member, so looking people up in it directly missed
+        # every married-in partner -- including Kathleen, whose crossing this
+        # search exists to find. The cost came out zero on a chart with five
+        # crossings and the search never ran once.
+        at: dict[str, float] = {}
+        for p, c in cell_of.items():
+            if not c.members or c.members[0] not in xs:
+                continue
+            base = xs[c.members[0]]
+            if c.split and len(c.members) > 1:
+                order = pairs_adjacent(c.members)
+                at[p] = base - c.width / 2 + order.index(p) + 0.5
+            else:
+                at[p] = base
+        xs = at
+        depth = {p: cell_of[p].depth for p in xs}
+        on_ring: dict[int, set] = {}
+        with_kids: dict[int, set] = {}
+        for p, x in xs.items():
+            on_ring.setdefault(depth[p], set()).add(round(x, 6))
+        for uid, u in graph.unions.items():
+            ps = [p for p in u.partners if p in xs]
+            if ps and any(c in xs for c in u.children):
+                with_kids.setdefault(depth[ps[0]], set()).add(
+                    round(xs[ps[0]], 6))
+        rows = {d: sorted(v) for d, v in on_ring.items()}
+        spokes = {d: sorted(v) for d, v in with_kids.items()}
+        cross, reach = 0, 0.0
+        for uid, u in graph.unions.items():
+            kids = [c for c in u.children
+                    if c in xs and graph.people[c].child_of == uid]
+            ps = [p for p in u.partners if p in xs]
+            if not kids or not ps:
+                continue
+            here = xs[ps[0]]
+            d_me, d_kid = depth[ps[0]], depth[kids[0]]
+            kset = {round(xs[c], 6) for c in kids}
+            runs, cur = [], []
+            for x in rows.get(d_kid, ()):
+                if x in kset:
+                    cur.append(x)
+                elif cur:
+                    runs.append(cur)
+                    cur = []
+            if cur:
+                runs.append(cur)
+            for run in runs or [sorted(kset)]:
+                foot = min(max(here, run[0]), run[-1])
+                if abs(foot - here) < 1e-9:
+                    continue                       # straight out; no bracket
+                a, b = min(here, foot), max(here, foot)
+                cross += sum(1 for x in spokes.get(d_me, ())
+                             if a + 1e-6 < x < b - 1e-6)
+                reach += b - a
+        return cross, round(reach, 4)
+
+    def every(c: _Cell, out: list) -> list:
+        out.append(c)
+        for k in c.kids:
+            every(k, out)
+        return out
+
+    def options(cell: _Cell):
+        """Re-orderings of one cell's blocks that keep its own children in a
+        run -- the couple has to stay over them."""
+        n = len(cell.kids)
+        if n < 2:
+            return
+        o0 = cell.over if cell.members and cell.over >= 0 else 0
+        o1 = o0 + cell.over_n - 1 if cell.members and cell.over >= 0 else n - 1
+        for i in range(n - 1):
+            if (i + 1 < o0) or (i > o1) or (o0 <= i and i + 1 <= o1):
+                k = list(cell.kids)
+                k[i], k[i + 1] = k[i + 1], k[i]
+                yield k, cell.over
+        # ...and the one that matters: take the block wedged between the
+        # couple and the family beyond it, and put it on the other side.
+        if cell.members and cell.over > 0:
+            k = list(cell.kids)
+            moved = k.pop(o0 - 1)
+            k.insert(o1, moved)
+            yield k, cell.over - 1
+        if cell.members and 0 <= cell.over and o1 < n - 1:
+            k = list(cell.kids)
+            moved = k.pop(o1 + 1)
+            k.insert(o0, moved)
+            yield k, cell.over + 1
+
+    best = cost(place())
+    if best[0]:
+        for _round in range(8):
+            moved = False
+            pool: list = []
+            for b in blocks:
+                every(b, pool)
+            for cell in sorted(pool, key=lambda c: (c.depth, len(c.kids))):
+                if best[0] == 0:
+                    break
+                keep, keep_over = list(cell.kids), cell.over
+                for kids, over in list(options(cell)):
+                    cell.kids, cell.over = kids, over
+                    got = cost(place())
+                    if got < best:
+                        best, keep, keep_over = got, kids, over
+                        moved = True
+                cell.kids, cell.over = keep, keep_over
+            if not moved or best[0] == 0:
+                break
+
+    xs = place()
     if not xs:
         g.warnings.append("Nobody could be placed on this chart.")
         return g

@@ -1104,6 +1104,14 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # only at the point it is joining. A radial line crossing an arc at right
     # angles reads as a junction, which is what it is. Two arcs at one radius
     # read as a claim about a family, which is not.
+    ring_floor: dict[int, float] = {}
+    for job in jobs:
+        ring_floor[job["gen"]] = max(
+            ring_floor.get(job["gen"], 0.0),
+            r_top(job["gen"] - 1), job["r_from"],
+            ink_top.get(job["gen"] - 1, 0.0) + size * 0.4) 
+    ring_floor = {k: v + lane_gap for k, v in ring_floor.items()}
+
     ring_lanes: dict[int, list[list[tuple[float, float]]]] = {}
     for job in sorted(jobs, key=lambda j: (j["gen"], min(j["head"], j["foot"]))):
         if abs(job["foot"] - job["head"]) < 1e-9:
@@ -1150,8 +1158,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # spread across whatever there is where there is not. Two must
             # never land on one radius: letting them collapse when the band
             # is tight brought the fault straight back on the inner rings.
-            floor_r = max(r_top(job["gen"] - 1), job["r_from"],
-                          ink_top.get(job["gen"] - 1, 0.0) + size * 0.4) + lane_gap
+            # ONE BASE PER RING, so two lanes on it are exactly `lane_gap`
+            # apart. Worked out per job from that job's own start radius, two
+            # reaches on one ring came out 0.7 mm apart and read as one line
+            # -- the very fault the lanes exist to prevent.
+            floor_r = ring_floor[job["gen"]]
             # ALWAYS INSIDE THE ARC IT FEEDS. Where a sheet is too small for
             # the family on it, a ring's names run out over the ring beyond
             # and there is no clear band left; taking the floor at face value
@@ -1190,9 +1201,42 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # a descent line the heavier line is plainly the one that
             # continues. It is the oldest convention in draughting and it
             # needs no legend.
+            # ---- AND IT JUMPS WHAT IT CANNOT AVOID -----------------------
+            #
+            # The ordering search in `couple_grid` is asked first, and where
+            # it can put a family beside the one it married into it does. Some
+            # it cannot, and those reaches still pass a descent line. Rather
+            # than a gap -- which reads as a line that stops -- the reach
+            # arches over: continuous ink, a small semicircle, the oldest
+            # "these two do not join" mark there is.
+            hop = []
+            if style.get("lines.reach_jump", True):
+                mid_t = (head + foot) / 2
+                hop = sorted(x for x in (_near(t, mid_t)
+                                         for t, u2 in spokes.get(job["gen"], ())
+                                         if u2 != job["uid"])
+                             if min(head, foot) < x < max(head, foot))
+            if not hop:
+                d_reach = G.arc_path(cx, cy, r_lane, head, foot)
+            else:
+                # A SEMICIRCLE, near enough: as wide as it is tall, and tall
+                # enough to read at the weight the line is drawn. Sized from
+                # the type, so it scales with the chart.
+                bump = min(size * 0.9, lane_gap * 0.6)
+                w = min(bump * 1.7 / max(r_lane, 1.0),
+                        abs(foot - head) / (2 * len(hop) + 2))
+                pts, step = [], (foot - head) / 160
+                for i in range(161):
+                    t = head + i * step
+                    lift = max((max(0.0, 1.0 - ((t - c) / w) ** 2) ** 0.5
+                                for c in hop), default=0.0)
+                    # INWARD. Arching outward lifted the reach into the
+                    # next lane out and the two read as one line; the
+                    # band on the inside is clear by a whole lane gap.
+                    pts.append(G.polar(cx, cy, r_lane - bump * lift, t))
+                d_reach = G.polyline(pts)
             plan.add(Element(
-                kind="path", layer="ENGRAVE",
-                d=G.arc_path(cx, cy, r_lane, head, foot),
+                kind="path", layer="ENGRAVE", d=d_reach,
                 stroke=job["colour"], stroke_width=job["width"] * 0.62,
                 fill="none", person_id=job["anchor"],
                 union_id=job["uid"], role="reach", z=9))
