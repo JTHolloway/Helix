@@ -46,7 +46,7 @@ from helix.style.tokens import Style                 # noqa: E402
 
 TAU = math.tau
 LINEWORK = {"siblings", "stem", "branch", "thread", "marriage",
-            "unknown_partner", "chord"}
+            "unknown_partner", "chord", "reach"}
 
 
 def norm(a: float) -> float:
@@ -228,6 +228,8 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
                    math.hypot(el.x - cx, el.y - cy),
                    name.get(el.person_id, "?")))
     at.sort()
+    at_pid = {el.person_id for el in plan.elements
+              if el.kind == "text" and el.person_id}
     # The rows of names, found from the names themselves rather than from a
     # fixed distance: on a metre panel the rings are further apart than the
     # 34 mm this first assumed, and half of every family fell outside the
@@ -455,6 +457,78 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
                           math.hypot(p[0] - cx, p[1] - cy),
                           norm(math.atan2(p[1] - cy, p[0] - cx))))
 
+    # 6 ------------------------------------------- marriage under the siblings
+    #
+    # THE ORDER OF THE THREE LINES ROUND A NAME, and it has to be the same
+    # everywhere or none of them means anything:
+    #
+    #     the sibling arc    inside, nearer the centre  -- where you came from
+    #     the name
+    #     the marriage rule  outside                    -- who you married
+    #     the stem           outside that               -- your children
+    #
+    # Read with the near half of the disc the right way up, "outside" is
+    # underneath, so the marriage sits under the sibling line and over the
+    # children. Any couple where those two swap makes a marriage look like a
+    # descent.
+    arc_r: dict[str, float] = {}
+    for el in plan.elements:
+        if el.role == "siblings" and el.union_id and el.d:
+            for pts, _c in flatten(el, 1.0):
+                arc_r[el.union_id] = min(
+                    arc_r.get(el.union_id, 1e9),
+                    min(math.hypot(p[0] - cx, p[1] - cy) for p in pts))
+    wrong_order = []
+    for el in plan.elements:
+        if el.role not in ("marriage", "unknown_partner") or not el.d:
+            continue
+        pid = el.person_id
+        uid = g.people[pid].child_of if pid in g.people else None
+        if uid is None or uid not in arc_r:
+            continue
+        for pts, _c in flatten(el, 1.0):
+            rr = min(math.hypot(p[0] - cx, p[1] - cy) for p in pts)
+            if rr <= arc_r[uid]:
+                wrong_order.append((name.get(pid, "?"), rr, arc_r[uid]))
+
+    # 7 --------------------------------------------- every relationship drawn
+    #
+    # Not "does it look right" but "is it all there". One line per fact, and
+    # every fact with a line: a stem for every marriage that has children on
+    # the chart, a tick for every one of those children, and exactly one tie
+    # for every couple both of whom are drawn.
+    stems = {el.union_id for el in plan.elements if el.role == "stem"}
+    ticks: dict[str, int] = {}
+    for el in plan.elements:
+        if el.role in ("branch", "thread") and el.person_id:
+            ticks[el.person_id] = ticks.get(el.person_id, 0) + 1
+    ties = set()
+    for el in plan.elements:
+        if el.role in ("marriage", "chord", "married_across"):
+            ties.add(el.person_id)
+    placed = set(at_pid)
+    missing = []
+    for uid, u in g.unions.items():
+        ps = [p for p in u.partners if p in placed]
+        if not ps:
+            continue                 # parents outside the focus: nothing to
+                                     # draw a descent line FROM
+        # Strictly the union marked primary. Somebody with several parent
+        # links and none of them primary is a gap in the research, not a
+        # missing line -- `graph/validate.py` reports that, and the chart may
+        # not guess which set to draw.
+        kids = [c for c in u.children
+                if c in placed and g.people[c].child_of == uid]
+        if kids and uid not in stems:
+            missing.append(f"no stem for {'+'.join(name[p] for p in ps)}")
+        for c in kids:
+            if ticks.get(c, 0) != 1:
+                missing.append(f"{name[c]} has {ticks.get(c, 0)} branch ticks")
+    for uid, u in g.unions.items():
+        ps = [p for p in u.partners if p in placed]
+        if len(ps) == 2 and not (set(ps) & ties):
+            missing.append(f"no tie between {name[ps[0]]} and {name[ps[1]]}")
+
     if not quiet:
         print(f"{db}  engine {engine}  style {style_name or 'default'}  "
               f"{plan.canvas.width_mm:.0f}x{plan.canvas.height_mm:.0f} mm")
@@ -493,11 +567,21 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
             print(f"     {role:<9} r={r:6.1f} at {math.degrees(t):6.1f} deg"
                   f"   {', '.join(joins(r, t - 0.02, t + 0.02))[:36]}")
 
-        print("\nAll five should be ZERO.")
+        print(f"\n6. MARRIAGE ABOVE SIBLINGS  {len(wrong_order)}"
+              f"   (the two lines round a name, swapped)")
+        for who_, rr, ar in wrong_order[:8]:
+            print(f"     {who_[:28]:<28} rule r={rr:.1f} vs arc r={ar:.1f}")
+
+        print(f"\n7. RELATIONSHIP NOT DRAWN  {len(missing)}")
+        for m in missing[:10]:
+            print(f"     {m}")
+
+        print("\nAll seven should be ZERO.")
 
     return {"touching": len(hits), "long_way": len(long_way),
             "text_on_line": len(crossed), "crossings": len(crossings),
-            "loose": len(loose), "hits": hits}
+            "loose": len(loose), "order": len(wrong_order),
+            "undrawn": len(missing), "hits": hits}
 
 
 def main() -> None:

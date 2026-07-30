@@ -1141,10 +1141,37 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # of a line has to mean the same thing everywhere.
             r_lane = min(floor_r + job["lane"] * lane_gap,
                          r_arc - lane_gap)
+            # ---- WHY SOME OF THESE CROSS, AND WHAT IS DONE ABOUT IT -------
+            #
+            # A chart is a tree. A family is not: every marriage between two
+            # lines that are BOTH documented is a cycle, and a tree can nest
+            # one of the two, never both. Whichever loses is drawn in the
+            # other's cell, and the line back to its own parents has to span
+            # whatever the layout put in between.
+            #
+            # There is no planar way out, and it was worth proving rather
+            # than believing. Both orderings were tried and measured:
+            # `couple_grid.LEAN` and `couple_grid.FLANK`, with the numbers.
+            # And there is no clear band to route through -- every radius
+            # between two rings carries the spokes of the couples on the
+            # inner one, so a tangential line has to cross them.
+            #
+            # So the crossing stays and is made to READ as a crossing. The
+            # tangential run is drawn at two thirds weight, in two pieces
+            # that meet exactly: no gap, nothing dashed, but where it passes
+            # a descent line the heavier line is plainly the one that
+            # continues. It is the oldest convention in draughting and it
+            # needs no legend.
+            plan.add(Element(
+                kind="path", layer="ENGRAVE",
+                d=G.arc_path(cx, cy, r_lane, head, foot),
+                stroke=job["colour"], stroke_width=job["width"] * 0.62,
+                fill="none", person_id=job["anchor"],
+                union_id=job["uid"], role="reach", z=9))
             d_stem = (G.polyline([G.polar(cx, cy, job["r_from"], head),
                                   G.polar(cx, cy, r_lane, head)])
-                      + G.arc_path(cx, cy, r_lane, head, foot, move=False)
-                      + G.L(G.polar(cx, cy, r_arc, foot)))
+                      + G.polyline([G.polar(cx, cy, r_lane, foot),
+                                    G.polar(cx, cy, r_arc, foot)]))
         plan.add(Element(kind="path", layer="ENGRAVE", d=d_stem,
                          stroke=job["colour"], stroke_width=job["width"],
                          fill="none", person_id=job["anchor"],

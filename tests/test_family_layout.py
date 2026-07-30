@@ -1057,3 +1057,91 @@ def test_every_name_reads_outward(graph):
             f"'{el.text}' faces inward")
         seen += 1
     assert seen > 20, "no names to check"
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_a_marriage_sits_outside_the_sibling_arc(graph, focus):
+    """THE ORDER OF THE LINES ROUND A NAME, which has to be the same
+    everywhere or none of them means anything:
+
+        the sibling arc    inside   -- where you came from
+        the name
+        the marriage rule  outside  -- who you married
+        the stem           outside that -- your children
+
+    Read with the near half of the disc upright, "outside" is underneath, so
+    the marriage sits under the sibling line and over the children. Swap
+    those two anywhere and a marriage reads as a descent.
+    """
+    import math
+
+    from helix.render import pathflatten
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    cx, cy = plan.meta.extra["centre_mm"]
+    arc_r: dict = {}
+    for el in plan.elements:
+        if el.role == "siblings" and el.union_id and el.d:
+            for pts, _c in pathflatten.flatten(el, 1.0):
+                arc_r[el.union_id] = min(
+                    arc_r.get(el.union_id, 1e9),
+                    min(math.hypot(p[0] - cx, p[1] - cy) for p in pts))
+    checked = 0
+    for el in plan.elements:
+        if el.role not in ("marriage", "unknown_partner") or not el.d:
+            continue
+        uid = (graph.people[el.person_id].child_of
+               if el.person_id in graph.people else None)
+        if uid not in arc_r:
+            continue
+        for pts, _c in pathflatten.flatten(el, 1.0):
+            rr = min(math.hypot(p[0] - cx, p[1] - cy) for p in pts)
+            assert rr > arc_r[uid], (
+                f"{focus}: {graph.people[el.person_id].full_name}'s marriage "
+                f"rule is at r={rr:.1f}, inside the arc over their brothers "
+                f"and sisters at r={arc_r[uid]:.1f}")
+            checked += 1
+    assert checked, "no couple had both lines to compare"
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_every_relationship_in_the_file_is_drawn(graph, focus):
+    """Not "does it look right" but "is it all there". One line per fact and
+    every fact with a line: a stem for every marriage with children on the
+    chart, exactly one tick for each of those children, and exactly one tie
+    for every couple both of whom are drawn.
+
+    A child with no tick is a name floating with nothing joining it to its
+    parents, which is the "branches out of nowhere" the owner reported.
+    """
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    placed = {e.person_id for e in plan.elements
+              if e.kind == "text" and e.person_id}
+    stems = {e.union_id for e in plan.elements if e.role == "stem"}
+    ticks: dict = {}
+    for e in plan.elements:
+        if e.role in ("branch", "thread") and e.person_id:
+            ticks[e.person_id] = ticks.get(e.person_id, 0) + 1
+    tied = {e.person_id for e in plan.elements
+            if e.role in ("marriage", "chord", "married_across")}
+    for uid, u in graph.unions.items():
+        ps = [p for p in u.partners if p in placed]
+        if not ps:
+            continue                 # parents outside the focus
+        # strictly the union marked primary: somebody with several parent
+        # links and no primary is a gap in the research, and the chart may
+        # not guess which set of parents to draw
+        kids = [c for c in u.children
+                if c in placed and graph.people[c].child_of == uid]
+        if kids:
+            assert uid in stems, (
+                f"{focus}: no stem from "
+                f"{' + '.join(graph.people[p].full_name for p in ps)} "
+                f"to their {len(kids)} children")
+        for c in kids:
+            assert ticks.get(c, 0) == 1, (
+                f"{focus}: {graph.people[c].full_name} has "
+                f"{ticks.get(c, 0)} lines to their parents, not one")
+        if len(ps) == 2:
+            assert set(ps) & tied, (
+                f"{focus}: nothing joins {graph.people[ps[0]].full_name} and "
+                f"{graph.people[ps[1]].full_name}, who are married")

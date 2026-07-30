@@ -65,6 +65,22 @@ SEAM = 1.5
 # Fewest cells the disc is ever divided into, so a four-person chart does not
 # give each couple a quadrant.
 MIN_CELLS = 14.0
+# TWO EXPERIMENTS, both of which measured worse. Left here as constants so the
+# next person re-runs them rather than re-invents them; `tools/ink_check.py`
+# and the elbow count in the commit message are the numbers to beat.
+#
+# LEAN   how far a couple leans over their own children toward the child of
+#        theirs who is drawn somewhere else -- the one they have a long line
+#        to. 0 is dead centre, 1 hard against the edge. It shortens that line
+#        and costs a bracket on the other side: 9 brackets and 270 degrees of
+#        detour at 0, 10 and 266 at 0.5. No gain, and one more name shortened.
+# FLANK  put the couple BETWEEN its two ancestral lines instead of beyond
+#        both, so each partner has their own behind them. Reads beautifully
+#        in the abstract and is worse on the sheet, because the couple's own
+#        children stop being at the edge of the block nearest the descendant
+#        it hangs from: crossings 5 -> 12, detour 270 -> 359 degrees.
+LEAN = 0.0
+FLANK = False
 
 
 @dataclass
@@ -85,6 +101,10 @@ class _Cell:
     uid: str = ""                              # which marriage a group holds
     over: int = -1
     over_n: int = 1                            # how many of them are children
+    # +1 or -1: which side the ONE child of this couple who is not in this
+    # block lies on. The couple leans that way over their children, because
+    # the line to that child is the only long one they have.
+    lean: int = 0
     rel: float = 0.0
     x: float = 0.0
     contour: dict[int, tuple[float, float]] = field(default_factory=dict)
@@ -206,7 +226,14 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
         if run:
             lo = min(_span(k)[0] for k in run)
             hi = max(_span(k)[1] for k in run)
-            x = (lo + hi) / 2
+            # OVER THEIR CHILDREN, and toward the one who is not here. A stem
+            # reaches the nearest END of a run of children side by side, so
+            # leaning costs that stem nothing -- and it comes straight off the
+            # long line to the child out in the cell this block hangs from.
+            # Kathleen's parents sat in the middle of the seven children still
+            # at home and 103 degrees from her; leaning halves that.
+            mid = (lo + hi) / 2
+            x = mid + (hi - lo) / 2 * LEAN * cell.lean
             shift = 0.0
             if cell.depth in acc:
                 shift = max(0.0, acc[cell.depth][1] + fam
@@ -483,11 +510,34 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         # cells and one crossing two.
         if len(ups) > 1:
             ups.sort(key=_cells_in, reverse=True)
-        # Siblings nearest the couple; the generations behind them, further
-        # away. The cell sits over the siblings either way.
-        cell.kids = (ups + groups) if side < 0 else (groups + ups[::-1])
-        cell.over = (len(ups) if side < 0 else 0) if groups else -1
+        # Putting the couple BETWEEN its two lines was tried, because that is
+        # what a marriage is -- the place two lines meet -- and it reads
+        # beautifully in the abstract:
+        #
+        #   [ her family ][ HER | HIM ][ his family ]
+        #
+        # It is worse. The couple's own children stop being at the edge of the
+        # block nearest the descendant it hangs from, so THAT arc needs a
+        # bracket, and on the owner's tree the crossings went from five to
+        # twelve and the detour from 270 degrees to 359. Both lines on one
+        # side, narrower one nearest, stands.
+        if FLANK and len(ups) > 1 and groups:
+            cell.kids = ([ups[1]] + groups + [ups[0]] if side < 0
+                         else [ups[0]] + groups + [ups[1]])
+            cell.over = 1
+        else:
+            cell.kids = (ups + groups) if side < 0 else (groups + ups[::-1])
+            cell.over = (len(ups) if side < 0 else 0) if groups else -1
         cell.over_n = len(groups)
+        # WHICH WAY THIS COUPLE LEANS OVER THEIR CHILDREN. `pid` is one of
+        # them and is NOT in this block -- he is out in the cell this block
+        # hangs from -- so the line to him is the long one, and every
+        # millimetre the couple moves his way comes straight off it.
+        #
+        # It costs nothing at the other end: a stem only has to reach the
+        # NEAREST END of a run of children side by side, not their middle, so
+        # leaning does not lengthen anything.
+        cell.lean = 1 if side < 0 else -1
         return cell
 
     me = descend(subj, 0)
