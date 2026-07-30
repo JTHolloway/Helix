@@ -46,7 +46,8 @@ from helix.style.tokens import Style                 # noqa: E402
 
 TAU = math.tau
 LINEWORK = {"siblings", "stem", "branch", "thread", "marriage",
-            "unknown_partner", "chord", "reach"}
+            "unknown_partner", "chord", "reach",
+            "marriage_divider"}
 
 
 def norm(a: float) -> float:
@@ -256,7 +257,9 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
     for el in plan.elements:
         if el.kind != "path" or el.role not in LINEWORK or not el.d:
             continue
-        key = el.union_id or el.person_id or id(el)
+        # `line_id` is the CELL: the two ties under somebody who
+        # married twice are one cell's business and may meet.
+        key = el.union_id or el.line_id or el.person_id or id(el)
         for pts, _closed in flatten(el, 0.25):
             for r, t0, t1, sweep in runs_of(pts, cx, cy):
                 if r < 1.0:
@@ -390,7 +393,8 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
     for el in plan.elements:
         if el.kind != "path" or el.role not in LINEWORK or not el.d:
             continue
-        if el.role in ("marriage", "unknown_partner", "chord"):
+        if el.role in ("marriage", "unknown_partner", "chord",
+                       "marriage_divider"):
             # something to LAND on, never something with a loose end of its
             # own: a rule is a tie between two names and ends at each of them
             for pts, _c in flatten(el, 0.4):

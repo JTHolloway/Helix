@@ -148,8 +148,8 @@ def _stem_runs(graph, g, wraps: bool):
             hi_h = ts[0] + (ts[-1] - ts[0]) * 0.8
         else:
             sl = g.slots[anchor]
-            lo_h = sl.tc - (sl.t1 - sl.t0) * 0.30
-            hi_h = sl.tc + (sl.t1 - sl.t0) * 0.30
+            lo_h = sl.tc - (sl.t1 - sl.t0) * 0.20
+            hi_h = sl.tc + (sl.t1 - sl.t0) * 0.20
 
         # ---- ONE ARC PER CONTIGUOUS RUN OF THEM, NEVER ONE ARC OVER ALL ---
         #
@@ -212,12 +212,22 @@ def _stem_runs(graph, g, wraps: bool):
         if cur:
             runs.append(cur)
         for run in runs or [kids]:
-            # ...and each run gets the point on the couple NEAREST it, so a
-            # stem is a plain radius wherever it can be.
+            # THE MIDDLE UNLESS SLIDING BUYS SOMETHING. A stem leaves from the
+            # centre of the cell, square under the name, because anything else
+            # reads as a name that is not quite over its own branch -- and
+            # that was reported before it was measured.
+            #
+            # The one case where it may move is a run of children the middle
+            # does not reach: then, and only then, it slides as far as the
+            # side of the cell to save a bracket.
             ts = [g.slots[c].tc for c in run]
-            aim = (min(ts) + max(ts)) / 2
-            yield (uid, gen_k, anchor, parents,
-                   min(max(aim, lo_h), hi_h), run)
+            lo_r, hi_r = min(ts), max(ts)
+            mid_h = (lo_h + hi_h) / 2
+            if lo_r - 1e-9 <= mid_h <= hi_r + 1e-9:
+                head_t = mid_h                      # already over them
+            else:
+                head_t = min(max((lo_r + hi_r) / 2, lo_h), hi_h)
+            yield uid, gen_k, anchor, parents, head_t, run
 
 
 def _elbow_lanes(graph, g, wraps: bool) -> dict[int, int]:
@@ -828,15 +838,19 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             # partner it belongs to. The marriage is the tie between them --
             # the one place this design has to draw a line for it.
             #
-            # Where somebody married twice there are three names in the cell
-            # and two rules, and each gets ITS OWN RADIUS. Drawn at one
-            # radius they met end to end at the person they have in common
-            # and read as a single line under all three -- which is the
-            # shape of a sibling arc, saying the two spouses were brother
-            # and sister.
-            base = rule_r(members[0])
-            room = max(0.0, band_top(members[0].gen) - base)
-            step = min(size * 0.7, room / max(1, len(members) - 2))
+            # WHERE SOMEBODY MARRIED TWICE there are three names in the cell
+            # and two rules. Drawn at one radius they meet end to end at the
+            # person they have in common and read as ONE line under all three
+            # -- the shape of a sibling arc, saying the two spouses were
+            # brother and sister.
+            #
+            # Offsetting the second one radially fixed the meaning and looked
+            # wrong: two ties at two heights under one cell, for no reason the
+            # chart ever explains. So they sit at the SAME radius and a short
+            # radial divider is drawn across the person they share. One tie
+            # each side of the divider, both level, and the tick says where
+            # one marriage stops and the next begins.
+            step = 0.0
             for k, (a, b) in enumerate(zip(members, members[1:])):
                 # BELOW the names, in the gap, never through them. At half
                 # the label height this ran straight through "Kathleen
@@ -850,7 +864,20 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                                                theta(b.tc)),
                                  stroke=style.get("lines.marriage_colour", col),
                                  stroke_width=lw * 0.9, fill="none",
-                                 person_id=a.pid, role="marriage", z=8))
+                                 person_id=a.pid, line_id=cid,
+                                 role="marriage", z=8))
+                if k:
+                    # the divider, across the name the two marriages share
+                    plan.add(Element(
+                        kind="path", layer="ENGRAVE",
+                        d=G.polyline([G.polar(cx, cy, r - size * 0.5,
+                                              theta(a.tc)),
+                                      G.polar(cx, cy, r + size * 0.5,
+                                              theta(a.tc))]),
+                        stroke=style.get("lines.marriage_colour", col),
+                        stroke_width=lw * 0.9, fill="none",
+                        person_id=a.pid, line_id=cid,
+                        role="marriage_divider", z=8))
             continue
         t0, t1 = theta(members[0].t0), theta(members[0].t1)
         mid = (t0 + t1) / 2
@@ -864,9 +891,10 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             rule_top[cid] = max(rule_top.get(cid, 0.0), r)
             rule_at[frozenset((sl.pid, members[k + 1].pid))] = r
             # Wide enough that a stem leaving from the side its children are
-            # on still starts ON the rule: the head may slide 30% of the cell
-            # either way, so the rule has to reach at least that far.
-            half = (t1 - t0) * 0.34
+            # on still starts ON the rule -- the head may slide a fifth of
+            # the cell either way -- and no wider, because a rule that
+            # overhangs the names it joins reads as something else.
+            half = (t1 - t0) * 0.24
             plan.add(Element(kind="path", layer="ENGRAVE",
                              d=G.arc_path(cx, cy, r, mid - half, mid + half),
                              stroke=style.get("lines.marriage_colour", col),
@@ -986,7 +1014,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         r_row = ring_r[sl.gen] + (deep + 1) * pitch[sl.gen]
         t0, t1 = theta(sl.t0), theta(sl.t1)
         r_dash = ring_r[sl.gen] + deep * pitch[sl.gen] + reach(sl.gen) + size * 0.55
-        half = abs(t1 - t0) * 0.34      # as wide as the stem head may slide
+        half = abs(t1 - t0) * 0.24      # as wide as the stem head may slide
         plan.add(Element(kind="path", layer="ENGRAVE",
                          d=G.arc_path(cx, cy, r_dash, theta(sl.tc) - half,
                                       theta(sl.tc) + half),
