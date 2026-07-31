@@ -182,8 +182,11 @@ def restore(src: str | Path, out_db: str | Path, *,
                     f"no family.json. Contents: {', '.join(names[:6])}"
                 )
             data = json.loads(z.read("family.json"))
+            photos = [n for n in names
+                      if n.startswith("media/") and not n.endswith("/")]
     else:
         data = json.loads(src.read_text())
+        photos = []
 
     if data.get("format") != "helix-archive":
         raise ValueError(
@@ -213,10 +216,28 @@ def restore(src: str | Path, out_db: str | Path, *,
     con.commit()
     con.execute("PRAGMA foreign_keys = ON")
     problems = verify(con)
+
+    # AND THE PHOTOGRAPHS BACK BESIDE THE FILE. The `media` rows restored
+    # above name files by content hash; without this they name nothing, and
+    # a restored family would open with every portrait missing and no way
+    # to tell whether it ever had one.
+    restored_photos = 0
+    if photos:
+        from .album import album_dir
+        d = album_dir(out_db, create=True)
+        with zipfile.ZipFile(src) as z:
+            for n in photos:
+                name = Path(n).name
+                if not name or name.startswith("."):
+                    continue
+                (d / name).write_bytes(z.read(n))
+                restored_photos += 1
+
     return {"source": "archive",
             "exported": data.get("exported"),
             "tables": counts,
             "people": counts.get("person", 0),
+            "photos": restored_photos,
             "problems": problems}
 
 
@@ -264,6 +285,16 @@ def archive(db_path: str | Path, out_path: str | Path | None = None,
         z.writestr("family.json",
                    json.dumps(to_json(con), indent=1, default=str))
         z.writestr("people.csv", people_csv(con))
+        # THE PHOTOGRAPHS TOO. The `media` rows name files that live beside
+        # the database, so a zip holding only the rows is a zip of two
+        # hundred captions with nothing under them -- and the whole promise
+        # of an archive is that it is the copy you can keep somewhere else.
+        from .album import album_dir
+        adir = album_dir(db_path)
+        if adir.is_dir():
+            for f in sorted(adir.iterdir()):
+                if f.is_file():
+                    z.write(f, f"media/{f.name}")
         for r in renders or []:
             if Path(r).exists():
                 z.write(r, f"renders/{Path(r).name}")

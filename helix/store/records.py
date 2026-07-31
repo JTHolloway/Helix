@@ -53,6 +53,12 @@ KEYS: dict[str, tuple[str, ...]] = {
     "event": ("id",),
     "event_role": ("event_id", "person_id", "union_id", "role"),
     "place": ("id",),
+    # Photographs. `media_link.event_id` is part of the key and is usually
+    # NULL, which is why `_where` matches with IS rather than = -- a picture
+    # of a person and not of an event is the ordinary case, and `= NULL` is
+    # never true of anything.
+    "media": ("id",),
+    "media_link": ("media_id", "person_id", "event_id"),
 }
 
 ATTACHMENTS = ("father", "mother", "partner", "child", "sibling")
@@ -237,16 +243,29 @@ def _place_id(e: Edit, name: str) -> Optional[str]:
     return pid
 
 
-def set_event(e: Edit, person_id: str, typ: str, text: str,
-              place: str = "") -> None:
+def set_event(e: Edit, person_id: str, typ: str, text: Optional[str],
+              place: str = "", desc: Optional[str] = None) -> None:
     """Record a dated fact. Whatever was typed is kept: an unparseable date
-    is stored with kind='unknown' and the original string intact."""
-    d = parse_date(text)
+    is stored with kind='unknown' and the original string intact.
+
+    `desc` is for the facts that are a piece of TEXT rather than a date --
+    an occupation, a school. They are events like everything else, so they
+    can be dated and cited later without a schema change, and clearing one
+    to empty deletes nothing: the row stays with a blank description, which
+    is the difference between "not recorded" and "recorded as nothing".
+
+    NONE MEANS LEAVE IT ALONE, and the distinction is not pedantic. An empty
+    string is somebody clearing a field; None is a request that never
+    mentioned it. Written the same way, saving a birthplace on its own sent
+    an empty date with it and wiped the birth date that was already there --
+    which is the one thing this module must never do.
+    """
+    d = parse_date(text or "")
     place_id = _place_id(e, place)
     row = e.con.execute(
         "SELECT e.id FROM event e JOIN event_role r ON r.event_id=e.id "
         "WHERE r.person_id=? AND e.type=? LIMIT 1", (person_id, typ)).fetchone()
-    fields = {
+    fields = {} if text is None else {
         "date_json": d.to_json(),
         "date_earliest": d.earliest.isoformat() if d.earliest else None,
         "date_latest": d.latest.isoformat() if d.latest else None,
@@ -254,10 +273,14 @@ def set_event(e: Edit, person_id: str, typ: str, text: str,
     }
     if place_id:
         fields["place_id"] = place_id
+    if desc is not None:
+        fields["description"] = desc.strip() or None
     if row:
-        e.update("event", {"id": row["id"]}, fields)
+        if fields:
+            e.update("event", {"id": row["id"]}, fields)
         return
-    if not d.known and not (text or "").strip() and not place_id:
+    if (not d.known and not (text or "").strip() and not place_id
+            and not (desc or "").strip()):
         return
     eid = new_id()
     e.insert("event", {"id": eid, "type": typ, **fields})
@@ -306,11 +329,25 @@ def update_person(con, body: dict) -> dict:
                 e.insert("person_name", {"id": new_id(), "person_id": pid,
                                          "type": "birth", "is_primary": 1,
                                          **fields})
+        # `.get(k)` and not `.get(k, "")`: a key that is absent means "do
+        # not touch this", and an empty string means "clear it". Sent the
+        # same way, saving somebody's birthplace wiped their birth date.
         if "birth" in body or "birth_place" in body:
-            set_event(e, pid, "birth", body.get("birth", ""),
+            set_event(e, pid, "birth", body.get("birth"),
                       body.get("birth_place", ""))
-        if "death" in body:
-            set_event(e, pid, "death", body.get("death", ""))
+        if "death" in body or "death_place" in body:
+            set_event(e, pid, "death", body.get("death"),
+                      body.get("death_place", ""))
+        # WHAT SOMEBODY KNEW ABOUT THEM. Not decoration: these are the
+        # things people actually remember and the reason for keeping a file
+        # at all -- where she was born, what he did, where they went to
+        # school. Each is an event with a date of its own in the schema, so
+        # "carpenter, from 1911" stays sayable later; today the app writes
+        # the description and leaves the date blank rather than inventing
+        # one.
+        for typ in ("occupation", "education"):
+            if typ in body:
+                set_event(e, pid, typ, "", desc=body[typ])
         changes = {}
         if "sex" in body and body["sex"] in ("M", "F", "X", "U"):
             changes["sex"] = body["sex"]

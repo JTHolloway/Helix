@@ -29,6 +29,11 @@ class Person:
     confidence: int = 2
     is_placeholder: bool = False
     living: Optional[bool] = None
+    # WHAT SOMEBODY WROTE DOWN THAT IS NOT A FIELD. The stories, the family
+    # rumour, the reason a date is uncertain. A genealogy program that has
+    # nowhere to put "she always said her mother came over on the Empire
+    # Windrush" loses the only part nobody else can reconstruct.
+    notes: str = ""
     tags: list[str] = field(default_factory=list)
 
     # graph edges (filled by FamilyGraph)
@@ -291,6 +296,9 @@ def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
             confidence=r["confidence"], is_placeholder=bool(r["is_placeholder"]),
             living=None if r["living"] is None else bool(r["living"]),
         )
+    for r in con.execute("SELECT id, notes FROM person WHERE notes IS NOT NULL"):
+        if r["id"] in people:
+            people[r["id"]].notes = r["notes"] or ""
 
     for r in con.execute(
         "SELECT er.person_id pid, e.type t, e.description d, p.name pl "

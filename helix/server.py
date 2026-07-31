@@ -14,6 +14,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from .graph import build as gbuild
+from .graph.kinship import (KinFilter, Kinship, all_groups, household,
+                            siblings_of)
 from .graph.thread import Contingency, thread
 from .layout import registry
 from .layout.base import LayoutSettings
@@ -39,7 +41,30 @@ _RECORD_ROUTES = {
     "/api/union/child":   lambda con, b: records.union_child_op(con, b),
     "/api/undo":          lambda con, b: records.undo(con),
     "/api/redo":          lambda con, b: records.redo(con),
+    "/api/person/photo":  lambda con, b: _add_photo(con, b),
+    "/api/person/photo/remove": lambda con, b: _drop_photo(con, b),
 }
+
+
+def _add_photo(con, b: dict) -> dict:
+    """A photograph, copied into the album beside the family file.
+
+    The bytes arrive as a `data:` URL because that is what a browser's
+    FileReader produces and because the standard library has no multipart
+    parser it would be wise to point at untrusted input.
+    """
+    from .store import album
+    name, _path = album.store_data_url(ST.dbpath, b["data"],
+                                       b.get("filename", ""))
+    mid = album.attach(con, b["id"], name, caption=b.get("caption", ""),
+                       portrait=b.get("portrait", True) is not False)
+    return {"ok": True, "id": b["id"], "media_id": mid, "name": name}
+
+
+def _drop_photo(con, b: dict) -> dict:
+    from .store import album
+    album.detach(con, b["id"], b["media_id"])
+    return {"ok": True, "id": b["id"]}
 
 
 class State:
@@ -62,12 +87,26 @@ class State:
         self.subject = get_setting(self.con, "subject_person_id")
         self.title = get_setting(self.con, "project_title", "My family")
         self._cont = None
+        self._kin = None
 
     @property
     def contingency(self) -> Contingency:
         if self._cont is None:
             self._cont = Contingency(self.graph)
         return self._cont
+
+    @property
+    def kin(self) -> Kinship:
+        """Everybody's relation to the subject, worked out once per reload.
+
+        Cached because it is read by four different screens and rebuilt on
+        every write anyway. Asked per person instead it is quadratic: the
+        relatives sidebar lists four hundred people and would walk four
+        hundred ancestor sets to do it.
+        """
+        if self._kin is None:
+            self._kin = Kinship(self.graph, self.subject)
+        return self._kin
 
 
 ST: State | None = None
@@ -85,6 +124,9 @@ class Handler(BaseHTTPRequestHandler):
             if u.path.startswith("/api/"):
                 with ST.lock:
                     return self._api(u.path[5:], q)
+            if u.path.startswith("/print/"):
+                with ST.lock:
+                    return self._print(u.path[7:], q)
             return self._static(u.path)
         except Exception as e:                       # never show a stack trace
             self._json({"error": str(e)}, 500)
@@ -151,6 +193,30 @@ class Handler(BaseHTTPRequestHandler):
             return
         if route == "person":
             return self._json(_person_detail(ST, q["id"]))
+        if route == "relatives":
+            # THE SIDEBAR. Everybody in the file, in tabs, closest first.
+            return self._json(_relatives(ST))
+        if route == "kin":
+            # ONE PERSON, MEASURED TWICE: how they stand to you, and how
+            # everyone else stands to THEM. The second is what lights the
+            # chart up when you click a name -- their cousins, not yours.
+            return self._json(_kin_detail(ST, q["id"]))
+        if route == "groups":
+            return self._json(all_groups())
+        if route == "media":
+            from .store import album
+            p = album.resolve(ST.dbpath, q.get("name", ""))
+            if not p:
+                return self._json({"error": "No such picture."}, 404)
+            body = p.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", album.mime_for(p.name))
+            # named by the hash of its own bytes, so it can never go stale
+            self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if route == "person/search":
             return self._json(records.search(ST.con, q.get("q", ""),
                                              exclude=q.get("exclude", "")))
@@ -199,6 +265,48 @@ class Handler(BaseHTTPRequestHandler):
                                 "id": i.person_id} for i in validate(ST.graph)])
         self._json({"error": f"unknown endpoint /api/{route}"}, 404)
 
+    # ---------------------------------------------------------------- print
+    def _print(self, what, q):
+        """Pages meant for paper. HTML, printed by the browser -- see
+        `render/dossier.py` for why that is the right tool and not a
+        shortcut."""
+        from .render import dossier
+        from .store import album
+        g, k = ST.graph, ST.kin
+        photos = lambda pid: album.photos_of(ST.con, pid)   # noqa: E731
+
+        if what == "profile":
+            pid = q["id"]
+            return self._html(dossier.one(g, ST.con, pid, kin=k,
+                                          photos=photos(pid), title=ST.title))
+        if what == "profiles":
+            # WHOEVER IS ON THE CHART, in the order the sidebar shows them,
+            # so the people somebody actually wants are at the front of the
+            # pile rather than wherever the alphabet put them.
+            ids = _print_cast(q)
+            return self._html(dossier.everybody(
+                g, ST.con, ids, kin=k, photos_for=photos,
+                title=f"{ST.title} — profiles"))
+        if what == "outline":
+            plan_ids = set(_print_cast(q))
+            roots = [p for p in plan_ids
+                     if not [x for x in g.parents(p, primary_only=True)
+                             if x in plan_ids]]
+            roots.sort(key=lambda p: (g.people[p].birth.sort_value or 9e9,
+                                      g.people[p].sort_key))
+            return self._html(dossier.outline(
+                g, roots, kin=k, elided=_print_elided(q),
+                title=f"{ST.title} — outline"))
+        self.send_error(404, "Not found")
+
+    def _html(self, body: str):
+        raw = body.encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(raw)))
+        self.end_headers()
+        self.wfile.write(raw)
+
     # --------------------------------------------------------------- static
     def _static(self, path):
         rel = "index.html" if path in ("/", "") else path.lstrip("/")
@@ -235,10 +343,135 @@ def _plan(q):
         engine=design, subject_id=q.get("subject") or ST.subject,
         max_generations=int(q["gens"]) if q.get("gens") else None,
         focus=q.get("focus", "all"),
+        kin=_kin_filter(q),
         max_people=int(q["max_people"]) if q.get("max_people") else None,
         weight_mode=style.get("layout.weight_mode", "leaves"),
         redact_living=q.get("redact") == "1")
     return registry.run(design, ST.graph, s, style)
+
+
+def _kin_filter(q) -> KinFilter:
+    """How far the chart spreads, read off the query string.
+
+    `kin` carries the whole filter as JSON, which keeps a growing set of
+    controls out of the URL one parameter at a time; the plain named
+    parameters are there so the same chart can be asked for from a script
+    without building JSON.
+    """
+    d: dict = {}
+    if q.get("kin"):
+        try:
+            d = json.loads(q["kin"]) or {}
+        except ValueError:
+            d = {}
+    for name in ("max_cousin_degree", "max_removal", "max_steps",
+                 "max_up", "max_down"):
+        if q.get(name) not in (None, ""):
+            d[name] = q[name]
+    if q.get("married_in") in ("0", "false"):
+        d["married_in"] = False
+    if q.get("unrelated") in ("1", "true"):
+        d["unrelated"] = True
+    if q.get("groups"):
+        d["groups"] = [x for x in q["groups"].split(",") if x]
+    return KinFilter.from_dict(d)
+
+
+def _print_cast(q) -> list[str]:
+    """Who a printout covers.
+
+    THE SAME PEOPLE AS THE CHART, by default and on purpose. Print a chart
+    narrowed to first cousins and then a dossier of four hundred people and
+    the two do not describe the same family -- so the printout is built from
+    the same scoping the chart used, and says so on the page.
+    """
+    g, k = ST.graph, ST.kin
+    if q.get("all") == "1":
+        ids = list(g.people)
+    else:
+        keep = _scoped_ids(q)
+        ids = [p for p in g.people if p in keep]
+    return sorted(ids, key=lambda p: (k.of(p).rank, g.people[p].sort_key))
+
+
+def _scoped_ids(q) -> set:
+    from .graph.kinship import narrow
+    from .layout.subject_grid import _by_focus
+    subj = q.get("subject") or ST.subject
+    if not subj or subj not in ST.graph.people:
+        return set(ST.graph.people)
+    within = _by_focus(ST.graph, LayoutSettings(subject_id=subj,
+                                                focus=q.get("focus", "all")),
+                       subj)
+    return narrow(ST.graph, subj, _kin_filter(q), within=within,
+                  index=ST.kin).keep
+
+
+def _print_elided(q) -> dict:
+    from .graph.kinship import narrow
+    from .layout.subject_grid import _by_focus
+    subj = q.get("subject") or ST.subject
+    filt = _kin_filter(q)
+    if not subj or not filt.active:
+        return {}
+    within = _by_focus(ST.graph, LayoutSettings(subject_id=subj,
+                                                focus=q.get("focus", "all")),
+                       subj)
+    return narrow(ST.graph, subj, filt, within=within,
+                  index=ST.kin).elided_union
+
+
+def _relatives(st: State) -> dict:
+    """Everybody in the file, in tabs, closest first.
+
+    The tabs are drop-downs rather than a flat list because a real family
+    file is hundreds of people and the useful question is almost always
+    "who are my first cousins", not "who is person 214".
+    """
+    g, k = st.graph, st.kin
+    return {
+        "subject": st.subject,
+        "subject_name": (g.people[st.subject].full_name
+                         if st.subject in g.people else ""),
+        "total": len(g.people),
+        "groups": [dict(grp, people=[_kin_brief(st, p) for p in grp["people"]])
+                   for grp in k.groups()],
+    }
+
+
+def _kin_brief(st: State, pid: str) -> dict:
+    from .store import album
+    p = st.graph.people[pid]
+    kin = st.kin.of(pid)
+    port = album.portrait_of(st.con, pid)
+    return {"id": pid, "name": p.full_name, "life": p.lifespan, "sex": p.sex,
+            "relation": kin.label, "steps": kin.steps, "group": kin.group,
+            "portrait": port["name"] if port else None,
+            "is_subject": pid == st.subject}
+
+
+def _kin_detail(st: State, pid: str) -> dict:
+    """One person, measured twice.
+
+    HOW THEY STAND TO YOU is what the profile says in words. HOW EVERYONE
+    ELSE STANDS TO THEM is what lights the chart up when you click a name:
+    their brothers and sisters, their cousins, their second cousins. Those
+    are two different measurements from two different origins, and reading
+    the second off the first is the mistake that would put YOUR cousins in
+    a halo around SOMEBODY ELSE.
+    """
+    g = st.graph
+    kin = st.kin.of(pid)
+    theirs = st.kin.relatives_of(pid)
+    return {
+        "id": pid,
+        "relation": kin.to_dict(),
+        "counts": household(g, pid),
+        "highlight": {key: ids for key, ids in theirs.items() if ids},
+        "highlight_titles": {grp["key"]: grp["title"] for grp in all_groups()},
+        "through": (_brief(g, kin.through)
+                    if kin.through and kin.through in g.people else None),
+    }
 
 
 def _coerce(v: str):
@@ -276,15 +509,24 @@ def _person_detail(st: State, pid: str) -> dict:
         evs.append({"type": r["type"], "date": d.display, "place": r["place"] or "",
                     "desc": r["description"] or "", "confidence": r["confidence"],
                     "citations": r["cites"]})
-    rel = g.relationship(st.subject, pid) if st.subject else ""
+    from .store import album
+    kin = st.kin.of(pid)
     return {
         "id": pid, "name": p.full_name, "life": p.lifespan, "age": p.age,
         "sex": p.sex, "confidence": p.confidence,
         "given": p.given, "surname": p.surname,
         "birth": p.birth.display, "death": p.death.display,
         "birth_place": p.birth_place, "occupation": p.occupation,
+        "education": p.education, "notes": p.notes or "",
         "events": evs,
-        "relationship": rel,
+        # WHAT A PROFILE PAGE IS FOR. The relation in words and in numbers,
+        # the counts, the photographs, and everything anybody has written
+        # down. `relationship` is kept as it was so nothing that reads it
+        # breaks; `kin` is the same fact with structure on it.
+        "kin": kin.to_dict(),
+        "counts": household(g, pid),
+        "photos": album.photos_of(st.con, pid),
+        "relationship": kin.label if st.subject else "",
         "is_subject": pid == st.subject,
         "parents": [_brief(g, x) for x in g.parents(pid, False)],
         "partners": [_brief(g, x) for x in g.partners(pid)],
@@ -303,27 +545,10 @@ def _brief(g, pid: str) -> dict:
     return {"id": pid, "name": p.full_name, "life": p.lifespan, "sex": p.sex}
 
 
-def _siblings(g, pid: str) -> list[str]:
-    """Brothers and sisters through either parent, so a half-sibling is a
-    sibling here rather than a special case.
-
-    Walks the FAMILY, not the parents. "Add a brother" on somebody whose
-    parents are not recorded yet creates the family that will hold them, and
-    two children of a family with no named parents are still siblings.
-    """
-    fams = list(g.people[pid].child_of_all)          # full brothers and sisters
-    for par in g.parents(pid, primary_only=False):   # and half, through either
-        fams.extend(g.people[par].unions)
-    out, seen = [], {pid}
-    for uid in dict.fromkeys(fams):
-        u = g.unions.get(uid)
-        if not u:
-            continue
-        for c in u.children:
-            if c not in seen:
-                seen.add(c)
-                out.append(c)
-    return out
+# ONE DEFINITION OF A SIBLING, and it lives in the module that owns the word
+# "relation". Written out twice the two drifted: the profile counted
+# half-brothers and the sidebar did not.
+_siblings = siblings_of
 
 
 def _families(g, pid: str) -> list[dict]:

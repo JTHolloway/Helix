@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1000mm" height="1000mm" viewBox="0 0 1000 1000">
-<!-- helix | engine=radial_rings style=panel1m people=31 hash=9e594d964416 -->
+<!-- helix | engine=radial_rings style=panel1m people=31 hash=19b5bc6828a7 -->
 <rect x="0" y="0" width="1000" height="1000" fill="#FBF8F2"/>
 <g id="GUIDE" inkscape:groupmode="layer" inkscape:label="GUIDE">
 <path d="M318.5856,500A181.4144,181.4144 0 1,0 681.4144,500A181.4144,181.4144 0 1,0 318.5856,500Z" fill="none" stroke="#DAD2C2" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1,2.5"/>
@@ -101,7 +101,7 @@
 <text x="308.2879" y="525.2394" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#6E675C" text-anchor="middle" dominant-baseline="central" transform="rotate(82.5,308.2879,525.2394)">1724–1801</text>
 <text x="305.2977" y="525.633" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#8A8073" text-anchor="middle" dominant-baseline="central" transform="rotate(82.5,305.2977,525.633)">Walcot</text>
 <text x="764.324" y="534.7989" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,764.324,534.7989)">Mary Pargeter</text>
-<text x="767.7742" y="535.2531" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#6E675C" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,767.7742,535.2531)">1747–1810</text>
+<text x="767.7742" y="535.2531" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#6E675C" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,767.7742,535.2531)">1746–1810</text>
 <text x="727.318" y="639.3006" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,727.318,639.3006)">William Pargeter</text>
 <text x="730.2851" y="641.1189" font-family="'Iowan Old Style',Georgia,serif" font-size="2.6" fill="#6E675C" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,730.2851,641.1189)">1748–1795</text>
 <text x="651.0066" y="719.716" font-family="'Iowan Old Style',Georgia,serif" font-size="3.4" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(325.5,651.0066,719.716)">Albert Pargeter</text>

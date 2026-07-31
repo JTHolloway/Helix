@@ -73,6 +73,25 @@ class GenDate:
 
     @property
     def year(self) -> Optional[int]:
+        """The year this date is IN.
+
+        Not the rounded midpoint, which is what it used to be, and which was
+        wrong for everybody born in the second half of a year: 11 August
+        1967 has a sort value of 1967.6 and rounded to 1968. It appeared as
+        "1968–" under the name of a man whose profile said 11 Aug 1967 two
+        lines further down, and on every chart drawn since dates went on
+        them.
+
+        An interval spanning a year boundary -- "between 1899 and 1901" --
+        has no single year, and the midpoint is the only honest answer
+        there. Rounding is right for that case and only that case.
+        """
+        lo, hi = self.earliest, self.latest
+        if lo is None and hi is None:
+            return None
+        lo, hi = lo or hi, hi or lo
+        if lo.year == hi.year:
+            return lo.year
         sv = self.sort_value
         return None if sv is None else int(round(sv))
 

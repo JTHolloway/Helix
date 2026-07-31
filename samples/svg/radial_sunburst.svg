@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="600mm" height="600mm" viewBox="0 0 600 600">
-<!-- helix | engine=radial_sunburst style=labyrinth people=31 hash=69c577e509be -->
+<!-- helix | engine=radial_sunburst style=labyrinth people=31 hash=c685e3fb3c2c -->
 <rect x="0" y="0" width="600" height="600" fill="#F4F0E6"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
 <path d="M186.8751,300A113.1249,113.1249 0 1,0 413.1249,300A113.1249,113.1249 0 1,0 186.8751,300Z" fill="none" stroke="#C7BCA6" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -91,7 +91,7 @@
 <text x="138.6348" y="319.5331" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(442.5,138.6348,319.5331)">Florence Cadogan</text>
 <text x="138.6348" y="322.9551" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(442.5,138.6348,322.9551)">1724–1801</text>
 <text x="493.1104" y="323.7125" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,493.1104,323.7125)">Mary Pargeter</text>
-<text x="493.1104" y="327.1345" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,493.1104,327.1345)">1747–1810</text>
+<text x="493.1104" y="327.1345" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(277.5,493.1104,327.1345)">1746–1810</text>
 <text x="468.264" y="401.4013" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,468.264,401.4013)">William Pargeter</text>
 <text x="468.264" y="404.8233" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(301.5,468.264,404.8233)">1748–1795</text>
 <text x="411.0529" y="459.872" font-family="'Iowan Old Style','Palatino Linotype',Georgia,serif" font-size="2.9" fill="#1C1C1A" text-anchor="middle" dominant-baseline="central" transform="rotate(325.5,411.0529,459.872)">Albert Pargeter</text>
