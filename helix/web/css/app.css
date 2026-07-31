@@ -256,3 +256,135 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
   align-items: center; justify-content: center; text-align: center;
   gap: .4rem; padding: 2rem; }
 .empty p { max-width: 26rem; opacity: .75; }
+
+/* ══════════════════════════ reading the family ═══════════════════════════
+   Explore and Build are two windows onto the same file. Everything below
+   dresses the reading half: the tabs of relatives, the profile panel, and
+   the halo that lights up whoever is related to the person you clicked. */
+
+/* --- the mode switch in the header ------------------------------------- */
+.segmented{display:flex;border:1px solid var(--rule);border-radius:var(--r);
+           overflow:hidden;background:var(--paper)}
+.segmented .seg{border:0;background:none;font:inherit;font-size:14px;
+                padding:6px 14px;cursor:pointer;color:var(--muted)}
+.segmented .seg.on{background:var(--accent);color:#fff}
+.segmented .seg + .seg{border-left:1px solid var(--rule)}
+
+/* --- the relatives sidebar --------------------------------------------- */
+#kinFind{width:100%;padding:7px 9px;border:1px solid var(--rule);
+         border-radius:var(--r);background:var(--paper);color:var(--ink);
+         font:inherit;font-size:14px;margin-bottom:8px}
+.kinlist{margin:0 -16px}
+.kingroup{border-top:1px solid var(--rule)}
+.kingroup:last-child{border-bottom:1px solid var(--rule)}
+.kingroup > summary{display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding:9px 16px;font-size:13.5px;font-weight:600;list-style:none;
+  user-select:none}
+.kingroup > summary::-webkit-details-marker{display:none}
+.kingroup > summary::before{content:'▸';color:var(--muted);font-size:11px;
+  transition:transform .12s}
+.kingroup[open] > summary::before{transform:rotate(90deg)}
+.kingroup > summary:hover{background:var(--paper)}
+.kingroup .t{flex:1}
+.kingroup .n{color:var(--muted);font-weight:400;font-size:12px;
+  background:var(--paper);border:1px solid var(--rule);border-radius:10px;
+  padding:0 7px}
+.kinpeople{padding:2px 0 8px}
+.kinperson{display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  border:0;background:none;font:inherit;cursor:pointer;color:inherit;
+  padding:5px 16px}
+.kinperson:hover{background:var(--paper)}
+.kinperson.on{background:var(--accent-soft)}
+.kinperson .av{width:30px;height:30px;border-radius:50%;flex:0 0 auto;
+  object-fit:cover;background:var(--paper);border:1px solid var(--rule)}
+.kinperson .av.blank{display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--muted);letter-spacing:.02em}
+.kinperson .who{min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.kinperson .who b{font-weight:600;font-size:14px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.kinperson .who small{color:var(--muted);font-size:11.5px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.groups{margin-top:10px}
+.groups > summary{cursor:pointer;font-size:13px;color:var(--muted);
+  padding:4px 0}
+.grouplist{max-height:230px;overflow:auto;padding:4px 0}
+.grouplist label{margin:5px 0;font-size:13px}
+
+/* --- the profile panel -------------------------------------------------- */
+.prohead{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+.drop{flex:0 0 auto;width:78px;height:98px;border-radius:6px;overflow:hidden;
+  border:1px solid var(--rule);background:var(--paper);cursor:pointer;
+  display:block;position:relative}
+.drop img{width:100%;height:100%;object-fit:cover;display:block}
+.drop .ph{display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;color:var(--muted);font-size:20px;gap:4px}
+.drop .ph em{font-size:9.5px;font-style:normal;text-align:center;padding:0 4px}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.protxt{min-width:0;flex:1}
+.protxt h3{margin:0 0 2px;font-size:17px;line-height:1.2}
+.protxt .life{margin:0 0 6px;color:var(--muted);font-size:13px}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}
+.metrics .m{background:var(--paper);border:1px solid var(--rule);
+  border-radius:6px;padding:7px 9px;line-height:1.25}
+.metrics .m b{display:block;font-size:19px;font-weight:600}
+.metrics .m span{font-size:11.5px;color:var(--muted)}
+.metrics .m small{display:block;font-size:10.5px;color:var(--muted);opacity:.8}
+
+.facts label{display:block;margin:8px 0;font-size:13px}
+.facts input,.facts textarea{width:100%;margin-top:3px;padding:6px 8px;
+  border:1px solid var(--rule);border-radius:6px;background:var(--paper);
+  color:var(--ink);font:inherit;font-size:13.5px}
+.facts textarea{resize:vertical;line-height:1.45}
+
+.progal{display:flex;flex-wrap:wrap;gap:6px}
+.progal figure{margin:0;position:relative;width:64px;height:64px}
+.progal img{width:100%;height:100%;object-fit:cover;border-radius:4px;
+  border:1px solid var(--rule)}
+.progal .x{position:absolute;top:-6px;right:-6px;width:20px;height:20px;
+  border-radius:50%;border:1px solid var(--rule);background:var(--panel);
+  cursor:pointer;line-height:1;font-size:14px;color:var(--muted);padding:0}
+
+.halo{display:flex;flex-wrap:wrap;gap:5px}
+.halobtn{display:flex;align-items:center;gap:6px;border:1px solid var(--rule);
+  background:var(--paper);border-radius:14px;padding:3px 10px;cursor:pointer;
+  font:inherit;font-size:12px;color:inherit}
+.halobtn.on{border-color:var(--accent);background:var(--accent-soft)}
+.halobtn b{font-weight:600}
+.halo .hint{flex-basis:100%;margin:6px 0 0}
+.sw{width:9px;height:9px;border-radius:50%;display:inline-block}
+.proacts{display:flex;gap:6px;margin-top:16px}
+.proacts button{flex:1}
+
+/* WHO IS RELATED TO WHOM, on the chart. A halo and not a repaint: every
+   line keeps the colour it already had and gains a ring, so the chart still
+   reads as the chart while it is answering a question about one person. */
+.sw-immediate      {background:#9B3A2E}
+.sw-cousins_1      {background:#3E6B70}
+.sw-cousins_2      {background:#6B7B4F}
+.sw-aunts_uncles   {background:#9C6B3F}
+.sw-nieces_nephews {background:#7A5C8E}
+.sw-grandparents   {background:#4A6E9C}
+.sw-grandchildren  {background:#B08A3E}
+/* STROKE ON A LINE, FILL ON A NAME, and never the other way round. Set as
+   one rule, `fill` turned every path on the chart into a solid shape and the
+   whole disc went red -- the linework is drawn with fill:none and means it. */
+#canvas .kin-lit{paint-order:stroke}
+#canvas text.kin-lit{font-weight:700}
+#canvas path[data-kin-group],#canvas circle[data-kin-group]{stroke-width:1.9}
+#canvas path[data-kin-group="immediate"]      {stroke:#9B3A2E!important}
+#canvas path[data-kin-group="cousins_1"]      {stroke:#3E6B70!important}
+#canvas path[data-kin-group="cousins_2"]      {stroke:#6B7B4F!important}
+#canvas path[data-kin-group="aunts_uncles"]   {stroke:#9C6B3F!important}
+#canvas path[data-kin-group="nieces_nephews"] {stroke:#7A5C8E!important}
+#canvas path[data-kin-group="grandparents"]   {stroke:#4A6E9C!important}
+#canvas path[data-kin-group="grandchildren"]  {stroke:#B08A3E!important}
+#canvas text[data-kin-group="immediate"]      {fill:#9B3A2E!important}
+#canvas text[data-kin-group="cousins_1"]      {fill:#3E6B70!important}
+#canvas text[data-kin-group="cousins_2"]      {fill:#6B7B4F!important}
+#canvas text[data-kin-group="aunts_uncles"]   {fill:#9C6B3F!important}
+#canvas text[data-kin-group="nieces_nephews"] {fill:#7A5C8E!important}
+#canvas text[data-kin-group="grandparents"]   {fill:#4A6E9C!important}
+#canvas text[data-kin-group="grandchildren"]  {fill:#B08A3E!important}
+#canvas text.kin-centre{fill:var(--accent)!important;font-weight:800}
+#canvas path.kin-centre{stroke:var(--accent)!important;stroke-width:2.4}

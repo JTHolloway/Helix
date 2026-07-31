@@ -12,10 +12,17 @@
 <header class="bar">
   <div class="brand">Helix<span id="proj"></span></div>
   <div class="grow"></div>
+  <div class="segmented" role="group" aria-label="What this window is for">
+    <button id="exploreBtn" class="seg on" aria-pressed="true"
+      title="Read the family. Click anyone to see who they are. (E)">Explore</button>
+    <button id="buildBtn" class="seg" aria-pressed="false"
+      title="Add people and change how the chart looks. (B)">Build</button>
+  </div>
   <input id="search" type="search" placeholder="Find a person…" autocomplete="off">
   <div id="results" class="results" hidden></div>
   <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶</button>
   <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷</button>
+  <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
   <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
   <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
   <span id="saved" class="saved" title="Every change is written to your family file the moment you make it">Saved</span>
@@ -23,8 +30,60 @@
 </header>
 
 <main>
-  <!-- ─────────────────────────── LEFT ─────────────────────────── -->
-  <aside id="left">
+  <!-- ──────────────────── LEFT · EXPLORE ──────────────────────── -->
+  <!-- Everybody in the file, in tabs, closest relation first. The order is
+       the one people name their family in, not the alphabet and not the
+       arithmetic: nobody puts their grandmother above their sister. -->
+  <aside id="kin">
+    <section class="panel open" data-panel="scope">
+      <h2>How far the tree spreads</h2>
+      <p class="hint">Narrowing the tree lays it out again from scratch, so
+        what is left is arranged as well as it can be — rather than left with
+        a gap where the cousins were.</p>
+      <label>Cousins
+        <select id="kinCousins">
+          <option value="">However far the family goes</option>
+          <option value="2">Out to second cousins</option>
+          <option value="1">First cousins only</option>
+          <option value="0">No cousins at all</option>
+        </select>
+      </label>
+      <label>Generations apart
+        <select id="kinRemoved">
+          <option value="">Any distance</option>
+          <option value="1">At most one generation</option>
+          <option value="0">Same generation only</option>
+        </select>
+      </label>
+      <label>Furthest anybody may be
+        <select id="kinSteps">
+          <option value="">No limit</option>
+          <option value="8">8 steps</option>
+          <option value="6">6 steps</option>
+          <option value="4">4 steps</option>
+          <option value="2">2 steps — the people next to you</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="kinMarried" checked>
+        Include husbands and wives who married in</label>
+      <details class="groups"><summary>Choose relations one by one</summary>
+        <div id="kinGroups" class="grouplist"></div>
+        <button id="kinAll" class="ghost wide">Turn them all back on</button>
+      </details>
+      <div id="kinCount" class="fit"></div>
+    </section>
+
+    <section class="panel open" data-panel="relatives">
+      <h2>Everyone in this family</h2>
+      <p class="hint">Closest first. Open a tab and click a name.</p>
+      <input id="kinFind" type="search" placeholder="Filter these names…"
+        autocomplete="off">
+      <div id="kinList" class="kinlist"></div>
+    </section>
+  </aside>
+
+  <!-- ──────────────────── LEFT · BUILD ────────────────────────── -->
+  <aside id="left" hidden>
     <section class="panel open" data-panel="design">
       <h2>1 · Choose a look</h2>
       <div id="gallery" class="gallery"></div>
@@ -218,6 +277,19 @@
 
 <dialog id="listDlg"><h2 id="listTitle"></h2><div id="listBody"></div>
   <form method="dialog"><button class="ghost">Close</button></form></dialog>
+
+<dialog id="printDlg">
+  <h2>Print</h2>
+  <p class="hint">These open in a new tab with a Print button. They cover the
+    same people the chart does, so a narrowed chart gives a narrowed dossier.</p>
+  <div class="exports">
+    <button data-pr="profile">This person's profile</button>
+    <button data-pr="profiles">Everyone on the chart — one profile per page</button>
+    <button data-pr="profiles-all">Everyone in the file — one profile per page</button>
+    <button data-pr="outline">The tree as an indented outline</button>
+  </div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
 
 <script type="module" src="js/main.js"></script>
 </body>

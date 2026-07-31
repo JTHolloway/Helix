@@ -347,7 +347,21 @@ def _plan(q):
         max_people=int(q["max_people"]) if q.get("max_people") else None,
         weight_mode=style.get("layout.weight_mode", "leaves"),
         redact_living=q.get("redact") == "1")
-    return registry.run(design, ST.graph, s, style)
+    plan = registry.run(design, ST.graph, s, style)
+    # EVERY DESIGN SAYS WHAT IT LEFT OFF, even the ones that cannot draw a
+    # mark for it. The flagship puts a pruned branch on each family and
+    # writes its own richer count; the other eighteen share the same scoping
+    # and would otherwise drop people silently, which is the one thing a
+    # narrowed chart must never do. This is the floor: the number, always.
+    got = getattr(s, "narrowed", None)
+    if got is not None and "elided" not in plan.meta.extra:
+        plan.meta.extra["elided"] = {
+            "marriages": len(got.elided_union),
+            "people": sum(got.elided_union.values()),
+            "below": sum(got.elided_below.values()),
+            "drawn": False,
+        }
+    return plan
 
 
 def _kin_filter(q) -> KinFilter:

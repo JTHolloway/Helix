@@ -400,3 +400,51 @@ def test_the_outline_says_where_it_was_cut(family):
     c, _ids, _db = family
     h = _fetch(c, "/print/outline?focus=bloodline&max_cousin_degree=0")
     assert "not on this chart" in h
+
+
+# ------------------------------------------------------------ the window --
+def test_every_script_the_page_asks_for_is_served(family):
+    """Cheap, and it catches the mistake that breaks the whole window: a
+    module renamed or a path typed wrong shows up as a blank page and a
+    console error nobody sees from Python."""
+    import re
+    c, _ids, _db = family
+    with urllib.request.urlopen(f"{c.base}/") as r:
+        page = r.read().decode()
+    wanted = set(re.findall(r'(?:src|href)="([^"]+\.(?:js|css))"', page))
+    assert wanted, "the page pulls in no assets at all"
+    seen = set()
+    todo = list(wanted)
+    while todo:
+        rel = todo.pop()
+        if rel in seen:
+            continue
+        seen.add(rel)
+        with urllib.request.urlopen(f"{c.base}/{rel.lstrip('/')}") as r:
+            body = r.read().decode()
+        if rel.endswith(".js"):
+            base = rel.rsplit("/", 1)[0]
+            for imp in re.findall(r"from\s+'\.\/([^']+)'", body):
+                todo.append(f"{base}/{imp}")
+
+
+def test_the_window_opens_on_the_flagship_design(family):
+    """`radial_family` is the design every other part of this program is
+    written around, and the one that draws the marks for a narrowed branch.
+    The window used to open on the older one-slot-per-person layout, so the
+    flagship was something you had to go and find."""
+    c, _ids, _db = family
+    with urllib.request.urlopen(f"{c.base}/js/main.js") as r:
+        js = r.read().decode()
+    assert "design: 'radial_family'" in js
+
+
+def test_every_design_says_what_it_left_off(family):
+    """The flagship marks each family; the other eighteen share the same
+    scoping and would otherwise drop people silently."""
+    c, _ids, _db = family
+    for design in ("radial_family", "radial_rings", "dendrogram"):
+        plan = c.get("plan", design=design, focus="bloodline",
+                     max_cousin_degree=0)
+        el = plan["meta"]["extra"].get("elided")
+        assert el and el["people"] > 0, f"{design} says nothing about what it cut"

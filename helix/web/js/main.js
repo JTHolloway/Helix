@@ -7,6 +7,8 @@ import { get, post, svgUrl } from './api.js';
 import { draw } from './canvas.js';
 import { attach } from './zoom.js';
 import * as inspector from './inspector.js';
+import * as profile from './profile.js';
+import * as relatives from './relatives.js';
 import { addPerson as addFirstPerson } from './edit.js';
 
 const $ = s => document.querySelector(s);
@@ -15,14 +17,30 @@ const view = attach(wrap, host);
 
 let META = null, PLAN = null, SEL = null, WHATIF = false, TIMER = null;
 
+// EXPLORE or BUILD. Two windows onto the same family, and the split is not
+// cosmetic: reading a family and building one ask different questions, and
+// the reading half has to be safe to hand to somebody who is not going to be
+// careful with it. Explore is the default because most of the time, most
+// people are reading.
+let MODE = 'explore';
+
 const S = {                       // everything the preview depends on
-  design: 'radial_rings', style: 'rings', gens: '5', focus: 'bloodline',
+  // THE FLAGSHIP, and the default everywhere else in the program: one cell
+  // per couple, one ring per generation, founders at the centre. The window
+  // opened on `radial_rings` -- the older one-slot-per-person layout -- so
+  // the design every other part of this program is written around was one
+  // the person had to go and find.
+  design: 'radial_family', style: '', gens: '5', focus: 'bloodline',
   tpl: '{given_first} {surname}', cmode: 'none', redact: false,
   threadOn: true, w: 1000, h: 1000, inner: 110, gamma: 50, timeScale: true,
   rings: true, fsize: 34, lw: 45, conn: 'orthogonal', start: -90, sweep: 360,
   pitch: 25, entrygap: 0, cluster: 0, orient: 'radial', marr: true,
   sibgap: 10, famgap: 60, cellcap: 12,
-  leaf: 'auto', wedges: true, wedgeop: 13
+  leaf: 'auto', wedges: true, wedgeop: 13,
+  // HOW FAR THE TREE SPREADS, by relation. Sent with every plan request, so
+  // narrowing re-runs the whole layout rather than hiding branches -- see
+  // `LayoutSettings.kin`.
+  kin: { married_in: true }
 };
 
 // ─────────────────────────────────────────────────────────────── boot ────
@@ -37,8 +55,11 @@ async function init() {
   wireExport();
   wireKeys();
   wirePeopleList();
+  wireMode();
+  wireScope();
+  wirePrint();
   undoLabels();
-  await refresh();
+  await Promise.all([refresh(), loadRelatives()]);
   view.fit();
   status();
   setInterval(status, 30000);
@@ -64,6 +85,7 @@ async function _refresh() {
       n.addEventListener('pointerenter', () => WHATIF && whatIf(n.dataset.p));
     });
     if (SEL) markSelected();
+    if (MODE === 'explore' && SEL) showProfile(SEL);
     readout();
   } catch (e) { fail(e); } finally { $('#loading').hidden = true; }
 }
@@ -90,6 +112,7 @@ function showEmptyState() {
 function params() {
   return {
     design: S.design, style: S.style, gens: S.gens, focus: S.focus,
+    kin: JSON.stringify(S.kin),
     redact: S.redact ? 1 : 0,
     's.canvas.width_mm': S.w, 's.canvas.height_mm': S.h,
     's.layout.inner_radius_mm': S.inner,
@@ -150,9 +173,13 @@ async function status() {
 function readout() {
   const m = PLAN.meta, n = m.extra?.labels_hidden || 0;
   showFit(m.extra?.fit, n);
+  const el = m.extra?.elided;
   $('#readout').innerHTML =
     `<b>${m.people}</b> people · ${m.generations} generations · ` +
     `${m.year_min}–${m.year_max} · ${S.w}×${S.h} mm` +
+    (el && el.marriages
+      ? `<br><span class="warn">${el.people} more not shown — look for the
+         ⊥ marks</span>` : '') +
     (n ? `<br><span class="warn">${n} names did not fit.</span>`
        : `<br><span class="ok">Every name fits.</span>`);
 }
@@ -267,12 +294,163 @@ async function select(pid) {
   SEL = pid;
   markSelected();
   $('#right').hidden = false;
+  relatives.mark($('#kinList'), pid);
+  if (MODE === 'explore') return showProfile(pid);
   await inspector.show($('#inspector'), pid, {
     onSelect: select,
     onSubject: async () => { META = await get('meta'); refresh(); },
-    onChanged: async () => { META = await get('meta'); refresh(); undoLabels(); },
+    onChanged: async () => {
+      META = await get('meta'); await loadRelatives(); refresh(); undoLabels();
+    },
     onToast: toast,
   });
+}
+
+async function showProfile(pid) {
+  await profile.show($('#inspector'), pid, {
+    onSelect: select,
+    onToast: toast,
+    onHighlight: paintHalo,
+    onEdit: p => { setMode('build'); select(p); },
+    onChanged: async () => {
+      META = await get('meta'); await loadRelatives(); refresh();
+    },
+  });
+}
+
+// ─────────────────────────────────────────────── explore vs build ────────
+function setMode(next) {
+  MODE = next;
+  document.body.dataset.mode2 = next;
+  $('#exploreBtn').classList.toggle('on', next === 'explore');
+  $('#buildBtn').classList.toggle('on', next === 'build');
+  $('#exploreBtn').setAttribute('aria-pressed', next === 'explore');
+  $('#buildBtn').setAttribute('aria-pressed', next === 'build');
+  $('#kin').hidden = next !== 'explore';
+  $('#left').hidden = next !== 'build';
+  if (next === 'build') clearHalo();
+  if (SEL) select(SEL);
+}
+
+function wireMode() {
+  $('#exploreBtn').addEventListener('click', () => setMode('explore'));
+  $('#buildBtn').addEventListener('click', () => setMode('build'));
+  setMode('explore');
+}
+
+// ───────────────────────────────────── who is lit up on the chart ────────
+//
+// A halo, not a repaint. Everything keeps its own colour and gains a ring,
+// so the chart still reads as the chart while it is answering a question.
+function paintHalo(sets, centre) {
+  clearHalo();
+  host.querySelectorAll(`[data-p="${CSS.escape(centre)}"]`)
+      .forEach(n => n.classList.add('kin-centre'));
+  for (const [group, ids] of Object.entries(sets || {})) {
+    if (!profile.HALO.some(([k]) => k === group)) continue;
+    for (const id of ids) {
+      host.querySelectorAll(`[data-p="${CSS.escape(id)}"]`)
+          .forEach(n => { n.classList.add('kin-lit'); n.dataset.kinGroup = group; });
+    }
+  }
+}
+
+function clearHalo() {
+  host.querySelectorAll('.kin-lit,.kin-centre').forEach(n => {
+    n.classList.remove('kin-lit', 'kin-centre');
+    delete n.dataset.kinGroup;
+  });
+}
+
+// ───────────────────────────────────────────── the relatives sidebar ─────
+async function loadRelatives() {
+  try {
+    await relatives.load();
+    drawRelatives();
+  } catch { /* an empty file has no relatives to list */ }
+}
+
+function drawRelatives() {
+  relatives.draw($('#kinList'), {
+    selected: SEL,
+    onSelect: pid => { setMode('explore'); select(pid); },
+    onScope: (total, shown) => {
+      const on = PLAN ? PLAN.meta.people : shown;
+      const el = PLAN?.meta?.extra?.elided;
+      $('#kinCount').innerHTML =
+        `<b>${on}</b> of ${total} people on the chart` +
+        (el && el.marriages
+          ? `<br><span class="warn">${el.people} left off, marked on
+             ${el.marriages} ${el.marriages === 1 ? 'family' : 'families'}</span>`
+          : '');
+    },
+  });
+}
+
+function wireScope() {
+  const push = () => { refresh().then(drawRelatives); };
+  const num = (el, key) => $(el).addEventListener('change', () => {
+    const v = $(el).value;
+    if (v === '') delete S.kin[key]; else S.kin[key] = Number(v);
+    push();
+  });
+  num('#kinCousins', 'max_cousin_degree');
+  num('#kinRemoved', 'max_removal');
+  num('#kinSteps', 'max_steps');
+  $('#kinMarried').addEventListener('change', () => {
+    S.kin.married_in = $('#kinMarried').checked; push();
+  });
+  $('#kinFind').addEventListener('input', () => {
+    relatives.filter($('#kinFind').value); drawRelatives();
+  });
+  get('groups').then(gs => {
+    const box = $('#kinGroups');
+    box.innerHTML = gs.filter(g => g.key !== 'self').map(g =>
+      `<label class="check" title="${escAttr(g.blurb)}">
+        <input type="checkbox" data-g="${g.key}" checked> ${escAttr(g.title)}</label>`
+    ).join('');
+    const sync = () => {
+      const on = [...box.querySelectorAll('input:checked')].map(i => i.dataset.g);
+      const all = box.querySelectorAll('input').length;
+      // ALL ON MEANS NO FILTER, not a filter that happens to allow
+      // everything: a chart that has never been near this screen must ask
+      // for the chart it always was.
+      if (on.length === all) delete S.kin.groups;
+      else S.kin.groups = ['self', ...on];
+      push();
+    };
+    box.querySelectorAll('input').forEach(i => i.addEventListener('change', sync));
+    $('#kinAll').addEventListener('click', () => {
+      box.querySelectorAll('input').forEach(i => { i.checked = true; });
+      sync();
+    });
+  }).catch(() => {});
+}
+
+function wirePrint() {
+  const dlg = $('#printDlg');
+  $('#printBtn').addEventListener('click', () => dlg.showModal());
+  dlg.querySelectorAll('[data-pr]').forEach(b =>
+    b.addEventListener('click', () => {
+      const q = new URLSearchParams({ focus: S.focus, kin: JSON.stringify(S.kin) });
+      const what = b.dataset.pr;
+      let url;
+      if (what === 'profile') {
+        if (!SEL) { toast('Choose somebody first.'); return; }
+        url = `/print/profile?id=${encodeURIComponent(SEL)}`;
+      } else if (what === 'profiles-all') {
+        url = '/print/profiles?all=1';
+      } else {
+        url = `/print/${what === 'outline' ? 'outline' : 'profiles'}?${q}`;
+      }
+      dlg.close();
+      window.open(url, '_blank');
+    }));
+}
+
+function escAttr(s) {
+  return String(s ?? '').replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
 function markSelected() {
@@ -428,7 +606,13 @@ function wireKeys() {
     if (k === 'f') view.fit();
     if (k === 't') { $('#threadOn').click(); }
     if (k === 'c') { $('#whatif').click(); }
-    if (k === 'escape') { clearWhatIf(); $('#right').hidden = true; SEL = null; markSelected(); }
+    if (k === 'escape') {
+      clearWhatIf(); clearHalo();
+      $('#right').hidden = true; SEL = null; markSelected();
+    }
+    if (k === 'e') setMode('explore');
+    if (k === 'b') setMode('build');
+    if (k === 'p') { e.preventDefault(); $('#printDlg').showModal(); }
     if (k === '+' || k === '=') view.zoom(1.35);
     if (k === '-') view.zoom(1 / 1.35);
     if (k === 'l') { e.preventDefault(); showPeople(); }
