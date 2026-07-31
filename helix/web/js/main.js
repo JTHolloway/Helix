@@ -59,6 +59,7 @@ async function init() {
   wireScope();
   wirePrint();
   wireGaps();
+  wireImport();
   undoLabels();
   await Promise.all([refresh(), loadRelatives(), loadGaps()]);
   view.fit();
@@ -425,6 +426,99 @@ function wireGaps() {
   more.addEventListener('click', () => { GAPN += 12; loadGaps(); });
 }
 
+// ─────────────────────────────────────────────── somebody else's tree ────
+//
+// REPORTED BEFORE ANYTHING IS WRITTEN. Nobody's first import is the one
+// they meant, and four hundred people added by mistake is not a thing to
+// discover afterwards. The dry run reads the file, says what is in it, and
+// writes nothing; only the second button touches the family file.
+function wireImport() {
+  const dlg = $('#importDlg'), input = $('#impFile'), drop = $('#impDrop');
+  const report = $('#impReport'), actions = $('#impActions');
+  if (!dlg) return;
+  let pending = null;
+
+  $('#importBtn').addEventListener('click', () => {
+    report.hidden = true; actions.hidden = true; pending = null;
+    input.value = '';
+    dlg.showModal();
+  });
+  input.addEventListener('change', () => look(input.files[0]));
+  drop.addEventListener('dragover', ev => {
+    ev.preventDefault(); drop.classList.add('over');
+  });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', ev => {
+    ev.preventDefault(); drop.classList.remove('over');
+    look(ev.dataTransfer.files[0]);
+  });
+
+  async function look(file) {
+    if (!file) return;
+    report.hidden = false;
+    report.innerHTML = `<p>Reading ${escAttr(file.name)}…</p>`;
+    actions.hidden = true;
+    let data;
+    try {
+      data = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => rej(new Error('That file could not be read.'));
+        r.readAsDataURL(file);
+      });
+    } catch (e) { report.innerHTML = `<p class="warn">${escAttr(e.message)}</p>`; return; }
+    pending = { filename: file.name, data };
+    try {
+      const r = await post('import', { ...pending, dry_run: true });
+      report.innerHTML = summarise(r, file);
+      actions.hidden = false;
+    } catch (e) {
+      report.innerHTML = `<p class="warn">${escAttr(e.message)}</p>`;
+      pending = null;
+    }
+  }
+
+  function summarise(r, file) {
+    const bits = [`<p><b>${escAttr(file.name)}</b> — ${
+      r.kind === 'gedcom' ? `GEDCOM, read as ${escAttr(r.encoding)}`
+                          : 'a spreadsheet'}</p>`];
+    bits.push(`<ul>
+      <li><b>${r.people || 0}</b> people</li>
+      ${r.families ? `<li><b>${r.families}</b> families</li>` : ''}
+      ${r.sources ? `<li><b>${r.sources}</b> sources</li>` : ''}
+      ${r.placeholders ? `<li><b>${r.placeholders}</b> mentioned but not
+        listed — they will be added as people to fill in later</li>` : ''}
+    </ul>`);
+    if (r.unmapped && r.unmapped.length) {
+      bits.push(`<p class="hint">Columns with nowhere to go, kept in each
+        person's notes: ${r.unmapped.map(escAttr).join(', ')}</p>`);
+    }
+    for (const x of (r.problems || []).slice(0, 6)) {
+      bits.push(`<p class="warn">${escAttr(x)}</p>`);
+    }
+    return bits.join('');
+  }
+
+  $('#impGo').addEventListener('click', async () => {
+    if (!pending) return;
+    $('#impGo').disabled = true;
+    $('#impGo').textContent = 'Adding…';
+    try {
+      const r = await post('import', { ...pending, dry_run: false });
+      dlg.close();
+      toast(`Added ${r.people} people. Press Ctrl-Z if that was not what you wanted.`);
+      META = await get('meta');
+      await Promise.all([refresh(), loadRelatives()]);
+      undoLabels();
+    } catch (e) {
+      report.innerHTML += `<p class="warn">${escAttr(e.message)}</p>`;
+    } finally {
+      $('#impGo').disabled = false;
+      $('#impGo').textContent = 'Add these people to my file';
+    }
+  });
+}
+
 function wireScope() {
   const push = () => { refresh().then(drawRelatives); };
   const num = (el, key) => $(el).addEventListener('change', () => {
@@ -596,6 +690,7 @@ function wireExport() {
     b.addEventListener('click', () => {
       const kind = b.dataset.x;
       if (kind === 'png') return exportPng();
+      if (kind === 'gedcom') { window.location = '/api/gedcom'; return; }
       const p = { ...params(), name: (META.title || 'family').replace(/\W+/g, '-') };
       if (kind === 'svgprod') p.production = 1;
       if (kind === 'json') { downloadText(JSON.stringify(PLAN, null, 2), 'plan.json'); return; }

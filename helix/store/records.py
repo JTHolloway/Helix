@@ -60,6 +60,11 @@ KEYS: dict[str, tuple[str, ...]] = {
     "media": ("id",),
     "media_link": ("media_id", "person_id", "event_id"),
     "person_heritage": ("person_id", "label"),
+    # Where a fact came from. Written by the GEDCOM importer, which brings
+    # a cousin's sources in with their tree -- an import that dropped them
+    # would be turning cited research into hearsay.
+    "source": ("id",),
+    "citation": ("id",),
 }
 
 ATTACHMENTS = ("father", "mother", "partner", "child", "sibling")

@@ -150,6 +150,12 @@ class Handler(BaseHTTPRequestHandler):
                 from .store.archive import archive
                 return self._json({"ok": True,
                                    "path": str(archive(ST.dbpath))})
+            if u.path == "/api/import":
+                out = _import(body)
+                if not body.get("dry_run"):
+                    ST.reload()
+                    out.setdefault("history", records.history(ST.con))
+                return self._json(out)
             # ---- the record system. Everything below writes and reloads. --
             if u.path in _RECORD_ROUTES:
                 out = _RECORD_ROUTES[u.path](ST.con, body)
@@ -222,6 +228,27 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
+            return
+        if route == "gedcom":
+            # THE DOOR OUT, in the browser. A decade of research living in
+            # one SQLite file is only safe if it can leave, and this is the
+            # format every other program reads.
+            import tempfile
+            from .io import gedcom
+            with tempfile.TemporaryDirectory() as d:
+                stem = (ST.title or "family").replace(" ", "-")
+                f = Path(d) / f"{stem}.ged"
+                gedcom.export_file(ST.con, f,
+                                   version=q.get("version", "5.5.1"),
+                                   title=ST.title)
+                raw = f.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Disposition",
+                             f'attachment; filename="{stem}.ged"')
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
             return
         if route == "person/search":
             return self._json(records.search(ST.con, q.get("q", ""),
@@ -439,6 +466,68 @@ def _print_elided(q) -> dict:
                        subj)
     return narrow(ST.graph, subj, filt, within=within,
                   index=ST.kin).elided_union
+
+
+def _import(body: dict) -> dict:
+    """Bring somebody else's tree in, over HTTP.
+
+    The bytes arrive as a `data:` URL for the same reason a photograph does:
+    the standard library has no multipart parser it would be wise to point
+    at untrusted input, and FileReader is what a browser already gives you.
+
+    A DRY RUN WRITES NOTHING and is what the dialog shows first. Nobody's
+    first import is the one they meant, and four hundred people entered by
+    mistake is not something to discover afterwards.
+    """
+    import base64
+    import tempfile
+
+    # THE NAME IS CHECKED BEFORE THE BYTES. Told the file is a photograph,
+    # somebody wants to hear that Helix reads GEDCOM -- not "that file could
+    # not be read", which is what the decoder says about a .jpg and is no
+    # help at all (rule 8).
+    name = (body.get("filename") or "family.ged").strip() or "family.ged"
+    suffix = Path(name).suffix.lower() or ".ged"
+    if suffix not in (".ged", ".gedcom", ".csv", ".tsv", ".txt"):
+        raise ValueError(
+            f"Helix reads family trees as GEDCOM (.ged) and spreadsheets "
+            f"(.csv). {name} is a {suffix} file. In Ancestry, MyHeritage or "
+            f"FamilySearch, look for 'Export tree' and choose GEDCOM.")
+    raw = body.get("data") or ""
+    if "," in raw:
+        raw = raw.split(",", 1)[1]
+    try:
+        blob = base64.b64decode(raw)
+    except Exception:
+        raise ValueError("That file could not be read. Try choosing it again.")
+    dry = bool(body.get("dry_run"))
+
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / Path(name).name
+        path.write_bytes(blob)
+        if suffix in (".csv", ".tsv", ".txt"):
+            from .io.csv_import import import_csv
+            r = import_csv(path, None if dry else ST.con, dry_run=dry)
+            r["kind"] = "spreadsheet"
+            r.setdefault("events", 0)
+            return {"ok": True, "dry_run": dry, **r}
+        from .io import gedcom
+        if dry:
+            roots, meta = gedcom.read(path)
+            kinds: dict = {}
+            for x in roots:
+                kinds[x.tag] = kinds.get(x.tag, 0) + 1
+            return {"ok": True, "dry_run": True, "kind": "gedcom",
+                    "file": name, "encoding": meta["encoding"],
+                    "people": kinds.get("INDI", 0),
+                    "families": kinds.get("FAM", 0),
+                    "sources": kinds.get("SOUR", 0),
+                    "tags": kinds, "problems": meta["problems"][:10],
+                    "warnings": []}
+        r = gedcom.import_file(path, ST.con)
+        r["kind"] = "gedcom"
+        r["file"] = name
+        return {"ok": True, "dry_run": False, **r}
 
 
 def _gaps(st: State, q) -> dict:

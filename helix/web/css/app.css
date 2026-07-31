@@ -475,3 +475,21 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 #gapList{padding-left:18px}
 #gapMore{margin-top:8px}
 .wide{width:100%}
+
+/* --- bringing somebody else's tree in ----------------------------------- */
+/* Reported before anything is written. The report is the important half of
+   this dialog: the button under it is one click, and four hundred people
+   added by mistake is not a thing to discover afterwards. */
+#importDlg{max-width:520px}
+#impDrop{display:flex;align-items:center;justify-content:center;width:100%;
+  height:auto;min-height:74px;border:2px dashed var(--rule);border-radius:var(--r);
+  background:var(--paper);color:var(--muted);cursor:pointer;text-align:center;
+  padding:16px;margin:12px 0;font-size:14px}
+#impDrop.over,#impDrop:hover{border-color:var(--accent);background:var(--accent-soft);
+  color:var(--ink)}
+.impreport{background:var(--paper);border:1px solid var(--rule);border-radius:6px;
+  padding:10px 13px;margin-bottom:10px;font-size:13.5px;max-height:40vh;overflow:auto}
+.impreport ul{margin:6px 0;padding-left:18px}
+.impreport li{margin:2px 0}
+.impreport p{margin:4px 0}
+.impreport .warn{color:var(--accent)}

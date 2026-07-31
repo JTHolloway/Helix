@@ -24,13 +24,14 @@ branches), profiles with photographs and facts, and printouts. See
 about making the program usable at all — but it is what makes the file worth
 keeping between renders.
 
-**Start at Blocker 3.**
+**All three blockers are done.** What is left is in
+`BUILD_INSTRUCTIONS.md`.
 
 ---
 
-Two gaps still stop Helix being usable on somebody else's data. Everything
-else is polish. **Build these in order and do not skip ahead.** Each has
-acceptance criteria that can be checked by running a command.
+The three things that stopped Helix being usable on anybody's data are
+built. Each has acceptance criteria that can be checked by running a
+command, and each command is below.
 
 ---
 
@@ -112,7 +113,7 @@ would be a guess.
 
 ---
 
-## Blocker 3 — No way in or out for anyone else's data
+## Blocker 3 — No way in or out for anyone else's data  ✅ DONE
 
 **Files:** `helix/io/gedcom/`, `helix/io/csv_import.py`
 
@@ -133,26 +134,58 @@ The module docstrings list the traps: ANSEL encoding, CONT/CONC continuation,
 custom `_TAGS`, `John /Smith/` name slashes, `@#DJULIAN@` escapes, families
 with no HUSB, children listed twice, cyclic pedigrees.
 
-**Done when:**
 ```bash
-helix export my.helix out.ged        # opens in Ancestry without complaint
-helix import family.ged new.helix    # 500+ people, no invented errors
+helix export my.helix -o out.ged     # 5.5.1 or 7.0, UTF-8, no line over 255
+helix import family.ged -o new.helix # any encoding, any vendor's damage
+helix import relatives.csv -o new.helix --dry-run
 ```
-Anything not modelled goes into `person.notes` prefixed `[GEDCOM]`. Never
-discard silently.
+
+**The writer came first**, as instructed, and is the half that matters: a
+decade of research in one SQLite file is only safe if it can leave.
+
+Built in `helix/io/gedcom/`: `lexer.py` (bytes -> records, with the encoding
+sniffed rather than believed), `parser.py` (records -> rows, in ONE `Edit`
+so an import is one Ctrl-Z), `writer.py` (rows -> 5.5.1 or 7.0). CSV import
+is in `helix/io/csv_import.py` with a dry run that writes nothing.
+
+`Import` in the app takes a dropped file, reports what is in it, and only
+writes when you press the second button. `Export -> GEDCOM` is the way out.
+
+**The round trip is exact.** 463 people and 67 families out of `big400.helix`
+and back into an empty file compare identical as multisets — every name,
+sex, date, place, occupation and family. Helix's own extras (heritage,
+confidence, the original text of a vague date) travel in `_` tags and come
+back as rows, so nothing is lost either way.
+
+Handled because real files do it: ANSEL with its combining marks written
+before the letter, `CHAR ANSI` meaning Windows-1252, CONT/CONC, custom `_`
+tags, `John /Smith/` slashes, `@#DJULIAN@`, `FROM x TO y`, a FAM with no
+HUSB, children listed twice, a pointer at nobody, a person with no NAME, a
+level that jumps, and cyclic pedigrees — detected and reported, never hung.
+
+Anything not modelled goes into `person.notes` prefixed `[GEDCOM]`. Nothing
+is discarded silently.
+
+```bash
+python3 -m pytest tests/test_gedcom.py -q      # 34 tests
+```
 
 ---
 
 ## After the blockers
 
-`BUILD_INSTRUCTIONS.md` has the full phase list. In short: clock fitting,
-research-gap ranking, DNA, and the eight designs specified in
+**Research-gap ranking and DNA are built** — `helix/analysis/gaps.py` and
+`graph/kinship.shared_dna`; see `docs/ANCESTRY.md`.
+
+What is left, none of it blocking: clock fitting (`fab/clock.py`), kerf
+compensation (`fab/kerf.py`, which needs callipers on a test strip more
+than it needs code), and the six designs specified in
 `docs/DESIGN_CATALOGUE.md` but not yet built.
 
 ## What must not regress
 
 ```bash
-python3 -m pytest tests -q       # 295 tests, all green
+python3 -m pytest tests -q       # 476 tests, all green
 python3 bootstrap.py             # must still print "Ready"
 ```
 

@@ -22,6 +22,7 @@
   <div id="results" class="results" hidden></div>
   <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶</button>
   <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷</button>
+  <button id="importBtn" class="ghost" title="Add people from a GEDCOM or a spreadsheet">Import</button>
   <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
   <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
   <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
@@ -277,12 +278,35 @@
   <div class="exports">
     <button data-x="archive">Archive — everything, zipped, to keep elsewhere</button>
     <button data-x="backup">Back up now</button>
+    <button data-x="gedcom">GEDCOM — opens in Ancestry, MyHeritage, FamilySearch</button>
     <button data-x="svg">SVG — for printing or the laser</button>
     <button data-x="svgprod">SVG — cut layers only (red = cut, black = engrave)</button>
     <button data-x="png">PNG — for sharing</button>
     <button data-x="json">Plan JSON — for scripting</button>
   </div>
   <p class="hint" id="exportSize"></p>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- BRINGING SOMEBODY ELSE'S TREE IN. Reported before anything is written,
+     because nobody's first import is the one they meant, and it all goes
+     into one undoable step so Ctrl-Z takes it back. -->
+<dialog id="importDlg">
+  <h2>Add people from a file</h2>
+  <p class="hint">A GEDCOM from Ancestry, MyHeritage, FamilySearch, Gramps or
+    Family Tree Maker — or a spreadsheet a relative sent you. Nothing is
+    thrown away: anything with no place to go is kept in that person's notes.</p>
+  <label class="drop wide" id="impDrop">
+    <span>Choose a .ged or .csv file, or drop one here</span>
+    <input type="file" id="impFile" accept=".ged,.gedcom,.csv,.tsv,.txt" hidden>
+  </label>
+  <div id="impReport" class="impreport" hidden></div>
+  <div class="exports" id="impActions" hidden>
+    <button id="impGo" class="primary">Add these people to my file</button>
+  </div>
+  <p class="hint">They are added to the family file you have open. If it is
+    not what you wanted, press Ctrl-Z once — the whole import is a single
+    step.</p>
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
 

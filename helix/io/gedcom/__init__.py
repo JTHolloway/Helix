@@ -4,7 +4,7 @@ GEDCOM is the only format every genealogy program can read, so this is the
 door in and the door out. It is also a 1980s format with thirty years of
 vendor-specific damage, so the parser must be forgiving.
 
-STRUCTURE (Phase 3)
+STRUCTURE
   lexer.py   bytes -> (level, xref, tag, value) records
   parser.py  records -> Helix rows
   writer.py  Helix rows -> GEDCOM 5.5.1 or 7.0
@@ -25,14 +25,13 @@ RULE
   Import must be lossless enough to round-trip. Anything not modelled goes
   into `person.notes` with a `[GEDCOM]` prefix so nothing is silently lost.
 """
+from .lexer import Rec, read, scan, sniff          # noqa: F401
+from .parser import import_file                     # noqa: F401
+from .writer import export as _export, gedcom_date  # noqa: F401
 
 
-def import_file(path: str, con, *, on_progress=None) -> dict:
-    raise NotImplementedError(
-        "GEDCOM import is Phase 3. Until then use the CSV importer "
-        "(helix.io.csv_import) or the sample generator."
-    )
-
-
-def export_file(con, path: str, *, version: str = "5.5.1") -> str:
-    raise NotImplementedError("GEDCOM export is Phase 3.")
+def export_file(con, path: str, *, version: str = "5.5.1",
+                title: str = "", submitter: str = "") -> dict:
+    """Write the whole family out. Returns a summary of what went."""
+    return _export(con, path, version=version, title=title,
+                   submitter=submitter)

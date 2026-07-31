@@ -433,6 +433,117 @@ def cmd_backup(a):
     print(f"  {do_backup(a.db)}")
 
 
+def cmd_export(a):
+    """Write the family out as GEDCOM, so it is not trapped in this program.
+
+    Rule from `docs/KEEPING_YOUR_WORK.md`: the file must be able to leave.
+    GEDCOM is the one format Ancestry, MyHeritage, FamilySearch, Gramps and
+    Family Tree Maker all read, so this is the door out.
+    """
+    from .io import gedcom
+    con = connect(a.db, create=False)
+    title = get_setting(con, "project_title", "")
+    out = a.out or str(Path(a.db).with_suffix(".ged"))
+    r = gedcom.export_file(con, out, version=a.version, title=title,
+                           submitter=a.submitter or "")
+    print(f"  {r['path']}  ({r['bytes'] / 1024:.0f} kB, GEDCOM {r['version']})")
+    print(f"  {r['people']} people, {r['families']} families, "
+          f"{r['sources']} sources")
+    print("\n  This file opens in Ancestry, MyHeritage, FamilySearch, "
+          "Gramps and\n  Family Tree Maker. Keep a copy somewhere that is "
+          "not this computer.")
+
+
+def cmd_import(a):
+    """Read somebody else's tree in -- GEDCOM or a spreadsheet.
+
+    Nothing is refused and nothing is silently dropped: anything Helix has
+    no column for is kept in that person's notes. If the result is not what
+    you wanted, one Ctrl-Z in the app takes the whole import back.
+    """
+    src = Path(a.src)
+    out = Path(a.out or (src.stem + ".helix"))
+    csvish = src.suffix.lower() in (".csv", ".tsv", ".txt")
+
+    # A DRY RUN MUST NOT CREATE THE FILE. `connect()` makes one if it is not
+    # there, so opening it before this check left an empty family file
+    # behind -- and the real import then refused to run because its own
+    # dry run had already created the target.
+    if a.dry_run:
+        if csvish:
+            from .io.csv_import import import_csv
+            r = import_csv(src, None, dry_run=True)
+            print(f"  {src.name}: {r['rows']} rows -> {r['people']} people, "
+                  f"{r['placeholders']} to be filled in later")
+            print(f"  Columns understood: "
+                  f"{', '.join(sorted(set(r['mapping'].values())))}")
+            if r["unmapped"]:
+                print(f"  Not understood (would be kept in notes): "
+                      f"{', '.join(r['unmapped'])}")
+            for x in r["problems"]:
+                print(f"    ! {x}")
+        else:
+            from .io import gedcom
+            roots, meta = gedcom.read(src)
+            kinds: dict = {}
+            for x in roots:
+                kinds[x.tag] = kinds.get(x.tag, 0) + 1
+            print(f"  {src.name}: {meta['bytes'] / 1024:.0f} kB, "
+                  f"read as {meta['encoding']}")
+            for tag, n in sorted(kinds.items(), key=lambda kv: -kv[1]):
+                print(f"    {tag:<6} {n}")
+            for x in meta["problems"][:5]:
+                print(f"    ! {x}")
+        print("\n  Nothing was written. Run again without --dry-run.")
+        return
+
+    if out.exists() and not a.into:
+        raise SystemExit(
+            f"\n  {out} already exists.\n"
+            f"  Choose another name with -o, or pass --into to add these "
+            f"people to it.\n")
+    con = connect(out)
+    if csvish:
+        from .io.csv_import import import_csv
+        r = import_csv(src, con, dry_run=False)
+        print(f"  {src.name}: {r['rows']} rows -> {r['people']} people, "
+              f"{r['families']} families" +
+              (f", {r['placeholders']} to be filled in later"
+               if r["placeholders"] else ""))
+        print(f"  Columns understood: "
+              f"{', '.join(sorted(set(r['mapping'].values())))}")
+        if r["unmapped"]:
+            print(f"  Not understood (kept in notes): "
+                  f"{', '.join(r['unmapped'])}")
+    else:
+        from .io import gedcom
+        r = gedcom.import_file(src, con)
+        print(f"  {src.name}: read as {r['encoding']}")
+        print(f"  {r['people']} people, {r['families']} families, "
+              f"{r['events']} facts, {r['sources']} sources")
+        if r["notes_kept"]:
+            print(f"  {r['notes_kept']} people had extra tags kept in their "
+                  f"notes, marked [GEDCOM]")
+        for x in (r["problems"] + r["warnings"])[:8]:
+            print(f"    ! {x}")
+    n = con.execute("SELECT COUNT(*) FROM person").fetchone()[0]
+    if not get_setting(con, "subject_person_id"):
+        # SOMEBODY HAS TO BE THE CENTRE, or the chart opens on nobody and
+        # every relation on screen reads "no known relation". The person
+        # with the most descendants is the best guess available before
+        # anyone has said whose tree it is.
+        row = con.execute(
+            "SELECT up.person_id, COUNT(*) n FROM union_partner up "
+            "JOIN union_child uc ON uc.union_id = up.union_id "
+            "GROUP BY up.person_id ORDER BY n DESC LIMIT 1").fetchone()
+        if row:
+            set_setting(con, "subject_person_id", row["person_id"])
+            print(f"  Centred the chart on the person with the most "
+                  f"children. Change it in the app.")
+    print(f"\n  {out} now holds {n} people.")
+    print(f"  Open it with:  helix serve {out}")
+
+
 def cmd_serve(a):
     from .server import serve
     serve(a.db, host=a.host, port=a.port, open_browser=not a.no_open)
@@ -518,6 +629,21 @@ def main(argv=None):
 
     p = sub.add_parser("backup", help="take a backup now")
     p.add_argument("db"); p.set_defaults(f=cmd_backup)
+
+    p = sub.add_parser("export", help="write the family out as GEDCOM")
+    p.add_argument("db"); p.add_argument("-o", "--out")
+    p.add_argument("--version", default="5.5.1", choices=["5.5.1", "7.0"])
+    p.add_argument("--submitter", default="")
+    p.set_defaults(f=cmd_export)
+
+    p = sub.add_parser("import", help="read a GEDCOM or spreadsheet in")
+    p.add_argument("src", help="a .ged from any program, or a .csv")
+    p.add_argument("-o", "--out", help="the family file to create")
+    p.add_argument("--into", action="store_true",
+                   help="add to an existing file instead of refusing")
+    p.add_argument("--dry-run", action="store_true",
+                   help="report what would happen and write nothing")
+    p.set_defaults(f=cmd_import)
 
     p = sub.add_parser("serve", help="open the app in your browser")
     p.add_argument("db"); p.add_argument("--host", default="127.0.0.1")
