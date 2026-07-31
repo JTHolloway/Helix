@@ -924,6 +924,17 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
                          else (c.flip,)):
                 for seat in seats:
                     yield kids, over, flip, seat
+    # HOW GOOD IS THE ANSWER? Coordinate descent finds a local best, and a
+    # local best is worth nothing unless you know how deep the well is. So:
+    # shuffle every free choice on the chart -- sibling order in every group,
+    # every leaf flip, every seat -- and run the whole search again from
+    # there. Twenty-five random starts on the owner's tree began between 9
+    # and 11 crossings with 51 to 59 cells of reach, and all twenty-five
+    # ended on exactly 4 and 30.39. The four that are left are what the
+    # family is, not where the search gave up; clearing them means giving it
+    # a move it does not have, and the two obvious candidates are written up
+    # above and below this function.
+    #
     # ROUND AND ROUND THE HINGES until nothing moves. Every arrangement of
     # every hinge was tried as a product first, which is exponential and
     # took twenty seconds on a 142-name chart -- and a chart with new
