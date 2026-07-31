@@ -89,8 +89,7 @@ export async function show(host, pid, hooks) {
 stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea>
         </label>
         <button class="primary wide" id="saveFacts">Save</button>
-        <p class="hint wide">Saved here, it changes everywhere — the chart,
-          the sidebar and every printout.</p>
+        <p class="hint wide">Saving updates the chart and the sidebar too.</p>
       </form>
 
       ${heritageBlock(d)}
@@ -305,7 +304,7 @@ function heritageBlock(d) {
             <b>${m.pct}%</b> ${esc(m.label)}</li>`).join('')}
         </ul>
         <p class="hint">${h.inherited
-          ? 'Worked out from what is recorded further up. A generalisation, not a test result.'
+          ? 'Worked out from what is recorded further up — a generalisation, not a test result.'
           : 'Recorded for them directly.'}</p>` : ''}
       <form class="hform" id="heritForm">
         <label class="wide">${own.length ? 'Recorded for them' :
@@ -330,14 +329,14 @@ function heritageBlock(d) {
 // about anybody's genome at all, which is why the note is not optional.
 function dnaBlock(d) {
   const dna = d.dna || {};
-  const line = (dna.display && !d.is_subject)
-    ? `<div class="dnashare">
-         <b>${esc(dna.display)}</b>
-         <span>expected shared DNA with ${esc(dna.with_name || 'you')}</span>
-         <small>${esc(dna.note)}</small>
-       </div>`
-    : (d.is_subject ? '' : `<p class="none">No shared blood — related by
-         marriage, so no DNA is expected in common.</p>`);
+  // ZERO IS AN ANSWER. A husband or a step-parent shares no ancestor, and
+  // 0% is the honest figure -- a blank reads as "could not be worked out".
+  const line = (d.is_subject || !dna.display) ? '' : `
+    <div class="dnashare${dna.share ? '' : ' zero'}">
+      <b>${esc(dna.display)}</b>
+      <span>expected shared DNA with ${esc(dna.with_name || 'you')}</span>
+      <small>${esc(dna.share ? dna.note : dna.why || '')}</small>
+    </div>`;
   return `<h4>Bloodline</h4><div class="dna" id="dnaBox">${line}
     ${bloodTree(dna.bloodline || [], d.name, 3)}</div>`;
 }

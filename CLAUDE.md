@@ -2,7 +2,7 @@
 
 A genealogy program that renders family trees as laser-cuttable charts, and
 keeps everything you know about the people on them. Python 3.11+, **zero
-required dependencies**, 507 tests.
+required dependencies**, 508 tests.
 
 ## Read this before anything else
 
@@ -78,13 +78,16 @@ Then read, in this order:
    option; it is probably already specified.
 7. **`docs/DESKTOP.md`** — Helix as an application you double-click, and
    where a person's family files live on their own computer.
+8. **`docs/DECISIONS.md`** — why the program is the way it is: the faults
+   found, the measurements taken, the things tried that did not work. It
+   lives there so the code can be read for what it does.
 
 `PROMPTS.md` holds the prompts the user will give you, in order.
 
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 507 tests, must stay green
+python3 -m pytest tests -q      # 508 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 

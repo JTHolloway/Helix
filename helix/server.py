@@ -220,11 +220,19 @@ class Handler(BaseHTTPRequestHandler):
             # show you the folder, list what is in it, and open another
             # family without going anywhere near a terminal.
             from .desktop import library as lib
+            g = ST.graph
+            sub = g.people.get(ST.subject) if ST.subject else None
             return self._json({
                 "library": str(lib.library_dir()),
                 "current": str(Path(ST.dbpath).resolve()),
                 "families": lib.families(),
                 "status": lib.status(ST.dbpath),
+                # WHOSE TREE IT IS. Every relation on every screen is
+                # measured from one person, so which person that is belongs
+                # with the file rather than buried in a profile.
+                "subject": ({"id": sub.id, "name": sub.full_name,
+                             "life": sub.lifespan} if sub else None),
+                "people": len(g.people),
             })
         if route == "duplicates":
             # THE SAME PERSON, ENTERED TWICE. Rare while you type -- the add
@@ -737,7 +745,8 @@ def _dna(st: State, pid: str) -> dict:
     """
     from .graph.kinship import bloodline, dna_display, shared_dna
     g, sub = st.graph, st.subject
-    share = shared_dna(g, sub, pid, kin=st.kin.of(pid)) if sub else None
+    kin = st.kin.of(pid) if sub else None
+    share = shared_dna(g, sub, pid, kin=kin) if sub else None
     return {
         "share": share,
         "display": dna_display(share),
@@ -746,6 +755,12 @@ def _dna(st: State, pid: str) -> dict:
         "bloodline": bloodline(g, pid, depth=4),
         "note": "Expected average. Real DNA varies either side of it, "
                 "and beyond second cousins a pair may share none at all.",
+        # Why it is zero, which is a different sentence for a husband than
+        # for somebody nobody has yet connected to the rest of the file.
+        "why": ("" if share else
+                ("Related by marriage — no shared ancestor."
+                 if kin and kin.group == "married_in" else
+                 "No shared ancestor has been recorded.")),
     }
 
 

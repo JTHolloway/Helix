@@ -301,10 +301,10 @@ def test_renaming_from_the_app_moves_the_file_too(running):
     """Otherwise the folder fills up with family2.helix and there is no way
     to tell which is which without opening all of them."""
     c, a = running
-    r = c.post("library/rename", {"title": "Holloway of Bath"})
+    r = c.post("library/rename", {"title": "Whitcombe of Bath"})
     assert r["renamed"]
-    assert Path(r["path"]).name == "Holloway of Bath.helix"
-    assert c.get("meta")["title"] == "Holloway of Bath"
+    assert Path(r["path"]).name == "Whitcombe of Bath.helix"
+    assert c.get("meta")["title"] == "Whitcombe of Bath"
     assert c.get("meta")["stats"]["people"] == 0     # the file still opens
 
 

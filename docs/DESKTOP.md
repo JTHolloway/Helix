@@ -50,10 +50,10 @@ three are built at once, without anybody owning three computers.
 
 ```
 Documents/Helix/
-    Holloway.helix              the family. An ordinary SQLite file.
-    Holloway-media/             the photographs, beside it.
+    Whitcombe.helix             the family. An ordinary SQLite file.
+    Whitcombe-media/            the photographs, beside it.
     backups/                    thirty dated copies, taken automatically.
-    Holloway-archive-2026*.zip  whatever Export → Archive has written.
+    Whitcombe-archive-2026*.zip whatever Export → Archive has written.
 ```
 
 **Ordinary files in an ordinary folder, and that is a decision.** Not a
@@ -91,6 +91,9 @@ which file was open last:
   a folder never fills up with `family2.helix`.
 * **Make a copy** to experiment on. Through SQLite's own backup API, so the
   copy is never a half-written file.
+* **Choose whose tree it is.** Every relation in the program — the
+  sidebar, the DNA percentages, the research list — is measured from one
+  person, and this is where you say which.
 * **Start another family.**
 * **Open this folder** in Finder or Explorer. The answer to "where exactly
   is my data?", which is the first thing anybody asks of a program they are
@@ -136,7 +139,7 @@ on a machine with nothing installed. The desktop shell is
 
 ```bash
 helix-app                                   # the family you had open
-helix-app "Documents/Helix/Holloway.helix"  # a particular one
+helix-app "Documents/Helix/Whitcombe.helix" # a particular one
 helix-app --library /Volumes/Backup/Trees   # keep files somewhere else
 ```
 

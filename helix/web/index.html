@@ -40,9 +40,6 @@
   <aside id="kin">
     <section class="panel open" data-panel="scope">
       <h2>How far the tree spreads</h2>
-      <p class="hint">Narrowing the tree lays it out again from scratch, so
-        what is left is arranged as well as it can be — rather than left with
-        a gap where the cousins were.</p>
       <label>Cousins
         <select id="kinCousins">
           <option value="">However far the family goes</option>
@@ -162,8 +159,7 @@
 
     <section class="panel open" data-panel="thread">
       <h2>3 · Your bloodline</h2>
-      <p class="hint">The people you are directly descended from — everyone
-        without whom you would not exist.</p>
+      <p class="hint">The people you are directly descended from.</p>
       <label class="check"><input type="checkbox" id="threadOn" checked> Highlight it</label>
       <label class="check"><input type="checkbox" id="whatif"> <b>What-if mode</b> — hover anyone to see who vanishes without them</label>
       <button id="criticalBtn" class="ghost wide">Show the 20 most important ancestors</button>
@@ -296,8 +292,8 @@
 <dialog id="importDlg">
   <h2>Add people from a file</h2>
   <p class="hint">A GEDCOM from Ancestry, MyHeritage, FamilySearch, Gramps or
-    Family Tree Maker — or a spreadsheet a relative sent you. Nothing is
-    thrown away: anything with no place to go is kept in that person's notes.</p>
+    Family Tree Maker, or a spreadsheet. Anything Helix has no field for is
+    kept in that person's notes.</p>
   <label class="drop wide" id="impDrop">
     <span>Choose a .ged or .csv file, or drop one here</span>
     <input type="file" id="impFile" accept=".ged,.gedcom,.csv,.tsv,.txt" hidden>
@@ -306,9 +302,8 @@
   <div class="exports" id="impActions" hidden>
     <button id="impGo" class="primary">Add these people to my file</button>
   </div>
-  <p class="hint">They are added to the family file you have open. If it is
-    not what you wanted, press Ctrl-Z once — the whole import is a single
-    step.</p>
+  <p class="hint">Added to the family you have open. Ctrl-Z undoes the whole
+    import in one step.</p>
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
 
@@ -332,9 +327,8 @@
      actually written down. -->
 <dialog id="statsDlg">
   <h2>Numbers</h2>
-  <p class="hint">Worked out from what is in the file. Where a date is
-    missing the person is simply not counted, so a figure with few people
-    behind it says so.</p>
+  <p class="hint">Worked out from what is in the file. People with no dates
+    are not counted, and each figure says how many are behind it.</p>
   <div id="statsBody"></div>
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
@@ -352,11 +346,9 @@
 
 <dialog id="printDlg">
   <h2>Print</h2>
-  <p class="hint">These open in a new tab with a Print button. They cover the
-    same people the chart does, so a narrowed chart gives a narrowed dossier.</p>
-  <p class="hint">A profile is what you <b>file</b> — it carries what is known
-    and nothing else. The research list is a separate sheet, because a to-do
-    list printed onto somebody's life is out of date in a week.</p>
+  <p class="hint">Each opens in a new tab with a Print button, and covers the
+    same people the chart does. A profile carries what is known; the research
+    list prints on its own sheet.</p>
   <div class="exports">
     <button data-pr="profile">This person's profile</button>
     <button data-pr="profiles">Everyone on the chart — one profile per page</button>

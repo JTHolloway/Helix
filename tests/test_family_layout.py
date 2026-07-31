@@ -166,7 +166,7 @@ def remarried(tmp_path):
     add("Susan", "Hallam", dad, "partner", birth="1964")
     g0 = build.load(con)
     u_susan = g0.people[dad].unions[0]
-    add("James", "Pargeter", dad, "child", union=u_susan, birth="1992")
+    add("Thomas", "Pargeter", dad, "child", union=u_susan, birth="1992")
     add("Rachel", "Dunmore", dad, "partner", birth="1960")
     g1 = build.load(con)
     u_rachel = [u for u in g1.people[dad].unions if u != u_susan][0]
@@ -230,7 +230,7 @@ def test_both_sets_of_children_hang_off_that_one_cell(remarried):
     g = cellgrid(graph, "all")
     kids = {graph.people[c].full_name: g.slots[c]
             for c in graph.children(dad) if c in g.slots}
-    assert set(kids) == {"James Pargeter", "Hannah Pargeter"}
+    assert set(kids) == {"Thomas Pargeter", "Hannah Pargeter"}
     for sl in kids.values():
         assert sl.gen == g.slots[dad].gen + 1
 
@@ -746,8 +746,8 @@ def test_an_arc_never_covers_a_stranger(graph, focus):
 @pytest.mark.parametrize("focus", ["bloodline", "all"])
 def test_no_two_sibling_arcs_on_a_ring_overlap(graph, focus):
     """Two arcs at the same radius that overlap draw as ONE ring, which says
-    the people at both ends are brothers and sisters. Michaela's arc to her
-    brother and David's to his were half a millimetre apart in radius and
+    the people at both ends are brothers and sisters. Sarah's arc to her
+    brother and William's to his were half a millimetre apart in radius and
     overlapped by thirteen degrees, so a husband and wife appeared to be
     siblings as well as spouses."""
     g = cellgrid(graph, focus)
@@ -789,7 +789,7 @@ def test_a_partner_nobody_recorded_is_named_unknown(tmp_path):
         return records.add_person(con, body)["id"]
 
     dad = add("Michael", "Pargeter", birth="1930")
-    add("James", "Pargeter", dad, "child", birth="1960")
+    add("Thomas", "Pargeter", dad, "child", birth="1960")
     add("Claire", "Pargeter", dad, "child", birth="1962")
     set_setting(con, "subject_person_id", dad)
     graph = build.load(con)
@@ -893,10 +893,10 @@ def test_no_two_families_are_drawn_as_one_line(graph, focus):
     line running out of one family and into the next:
 
       * Paul, Derek and Gorden's arc ran on into the stem carrying Barry
-        Viney, their half-brother by a different mother -- four children of
+        Marlow, their half-brother by a different mother -- four children of
         two mothers on one branch;
-      * the arc over Peter and his brother Richard ran on into the stem
-        bringing Kathleen down from her own parents, which drew a man and
+      * the arc over Joseph and his brother Richard ran on into the stem
+        bringing Margaret down from her own parents, which drew a man and
         his WIFE as brother and sister.
 
     Two millimetres is not a gap. Nothing else on this chart means "these
@@ -1015,7 +1015,7 @@ def test_a_child_of_two_unions_is_under_one_arc_only(graph, focus):
     """Somebody adopted, fostered, or whose parentage is in doubt is a child
     of two unions in the file. Drawing an arc from each puts them in two
     families as a full sibling of both -- which is what had Essie Sell under
-    the McGiverns' arc AND the Sells'.
+    one family's arc AND another's.
 
     `schema.sql` is explicit: the layout follows the union marked primary,
     and the other link is drawn as a chord across the disc.
@@ -1170,22 +1170,22 @@ def cousins(tmp_path):
             body["attach"] = {"to": to, "as": how, "union": union}
         return records.add_person(con, body)["id"]
 
-    reed = add("Walter", "Reed", birth="1901")
-    add("Ada", "Reed", reed, "partner", birth="1903")
-    paul = add("Paul", "Reed", reed, "child", birth="1930")
-    add("Derek", "Reed", reed, "child", birth="1932")
-    add("Gorden", "Reed", reed, "child", birth="1935")
+    reed = add("Walter", "Pargeter", birth="1901")
+    add("Ada", "Pargeter", reed, "partner", birth="1903")
+    paul = add("Paul", "Pargeter", reed, "child", birth="1930")
+    add("Derek", "Pargeter", reed, "child", birth="1932")
+    add("Gorden", "Pargeter", reed, "child", birth="1935")
 
-    murray = add("Thomas", "Murraycarr", birth="1900")
-    add("Gurtrude", "Murraycarr", murray, "partner", birth="1902")
-    margret = add("Margret", "Murraycarr", murray, "child", birth="1931")
-    add("David", "Murraycarr", murray, "child", birth="1934")
+    murray = add("Thomas", "Threlfall", birth="1900")
+    add("Gertrude", "Threlfall", murray, "partner", birth="1902")
+    margret = add("Margret", "Threlfall", murray, "child", birth="1931")
+    add("William", "Threlfall", murray, "child", birth="1934")
 
     # the cousin marriage: both of them were already on the chart
     records.link_person(con, {"id": margret,
                               "attach": {"to": paul, "as": "partner"}})
     g0 = build.load(con)
-    sarah = add("Sarah", "Reed", paul, "child",
+    sarah = add("Sarah", "Pargeter", paul, "child",
                 union=g0.people[paul].unions[0], birth="1958")
     add("Colin", "Tye", sarah, "partner", birth="1957")
     g1 = build.load(con)
@@ -1291,22 +1291,22 @@ def test_a_couple_sits_between_the_two_families_they_join(cousins):
     g = cellgrid(graph, "all")
     at = {graph.people[p].full_name: sl.tc for p, sl in g.slots.items()}
     ring = {graph.people[p].full_name: sl.gen for p, sl in g.slots.items()}
-    assert ring["Paul Reed"] == ring["Margret Murraycarr"], (
+    assert ring["Paul Pargeter"] == ring["Margret Threlfall"], (
         "the couple whose two families meet are not even on one ring")
     # his brothers on his side, her brother on hers, and the couple between
-    for reed in ("Derek Reed", "Gorden Reed"):
-        assert at[reed] < at["Paul Reed"] < at["Margret Murraycarr"] \
-            or at[reed] > at["Paul Reed"] > at["Margret Murraycarr"], (
+    for reed in ("Derek Pargeter", "Gorden Pargeter"):
+        assert at[reed] < at["Paul Pargeter"] < at["Margret Threlfall"] \
+            or at[reed] > at["Paul Pargeter"] > at["Margret Threlfall"], (
                 f"{reed} is not on Paul's side of the marriage: "
                 f"{sorted(at, key=at.get)}")
-    assert (at["David Murraycarr"] - at["Margret Murraycarr"]) * \
-           (at["Margret Murraycarr"] - at["Paul Reed"]) > 0, (
+    assert (at["William Threlfall"] - at["Margret Threlfall"]) * \
+           (at["Margret Threlfall"] - at["Paul Pargeter"]) > 0, (
         "Margret's brother is not on Margret's side of the marriage: "
         f"{sorted(at, key=at.get)}")
     # ...which is the whole point: neither set of parents needs a bracket
     from helix.layout.engines.family import _stem_runs
     for uid, _gen, _a, _p, head_t, run in _stem_runs(graph, g, False):
-        if not {"Walter Reed", "Thomas Murraycarr"} & {
+        if not {"Walter Pargeter", "Thomas Threlfall"} & {
                 graph.people[q].full_name for q in graph.unions[uid].partners}:
             continue
         ts = [g.slots[c].tc for c in run]
@@ -1319,8 +1319,8 @@ def test_a_name_is_the_whole_name_with_its_years(graph):
     """What the default chart says about a person.
 
     Two things, and both are about being able to check the chart against a
-    record. The WHOLE name as it was entered -- "Harry Albert Reed", not
-    "Harry Reed", because the middle name is often the only thing telling
+    record. The WHOLE name as it was entered -- "Harry Albert Pargeter", not
+    "Harry Pargeter", because the middle name is often the only thing telling
     two of them apart -- and the years under it. Somebody with no dates
     recorded gets no second line, so a gap in the research reads as a gap
     rather than being papered over.
@@ -1370,8 +1370,8 @@ def test_a_long_name_loses_its_surname_before_its_given_name(graph):
 
     Without it the ladder drops from a whole name straight to two letters
     for anybody whose short form IS their whole name -- everyone with a
-    single given name. On the owner's chart that put "PH" next to "Kathleen
-    Holloway". A surname is the one thing a family tree never has to repeat:
+    single given name. On the owner's chart that put "PH" next to "Margaret
+    Whitcombe". A surname is the one thing a family tree never has to repeat:
     it is written on the branch the person is standing on.
     """
     from helix.layout.common import (PolarLabelPlacer, est_text_width,
@@ -1389,8 +1389,8 @@ def test_a_long_name_loses_its_surname_before_its_given_name(graph):
 
     # A NEIGHBOUR STANDING JUST TOO CLOSE. Placed so the window left over is
     # wider than the given name and narrower than the whole one -- which is
-    # exactly the squeeze the rung exists for, and is what happened to Peter
-    # Holloway for the sake of half a millimetre.
+    # exactly the squeeze the rung exists for, and is what happened to Joseph
+    # Whitcombe for the sake of half a millimetre.
     block_h = 20.0
     half_block = (block_h / 2 + 0.5) / r
     at = half_block + ((given + whole) / 4 + 0.5) / r

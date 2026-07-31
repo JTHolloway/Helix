@@ -258,7 +258,7 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
             # reaches the nearest END of a run of children side by side, so
             # leaning costs that stem nothing -- and it comes straight off the
             # long line to the child out in the cell this block hangs from.
-            # Kathleen's parents sat in the middle of the seven children still
+            # One couple's parents sat in the middle of the seven children still
             # at home and 103 degrees from her; leaning halves that.
             mid = (lo + hi) / 2
             x = mid + (hi - lo) / 2 * LEAN * cell.lean
@@ -376,7 +376,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         that person's. Ordering father-then-mother regardless meant that a
         wife with three recorded generations behind her sat on row 1, under
         a husband who married in from nowhere, and her whole ancestry
-        appeared to be his. Three couples on the owner's own tree.
+        appeared to be his. Three couples on one 142-person file.
         """
         return sorted(pids, key=lambda p: not has_line(p))
 
@@ -409,7 +409,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         #
         # A single marriage is different and stays stacked, however many
         # children it had: there is only one family, so there is nothing to
-        # tell apart. That is the owner's own distinction -- Doreen, who had
+        # tell apart. It is a real distinction -- somebody who had
         # two, against Heather, who had one.
         if any(_families(m) > 1 for m in members):
             return True
@@ -489,7 +489,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     #
     #    [ HER SISTERS ][ her uncles ][ her grandparents ]
     #
-    # and the arc is as short as it can be. 25 sweeping arcs on the owner's
+    # and the arc is as short as it can be. 25 sweeping arcs on a test
     # tree, all of them this.
     def ancestry(pid: str, depth: int, side: int = -1) -> Optional[_Cell]:
         """The cell of `pid`'s parents, and everything behind them.
@@ -540,7 +540,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         #
         # It is worse. The couple's own children stop being at the edge of the
         # block nearest the descendant it hangs from, so THAT arc needs a
-        # bracket, and on the owner's tree the crossings went from five to
+        # bracket, and on the test tree the crossings went from five to
         # twelve and the detour from 270 degrees to 359. Both lines on one
         # side, narrower one nearest, stands.
         if FLANK and len(ups) > 1 and groups:
@@ -558,7 +558,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         # was written for. Putting a couple between their two families when
         # they have children in this block moves those children off the edge
         # nearest the descendant the block hangs from, and the stem down to
-        # them then needs a bracket: crossings 5 -> 12 on the owner's tree.
+        # them then needs a bracket: crossings 5 -> 12 on the test tree.
         #
         # With NO children here there is nothing to move off the edge, and
         # the objection evaporates. What is left is the whole point of the
@@ -660,7 +660,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     # would read better, and one of them always does: the number of branches
     # that cross depends entirely on which side of a couple each family sits.
     #
-    # The fault that made this necessary: Kathleen's parents' branch, holding
+    # The fault that made this necessary: one couple's parents' branch, holding
     # all seven of her brothers and sisters, ran straight through Thomas and
     # Florence's branch down to Peter -- her husband. Two families crossing
     # at the very point they marry, which reads as though she married her own
@@ -680,7 +680,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         # crossings on it, and the search never ran.
         # EVERY PERSON, not every anchor. `_assign` records one x per CELL,
         # under its first member, so looking people up in it directly missed
-        # every married-in partner -- including Kathleen, whose crossing this
+        # every married-in partner -- including the one whose crossing this
         # search exists to find. The cost came out zero on a chart with five
         # crossings and the search never ran once.
         at: dict[str, float] = {}
@@ -711,7 +711,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         # married twice had both his stems at one point, so the reach of one
         # marriage could never be seen to cross the stem of the other -- and
         # that is the commonest crossing on the chart. Lorain and David's
-        # children crossed Michaela and David's for exactly this reason and
+        # children crossed another couple's for exactly this reason and
         # the search could not see it.
         stems = []
         for uid, u in graph.unions.items():
@@ -843,7 +843,8 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     #
     # It was only the couples where two documented lines meet. That missed
     # every REMARRIAGE, and a remarriage has the most obvious choice of the
-    # lot: David's children by Lorain and his children by Michaela sat on
+    # lot: one man's children by his first wife and his children by his
+    # second sat on
     # sides that made their two stems cross, when swapping them costs
     # nothing. Anything with a choice is enumerated now.
     #
@@ -858,7 +859,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     # this whole block hangs from -- and requiring `over >= 0` quietly
     # excluded exactly the couples where two families meet and nothing else
     # is going on. Margret Reed's is one: her parents and Paul's are both
-    # behind her, the Murraycarrs were put on the far side, and their arc
+    # behind her, her husband's family was put on the far side, and their arc
     # back to her crossed three Reed families. One swap fixes it, and the
     # search was not allowed to try it.
     def pick_hinges() -> list[_Cell]:
@@ -938,7 +939,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     # local best is worth nothing unless you know how deep the well is. So:
     # shuffle every free choice on the chart -- sibling order in every group,
     # every leaf flip, every seat -- and run the whole search again from
-    # there. Twenty-five random starts on the owner's tree began between 9
+    # there. Twenty-five random starts on a 142-person file began between 9
     # and 11 crossings with 51 to 59 cells of reach, and all twenty-five
     # ended on exactly 4 and 30.39. The four that are left are what the
     # family is, not where the search gave up; clearing them means giving it
@@ -1039,7 +1040,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     # brother or sister of the group around them has to be on the outside.
     # Put them on the inside and the arc drawn over "Paul, Derek and Gorden"
     # runs straight over Paul's wife, who reads as a fourth sibling. Reported
-    # on the owner's own tree, and it is the one thing a chart may never do:
+    # on a real file, and it is the one thing a chart may never do:
     # say somebody is a sibling when they are a spouse.
     #
     # Which side is "outside" is not known until every cell has an x, so it
@@ -1066,7 +1067,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
         satisfies more of them.
 
         What it prevents, generally: two sibling arcs on the same ring
-        OVERLAPPING. Michaela's arc to her brother ran 84.9 to 130.5 degrees
+        OVERLAPPING. One woman's arc to her brother ran 84.9 to 130.5 degrees
         and David's to his ran 64.6 to 97.6, half a millimetre apart in
         radius, so the two drew as ONE continuous ring passing through the
         pair -- reading as though the husband and wife were also brother and

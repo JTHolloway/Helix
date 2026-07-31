@@ -41,20 +41,20 @@ def family(tmp_path):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     c = Client(f"http://127.0.0.1:{srv.server_port}")
     try:
-        me = add(c, "James", "Holloway", birth="29 Apr 2003", sex="M")
+        me = add(c, "Thomas", "Whitcombe", birth="29 Apr 2003", sex="M")
         c.post("subject", {"id": me})
-        dad = add(c, "David", "Holloway", me, "father", birth="1967", sex="M")
-        mum = add(c, "Michaela", "Reed", me, "mother", birth="abt 1969", sex="F")
-        add(c, "Anthony", "Holloway", me, "sibling", birth="1993", sex="M")
-        gran = add(c, "Peter", "Holloway", dad, "father",
+        dad = add(c, "William", "Whitcombe", me, "father", birth="1967", sex="M")
+        mum = add(c, "Sarah", "Pargeter", me, "mother", birth="abt 1969", sex="F")
+        add(c, "Edward", "Whitcombe", me, "sibling", birth="1993", sex="M")
+        gran = add(c, "Joseph", "Whitcombe", dad, "father",
                    birth="8 Feb 1924", sex="M")
-        add(c, "Kathleen", "Holloway", dad, "mother", birth="1928", sex="F")
+        add(c, "Margaret", "Whitcombe", dad, "mother", birth="1928", sex="F")
         c.post("person", {"id": gran, "birth_place": "Walcot, Bath, Somerset",
                           "occupation": "Stonemason", "death": "2017",
                           "notes": "Always said his mother came from Cork."})
         c.post("person/heritage", {"id": gran,
                                    "heritage": [{"label": "Irish"}]})
-        add(c, "Sarah", "Holloway", dad, "sibling", birth="1965", sex="F")
+        add(c, "Hannah", "Whitcombe", dad, "sibling", birth="1965", sex="F")
         yield c, {"me": me, "dad": dad, "mum": mum, "gran": gran}, db
     finally:
         srv.shutdown()
@@ -143,7 +143,7 @@ def test_the_file_is_shaped_like_gedcom(family, tmp_path):
     assert any(x.startswith("0 @I1@ INDI") for x in lines)
     assert any(x.startswith("0 @F1@ FAM") for x in lines)
     # `John /Smith/` -- the slashes ARE the surname
-    assert "1 NAME James /Holloway/" in lines
+    assert "1 NAME Thomas /Whitcombe/" in lines
     assert all(len(x) <= 255 for x in lines), "a line went over the 255 limit"
     assert all(x[0].isdigit() for x in lines if x)
 
@@ -205,7 +205,7 @@ def test_a_vague_date_stays_vague(family, tmp_path):
     back = connect(tmp_path / "d.helix")
     gedcom.import_file(out, back)
     g = load(back)
-    mum = next(p for p in g.people.values() if p.full_name == "Michaela Reed")
+    mum = next(p for p in g.people.values() if p.full_name == "Sarah Pargeter")
     assert mum.birth.display == "abt 1969"
     assert mum.birth.kind == "about"
 
@@ -221,7 +221,7 @@ def test_helix_extras_come_back_as_rows_not_notes(family, tmp_path):
     back = connect(tmp_path / "h.helix")
     gedcom.import_file(out, back)
     g = load(back)
-    gran = next(p for p in g.people.values() if p.full_name == "Peter Holloway")
+    gran = next(p for p in g.people.values() if p.full_name == "Joseph Whitcombe")
     assert gran.heritage == {"Irish": 1.0}
 
 

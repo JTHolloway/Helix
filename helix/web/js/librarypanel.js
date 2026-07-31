@@ -28,9 +28,7 @@ export async function show(host, { onOpened, onToast }) {
           <button class="ghost" id="libReveal">Open this folder</button>
           <button class="ghost" id="libMove">Keep them somewhere else…</button>
         </div>
-        <p class="hint">Ordinary files in an ordinary folder — copy them to a
-          memory stick, put them in Dropbox, hand them to somebody. Nothing
-          here is locked inside Helix.</p>
+        <p class="hint">Ordinary files you can copy, back up or hand on.</p>
       </div>
 
       <h4>Open</h4>
@@ -52,12 +50,26 @@ export async function show(host, { onOpened, onToast }) {
         }).join('') || '<li class="none">Nothing here yet.</li>'}
       </ul>
 
+      <h4>Whose tree is this?</h4>
+      <div class="libsubj">
+        ${d.subject
+          ? `<b>${esc(d.subject.name)}</b>
+             <span>${esc(d.subject.life || 'dates unknown')}</span>`
+          : `<b class="none">Nobody chosen yet</b>`}
+        <p class="hint">Every relation in the program is measured from this
+          person — the sidebar, the DNA percentages and the research list.</p>
+        <input id="libSubjFind" type="search" autocomplete="off"
+          placeholder="${d.people ? 'Type a name to change it…'
+                                  : 'Add somebody first'}"
+          ${d.people ? '' : 'disabled'}>
+        <div id="libSubjHits" class="libhits"></div>
+      </div>
+
       <h4>This family</h4>
       <form class="libform" id="libRename">
         <label>What it is called
           <input id="libTitle" value="${esc(st.title || st.name)}"></label>
-        <p class="hint">Changing this renames the file on disk too, so the
-          folder never fills up with <code>family2.helix</code>.</p>
+        <p class="hint">This renames the file on disk too.</p>
         <button class="ghost wide">Rename</button>
       </form>
       <div class="libacts">
@@ -70,8 +82,7 @@ export async function show(host, { onOpened, onToast }) {
         <dt>Photographs</dt><dd>${st.photos} in
           <code>${esc(st.name)}-media</code></dd>
       </dl>
-      <p class="hint">Every change is written the moment you make it. There is
-        no Save button because there is never anything unsaved.</p>
+      <p class="hint">Every change is saved the moment you make it.</p>
 
       <h4>Start another</h4>
       <form class="libform" id="libNew">
@@ -108,6 +119,34 @@ export async function show(host, { onOpened, onToast }) {
     if (!t) { onToast('Give it a name first.'); return; }
     act('library/new', { title: t });
   });
+  // ---- whose tree it is -----------------------------------------------
+  const find = host.querySelector('#libSubjFind');
+  const hits = host.querySelector('#libSubjHits');
+  let timer = null;
+  if (find) find.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const q = find.value.trim();
+      if (q.length < 2) { hits.innerHTML = ''; return; }
+      try {
+        const rows = await get('person/search', { q, limit: 8 });
+        hits.innerHTML = rows.length
+          ? rows.map(r => `<button class="libhit" data-subj="${esc(r.id)}">
+              <b>${esc(r.name)}</b> <span>${esc(r.life || '')}</span>
+            </button>`).join('')
+          : '<p class="none">Nobody of that name.</p>';
+        hits.querySelectorAll('[data-subj]').forEach(b =>
+          b.addEventListener('click', async () => {
+            try {
+              await post('subject', { id: b.dataset.subj });
+              onToast('The tree is now read from their side.');
+              onOpened();
+            } catch (e) { onToast(e.message); }
+          }));
+      } catch { hits.innerHTML = ''; }
+    }, 200);
+  });
+
   host.querySelector('#libMove').addEventListener('click', async () => {
     // NO NATIVE FOLDER PICKER IN A WEB PAGE, and the one browsers offer
     // hands over the files rather than the path. So this asks — and shows

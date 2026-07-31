@@ -20,8 +20,8 @@ SCORE for each missing fact:
                         visit (5) < overseas archive (10).
 
 OUTPUT
-  A ranked list of questions: "Who were Esther Mcguiggan's parents? The line
-  stops here -- 47 people descend from Esther with nothing beyond. Try the
+  A ranked list of questions: "Who were Sarah Pargeter's parents? The line
+  stops here -- 47 people descend from Sarah with nothing beyond. Try the
   1881 census."
 
   COMPUTED ON EVERY READ, and not written to `research_task`. The rows there

@@ -5,14 +5,14 @@ WHY THIS EXISTS. The descendant-oriented grid in `base.py` measures a
 person's ring by how far they sit below an apex ancestor. On a real family
 that is wrong, and visibly so:
 
-    David Holloway   generation 2, angle  43 deg
-    Michaela Reed    generation 4, angle 256 deg
+    a husband   generation 2, angle  43 deg
+    his wife    generation 4, angle 256 deg
 
-They are married and born two years apart. David was two steps below one
-apex; Michaela, whose own parents were recorded, was four steps below a
-different apex on the other side of the disc. So a married couple came out
-two rings apart and most of a circle away from each other, and the chart
-said nothing true about the family.
+Married, and born two years apart. He was two steps below one apex; she,
+whose own parents were recorded, was four steps below a different apex on
+the other side of the disc. So a married couple came out two rings apart
+and most of a circle away from each other, and the chart said nothing true
+about the family.
 
 WHAT THIS DOES INSTEAD. Two independent decisions, in this order.
 

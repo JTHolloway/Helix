@@ -102,7 +102,7 @@ no longer on it — a gap where the cousins were, every angle still allotted
 as though they were coming back. Removed from the cast list instead, the
 ordering search in `couple_grid` runs again on what is left.
 
-Measured on the owner's tree, the crossings genuinely fall as it simplifies:
+Measured on a 142-person file, the crossings genuinely fall as it simplifies:
 
 | Narrowing | People | Crossings |
 |---|---|---|

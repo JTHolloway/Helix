@@ -138,9 +138,9 @@ def _stem_runs(graph, g, wraps: bool):
         # THE UNION A CHILD BELONGS TO, and only that one. Somebody adopted,
         # fostered, or whose parentage is in doubt is a child of two unions
         # in the file, and drawing an arc from each put them in two families
-        # as a full sibling of both -- Essie Sell was under the McGiverns'
+        # as a full sibling of both -- a married-in wife appeared under her
         # arc and the Sells', which is exactly the "wrong people on the same
-        # branch" the owner kept finding. `schema.sql` is explicit: the
+        # branch" that kept turning up. `schema.sql` is explicit: the
         # layout follows the union marked primary, and the others are drawn
         # as a chord across the disc.
         kids = [c for c in union.children
@@ -173,8 +173,8 @@ def _stem_runs(graph, g, wraps: bool):
         # of one of the partners alone.
         #
         # Clamping this to the anchor's own leaf, as an earlier attempt did,
-        # dragged it to one partner's name: on the owner's chart the stem
-        # under "PH | Kathleen Holloway" left from PH's end rather than from
+        # dragged it to one partner's name: the stem
+        # under a couple left from one partner's end rather than from
         # between them, and the same everywhere a couple had a leaf each.
         # It does NOT have to be the exact middle, though, and insisting on
         # that is what put a right-angled detour on nine stems. A couple has
@@ -217,7 +217,7 @@ def _stem_runs(graph, g, wraps: bool):
         # a leaf each puts the husband and the wife at two different angles
         # on the same ring, so a run measured in whole cells swallowed the
         # wife -- and the arc over "Peter and his brother Richard" ran over
-        # Kathleen, who is Peter's WIFE. She sits under the marriage rule
+        # the married-in partner. She sits under the marriage rule
         # below, which is the only line that should ever join them.
         #
         # And A RING IS A CIRCLE: on a chart that goes the whole way round,
@@ -866,7 +866,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         Past this it is in the band where the NEXT ring's sibling arcs live,
         and a rule that lands beside one of those touches it. Fred Sell's
         marriage rule came within a millimetre of the arc over Winnie and
-        Theresa McGivern, which on the sheet made him one of them.
+        his wife's family, which on the sheet made him one of them.
         """
         nxt = ring_r.get(gen + 1)
         if nxt is None:
@@ -1040,8 +1040,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             step = 0.0
             for k, (a, b) in enumerate(zip(members, members[1:])):
                 # BELOW the names, in the gap, never through them. At half
-                # the label height this ran straight through "Kathleen
-                # Holloway" -- the rule that means "married" was striking out
+                # the label height this ran straight through the name
+                # below -- the rule that means "married" was striking out
                 # the name it was about.
                 r = rule_r(a) + k * step
                 rule_top[cid] = max(rule_top.get(cid, 0.0), r)
@@ -1364,7 +1364,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # line running from one family straight into the next:
     #
     #   * Paul, Derek and Gorden's arc ran on into the stem carrying Barry
-    #     Viney, their HALF-brother by a different mother -- four children on
+    #     a HALF-brother by a different mother -- four children on
     #     one branch, which is what the owner photographed;
     #   * the arc over Peter and his brother Richard ran on into the stem
     #     bringing Kathleen down from her own parents, putting a man and his

@@ -295,7 +295,7 @@ class Kinship:
 
         # PASS TWO: married in. Somebody with no shared ancestor who is
         # married to somebody who has one. Named for whoever they married,
-        # so "Judy Murraycarr" reads as "married to your first cousin" and
+        # so a cousin's wife reads as "married to your first cousin" and
         # not as a stranger in your file.
         for pid in g.people:
             if pid in self.by_id:
@@ -665,12 +665,21 @@ def narrow(graph, subject: Optional[str], filt: KinFilter,
 # none at all while being related exactly as the chart says. Every screen
 # that shows this number has to say so, or it reads as a test result.
 def shared_dna(graph, a: str, b: str, kin: Optional[Kin] = None) -> Optional[float]:
-    """Expected share of autosomal DNA, 0..1. None if not blood relatives."""
+    """Expected share of autosomal DNA, 0..1.
+
+    ZERO IS AN ANSWER, and it is the one somebody wants. A husband, a
+    step-parent and a friend of the family share no ancestor, and the honest
+    figure for all three is 0% -- not a blank, which reads as "the program
+    could not work it out". `None` is kept for the one case where that is
+    genuinely true: a person who is not in this file at all.
+    """
+    if a not in graph.people or b not in graph.people:
+        return None
     if a == b:
         return 1.0
     k = kin if kin is not None else Kinship(graph, a).of(b)
     if not k.blood or k.steps >= 99:
-        return None
+        return 0.0
     if k.up == 0 or k.down == 0:            # a straight line up or down
         return 0.5 ** k.steps
     return _paths(graph, a, b, k.up, k.down) * 0.5 ** k.steps
@@ -704,6 +713,8 @@ def dna_display(share: Optional[float]) -> str:
     """
     if share is None:
         return ""
+    if not share:
+        return "0%"
     pct = Decimal(share) * 100
     if pct < Decimal("0.01"):
         return "under 0.01%"

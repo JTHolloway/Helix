@@ -23,21 +23,25 @@ export async function showStats(host, onSelect) {
 
   host.innerHTML = `
     <div class="figs">
-      ${fig(s.count, 'people in the file')}
-      ${fig(s.median_lifespan_excl_infants ?? '—', 'median years lived',
+      ${fig(s.count, 'people', s.living ? `${s.living} living` : '')}
+      ${fig(s.median_lifespan ?? '—', 'median years lived',
             s.with_both_dates ? `of the ${s.with_both_dates} with both dates`
                               : 'nobody has both dates yet')}
-      ${s.infant_deaths ? fig(pct(s.infant_rate), 'died before five',
-                              `${s.infant_deaths} of ${s.with_both_dates}`) : ''}
+      ${fig(s.marriages, 'marriages')}
       ${s.endogamy_cases ? fig(s.endogamy_cases, 'cousins who married cousins')
                          : ''}
     </div>
 
-    ${d.extremes.length ? `<h4>The ones people remember</h4>
-      <ul class="extremes">${d.extremes.map(x => `<li>
+    ${d.records.length ? `<h4>Records</h4>
+      <ul class="records">${d.records.map(x => `<li>
         <b>${esc(x.what)}</b>
-        <button class="link" data-go="${esc(x.id)}">${esc(x.who)}</button>
-        — ${esc(x.value)}${x.detail ? ` <span class="sub">${esc(x.detail)}</span>` : ''}
+        <em>${esc(x.value)}</em>
+        <span>${x.ids.length
+          ? esc(x.who).split(' and ').map((n, i) =>
+              x.ids[i] ? `<button class="link" data-go="${esc(x.ids[i])}"
+                >${n}</button>` : n).join(' and ')
+          : esc(x.who)}</span>
+        ${x.detail ? `<small>${esc(x.detail)}</small>` : ''}
       </li>`).join('')}</ul>` : ''}
 
     ${d.by_decade.length > 1 ? `<h4>Born, by decade</h4>
@@ -55,16 +59,11 @@ export async function showStats(host, onSelect) {
 
     ${dec.length > 1 ? `<h4>How long people lived</h4>
       <table class="tbl"><thead><tr><th>Born</th><th>Lived to</th>
-        <th>Reaching five</th><th>Known</th></tr></thead><tbody>
+        <th>Known</th></tr></thead><tbody>
         ${dec.map(x => `<tr><td>${x.decade}s</td>
           <td>${x.median_lifespan ?? '—'}</td>
-          <td>${x.median_reaching_five ?? '—'}</td>
           <td class="sub">${x.known_lifespans}</td></tr>`).join('')}
-      </tbody></table>
-      <p class="hint">Two columns because they are two different facts. A
-        raw median is dragged down by infant deaths and tells you nobody
-        reached fifty; that is not what the records say, it is what dying at
-        two does to an average.</p>` : ''}
+      </tbody></table>` : ''}
 
     ${d.collapse.length ? `<h4>How much of your own ancestry is written down</h4>
       <table class="tbl"><thead><tr><th>Generation back</th><th>Known</th>
@@ -74,10 +73,8 @@ export async function showStats(host, onSelect) {
           <td class="meter"><i style="width:${Math.round(x.share * 100)}%"></i></td>
         </tr>`).join('')}
       </tbody></table>
-      <p class="hint">Everybody has 1024 ten-generation ancestors on paper
-        and fewer in fact, because cousins married cousins. The gap between
-        the columns is partly research still to do and partly the shape of a
-        real family.</p>` : ''}
+      <p class="hint">Fewer than the maximum means either research still to
+        do, or cousins who married cousins.</p>` : ''}
 
     ${d.surnames.length ? `<h4>The names it is made of</h4>
       <ul class="chips">${d.surnames.map(x => `<li><b>${esc(x.surname)}</b>
@@ -200,6 +197,5 @@ export async function lifeline(pid) {
           ? `<i>at ${e.age}</i>` : ''}
       </li>`).join('')}
     </ol>
-    <p class="hint">Everything the file knows, in order. A date on its own is
-      a number; a life is what the dates are for.</p>`;
+    <p class="hint">Everything the file knows about them, in order.</p>`;
 }

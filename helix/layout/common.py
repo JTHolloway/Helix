@@ -421,29 +421,28 @@ def place_radial_label(plan, placer: PolarLabelPlacer, person,
             fallbacks.append([(txt, lines[0][1], lines[0][2])])
 
     rung(short)
-    # THE GIVEN NAME, before initials. Without this rung the ladder drops
+    # THE GIVEN NAME, BEFORE INITIALS. Without this rung the ladder drops
     # from a whole name straight to two letters for anybody whose short form
-    # IS their whole name -- which is everyone with a single given name. On
-    # the owner's chart Peter Holloway needed 21.8 mm, had 23.6, lost the
-    # slot to his wife's longer name by half a millimetre, and appeared as
-    # "PH" beside her. "Peter" fits with room to spare, and the surname is
-    # the one thing a family tree never has to repeat: it is written on the
-    # branch he is standing on. Initials say nothing that the position does
-    # not already say.
+    # IS their whole name -- which is everyone with a single given name. A
+    # name needing 21.8 mm with 23.6 available can still lose its slot to a
+    # longer neighbour by half a millimetre and come out as two capitals; the
+    # given name alone fits with room to spare, and the surname is the one
+    # thing a family tree never has to repeat, because it is written on the
+    # branch the person is standing on.
     rung(person.given_used or person.given_first)
     rung(person.initials)
 
     # TURNING A NAME INSTEAD OF ABBREVIATING IT was tried here and does not
-    # work, though it looks like it should. Offering a tangential ring the
-    # radial mode as a last resort keeps far more names -- on the owner's
-    # tree the abbreviated ones went from three to one -- but a name set
-    # along its own branch runs OUTWARD from its row, and the first thing it
-    # meets is the rule that means that person is married. Two names crossed
-    # their own marriage rules immediately. The room a turned name really has
-    # is `rule_r - row_r`, which on a ring set tangentially is one label
-    # height, because that is exactly what the band was sized for. There is
-    # no room to turn into without resizing the band, and that was measured
-    # separately and is worse. The rung below is what fixed the case.
+    # work, though it looks as though it should. Offering a tangential ring
+    # the radial mode as a last resort keeps far more names -- abbreviated
+    # ones fell from three to one on a 142-person test file -- but a name
+    # set along its own branch runs OUTWARD from its row, and the first
+    # thing it meets is the rule that means that person is married. Two
+    # names crossed their own marriage rules immediately. The room a turned
+    # name really has is `rule_r - row_r`, which on a ring set tangentially
+    # is one label height, because that is exactly what the band was sized
+    # for. There is nothing to turn into without resizing the band, and that
+    # was measured separately and is worse. The rung above is the fix.
     if orientation == "tangential":
         modes = ["tangential"]
     elif orientation == "auto":
@@ -510,8 +509,7 @@ def _emit(plan, person, var, theta, r_start, cx, cy, style, flip, face,
               right way up instead. Same idea, chart turned through 180.
     upright   turn each name through 180 wherever it would be upside down,
               so no name ever is. Readable without moving the chart, at the
-              cost of the two halves reading in opposite directions --
-              which is exactly what the owner of this program did not want.
+              cost of the two halves reading in opposite directions.
 
     The first two are the consistent ones: you turn the chart, not your head.
     """

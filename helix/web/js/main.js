@@ -925,8 +925,7 @@ async function showPeople() {
             title="${p.complete}% of the basics filled in"></span></td>
         </tr>`).join('')}</tbody></table>
       <p class="hint">Sorted by ${ {surname:'surname', born:'birth year',
-        complete:'how complete the record is'}[listSort] }. The least
-        complete records are the ones worth an afternoon.</p>`;
+        complete:'how complete the record is'}[listSort] }.</p>`;
     $('#listBody').querySelectorAll('[data-sort]').forEach(b =>
       b.addEventListener('click', () => { listSort = b.dataset.sort; render(); }));
     $('#listBody').querySelectorAll('[data-p]').forEach(b =>

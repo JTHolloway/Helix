@@ -9,10 +9,10 @@ of a decade of research because somebody moved a folder.
 THE LIBRARY IS A PLAIN FOLDER OF PLAIN FILES, and that is a decision.
 
   Documents/Helix/
-      Holloway.helix              the family. An ordinary SQLite file.
-      Holloway-media/             the photographs, beside it.
+      Whitcombe.helix             the family. An ordinary SQLite file.
+      Whitcombe-media/            the photographs, beside it.
       backups/                    thirty dated copies, taken automatically.
-      Holloway-archive-*.zip      whatever `Export → Archive` has written.
+      Whitcombe-archive-*.zip     whatever `Export → Archive` has written.
 
   Not a hidden application-support directory, not a proprietary bundle, and
   not a database of databases. Somebody who has kept a family tree for ten

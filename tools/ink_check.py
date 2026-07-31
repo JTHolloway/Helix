@@ -5,7 +5,7 @@
 
 Every other check in this repository asks the layout what it intended.
 This one asks the plan what it actually put on the sheet, because the
-faults the owner keeps finding are not errors of intent -- the grid was
+faults that keep turning up are not errors of intent -- the grid was
 right every time -- they are two correct lines that happen to land close
 enough together to read as one.
 
@@ -357,7 +357,7 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
     # the width the direct line is drawn it is the loudest thing on the
     # sheet. Counted between different families only -- a stem meeting its
     # own arc is a junction, which is the whole point of it.
-    # NAMED, not tallied. This counted the Kathleen/Peter crossing all along
+    # NAMED, not tallied. This counted one couple's crossing all along
     # and reported it as "5 stem x stem", which told nobody anything: the
     # owner found it by eye in a picture. A crossing is only actionable if
     # you can see WHOSE branches they are.

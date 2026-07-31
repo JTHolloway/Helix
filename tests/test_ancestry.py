@@ -56,20 +56,20 @@ def family(tmp_path):
         # SEX IS RECORDED, because the words depend on it: "father" where
         # it is known, "parent" where it is not. Leaving it out would test
         # the neutral fallback and nothing else.
-        me = add(c, "James", "Holloway", birth="1992", sex="M")
+        me = add(c, "Thomas", "Whitcombe", birth="1992", sex="M")
         c.post("subject", {"id": me})
-        dad = add(c, "David", "Holloway", me, "father", birth="1962", sex="M")
-        add(c, "Michaela", "Reed", me, "mother", birth="1964", sex="F")
-        add(c, "Anthony", "Holloway", me, "sibling", birth="1995", sex="M")
-        gran = add(c, "Peter", "Holloway", dad, "father", birth="1930", sex="M")
-        add(c, "Kathleen", "Holloway", dad, "mother", birth="1932", sex="F")
-        unc = add(c, "Martin", "Holloway", gran, "child", birth="1960", sex="M")
-        add(c, "Laura", "Holloway", unc, "partner", birth="1961", sex="F")
-        add(c, "Alice", "Holloway", unc, "child", birth="1990", sex="F")
-        add(c, "Jack", "Holloway", unc, "child", birth="1993", sex="M")
-        ggran = add(c, "Thomas", "Holloway", gran, "father", birth="1900", sex="M")
-        gunc = add(c, "William", "Holloway", ggran, "child", birth="1928", sex="M")
-        add(c, "Doreen", "Holloway", gunc, "child", birth="1958", sex="F")
+        dad = add(c, "William", "Whitcombe", me, "father", birth="1962", sex="M")
+        add(c, "Sarah", "Pargeter", me, "mother", birth="1964", sex="F")
+        add(c, "Edward", "Whitcombe", me, "sibling", birth="1995", sex="M")
+        gran = add(c, "Joseph", "Whitcombe", dad, "father", birth="1930", sex="M")
+        add(c, "Margaret", "Whitcombe", dad, "mother", birth="1932", sex="F")
+        unc = add(c, "Henry", "Whitcombe", gran, "child", birth="1960", sex="M")
+        add(c, "Laura", "Whitcombe", unc, "partner", birth="1961", sex="F")
+        add(c, "Alice", "Whitcombe", unc, "child", birth="1990", sex="F")
+        add(c, "Jack", "Whitcombe", unc, "child", birth="1993", sex="M")
+        ggran = add(c, "Samuel", "Whitcombe", gran, "father", birth="1900", sex="M")
+        gunc = add(c, "Arthur", "Whitcombe", ggran, "child", birth="1928", sex="M")
+        add(c, "Doreen", "Whitcombe", gunc, "child", birth="1958", sex="F")
         yield c, {"me": me, "dad": dad, "gran": gran, "uncle": unc,
                   "ggran": ggran, "great_uncle": gunc}, db
     finally:
@@ -89,7 +89,7 @@ def by_name(groups, name):
 def test_the_sidebar_puts_everybody_in_a_tab(family):
     c, ids, _db = family
     r = c.get("relatives")
-    assert r["subject_name"] == "James Holloway"
+    assert r["subject_name"] == "Thomas Whitcombe"
     seen = [p["id"] for grp in r["groups"] for p in grp["people"]]
     assert len(seen) == r["total"] == len(set(seen))
 
@@ -110,17 +110,17 @@ def test_each_person_is_filed_under_the_right_relation(family):
     c, ids, _db = family
     groups = c.get("relatives")["groups"]
     for name, group, relation in (
-            ("James Holloway", "self", "you"),
-            ("David Holloway", "immediate", "father"),
-            ("Anthony Holloway", "immediate", "brother"),
-            ("Peter Holloway", "grandparents", "grandfather"),
-            ("Martin Holloway", "aunts_uncles", "uncle"),
-            ("Alice Holloway", "cousins_1", "first cousin"),
-            ("Thomas Holloway", "great_grandparents", "great-grandfather"),
-            ("William Holloway", "great_aunts_uncles", "great-uncle"),
-            ("Doreen Holloway", "cousins_1_removed",
+            ("Thomas Whitcombe", "self", "you"),
+            ("William Whitcombe", "immediate", "father"),
+            ("Edward Whitcombe", "immediate", "brother"),
+            ("Joseph Whitcombe", "grandparents", "grandfather"),
+            ("Henry Whitcombe", "aunts_uncles", "uncle"),
+            ("Alice Whitcombe", "cousins_1", "first cousin"),
+            ("Samuel Whitcombe", "great_grandparents", "great-grandfather"),
+            ("Arthur Whitcombe", "great_aunts_uncles", "great-uncle"),
+            ("Doreen Whitcombe", "cousins_1_removed",
              "first cousin once removed"),
-            ("Laura Holloway", "married_in", "married to your uncle")):
+            ("Laura Whitcombe", "married_in", "married to your uncle")):
         grp, person = by_name(groups, name)
         assert grp["key"] == group, f"{name} is under {grp['key']}"
         assert person["relation"] == relation, f"{name}: {person['relation']}"
@@ -150,17 +150,17 @@ def test_clicking_somebody_lights_up_THEIR_relatives_not_yours(family):
             names[p["id"]] = p["name"]
     # Alice and Jack are MY first cousins
     assert {names[p] for p in mine.get("cousins_1", [])} == {
-        "Alice Holloway", "Jack Holloway"}
+        "Alice Whitcombe", "Jack Whitcombe"}
     # ...and to my uncle they are his own children
     assert {names[p] for p in theirs.get("immediate", [])} >= {
-        "Alice Holloway", "Jack Holloway", "Peter Holloway"}
+        "Alice Whitcombe", "Jack Whitcombe", "Joseph Whitcombe"}
     # Doreen is my first cousin ONCE REMOVED and my uncle's first cousin --
     # the same two people, a different answer depending on who is asking,
     # which is the whole reason this is measured twice
     assert {names[p] for p in mine.get("cousins_1_removed", [])} == {
-        "Doreen Holloway"}
+        "Doreen Whitcombe"}
     assert {names[p] for p in theirs.get("cousins_1", [])} == {
-        "Doreen Holloway"}
+        "Doreen Whitcombe"}
 
 
 def test_a_profile_holds_what_you_know_about_them(family):
@@ -358,7 +358,7 @@ def test_one_profile_prints(family):
                       "notes": "Kept pigeons."})
     c.post("person/photo", {"id": ids["gran"], "data": PIXEL_URL})
     h = _fetch(c, f"/print/profile?id={ids['gran']}")
-    assert "Peter Holloway" in h
+    assert "Joseph Whitcombe" in h
     assert "Boilermaker" in h and "Kept pigeons." in h
     assert "/api/media?name=" in h, "the portrait is not on the page"
     assert "grandfather" in h, "it does not say how they are related to you"
@@ -389,10 +389,11 @@ def test_the_tree_prints_as_an_outline(family):
     ticked off against a list."""
     c, _ids, _db = family
     h = _fetch(c, "/print/outline?focus=bloodline")
-    for name in ("Thomas Holloway", "Peter Holloway", "Martin Holloway",
-                 "Alice Holloway"):
+    for name in ("Samuel Whitcombe", "Joseph Whitcombe", "Henry Whitcombe",
+                 "Alice Whitcombe"):
         assert name in h, f"{name} is missing from the outline"
-    assert h.index("Thomas Holloway") < h.index("Peter Holloway"), (
+    # the great-grandfather, then his son
+    assert h.index("Samuel Whitcombe") < h.index("Joseph Whitcombe"), (
         "descendants should be indented under their parents")
 
 
@@ -460,7 +461,7 @@ def test_a_grandmother_recorded_as_irish_makes_you_a_quarter_irish(family):
     c, ids, _db = family
     gran = [p["id"] for p in c.get("relatives")["groups"][0]["people"]]  # noqa
     kath = next(p["id"] for grp in c.get("relatives")["groups"]
-                for p in grp["people"] if p["name"] == "Kathleen Holloway")
+                for p in grp["people"] if p["name"] == "Margaret Whitcombe")
     c.post("person/heritage", {"id": kath, "heritage": [{"label": "Irish"}]})
 
     her = c.get("person", id=kath)["heritage"]
@@ -516,20 +517,20 @@ def test_how_much_dna_you_share_with_each_relation(family):
     """Halved at every step, and doubled again when BOTH members of the
     couple at the top are shared. That doubling is the whole of the
     difference between a full relation and a half one, and it is why the
-    number cannot be read off the label: `Sarah` and `Martin` are both
+    number cannot be read off the label: `Sarah` and `Henry` are both
     filed as your aunt and uncle and they are 25% and 12.5%."""
     c, ids, _db = family
     # A full aunt: a sibling of your father, so both grandparents are shared.
     # Added here rather than in the fixture so nothing else shifts under it.
-    add(c, "Sarah", "Holloway", ids["dad"], "sibling", birth="1965", sex="F")
-    want = {"David Holloway": "50%",       # father
-            "Anthony Holloway": "50%",     # full brother, both parents
-            "Peter Holloway": "25%",       # grandfather
-            "Sarah Holloway": "25%",       # full aunt, both grandparents
-            "Thomas Holloway": "12.5%",    # great-grandfather
-            "Martin Holloway": "12.5%",    # half-uncle: Peter only
-            "Alice Holloway": "6.25%",     # his daughter, a half-first-cousin
-            "Doreen Holloway": "3.13%"}    # great-uncle's daughter
+    add(c, "Hannah", "Whitcombe", ids["dad"], "sibling", birth="1965", sex="F")
+    want = {"William Whitcombe": "50%",       # father
+            "Edward Whitcombe": "50%",     # full brother, both parents
+            "Joseph Whitcombe": "25%",       # grandfather
+            "Hannah Whitcombe": "25%",      # full aunt, both grandparents
+            "Samuel Whitcombe": "12.5%",    # great-grandfather
+            "Henry Whitcombe": "12.5%",    # half-uncle: Joseph only
+            "Alice Whitcombe": "6.25%",     # his daughter, a half-first-cousin
+            "Doreen Whitcombe": "3.13%"}    # great-uncle's daughter
     for grp in c.get("relatives")["groups"]:
         for p in grp["people"]:
             if p["name"] in want:
@@ -551,11 +552,29 @@ def test_the_percentage_keeps_the_precision_that_means_something(family):
 
 
 def test_somebody_married_in_shares_no_dna(family):
+    """ZERO IS AN ANSWER. A husband, a step-parent and a friend of the
+    family share no ancestor, and the honest figure for all three is 0% --
+    not a blank, which reads as "the program could not work it out"."""
     c, ids, _db = family
     laura = next(p["id"] for grp in c.get("relatives")["groups"]
-                 for p in grp["people"] if p["name"] == "Laura Holloway")
-    assert c.get("person", id=laura)["dna"]["share"] is None
-    assert c.get("person", id=laura)["dna"]["display"] == ""
+                 for p in grp["people"] if p["name"] == "Laura Whitcombe")
+    d = c.get("person", id=laura)["dna"]
+    assert d["share"] == 0.0
+    assert d["display"] == "0%"
+    assert "marriage" in d["why"], "it should say why it is zero"
+
+
+def test_dna_is_blank_only_for_somebody_not_in_the_file(family):
+    """`None` is kept for the one case where "could not be worked out" is
+    genuinely true."""
+    from helix.graph.kinship import dna_display, shared_dna
+    from helix.graph.build import load
+    from helix.store.db import connect
+    c, ids, db = family
+    g = load(connect(db, create=False))
+    assert shared_dna(g, ids["me"], "nobody-at-all") is None
+    assert dna_display(None) == ""
+    assert dna_display(0.0) == "0%"
 
 
 def test_the_bloodline_seats_are_numbered_like_an_ahnentafel(family):
@@ -566,13 +585,13 @@ def test_the_bloodline_seats_are_numbered_like_an_ahnentafel(family):
     bl = c.get("person", id=ids["me"])["dna"]["bloodline"]
     seats = {r["slot"]: r for r in bl}
     assert len(bl) == 15
-    assert seats[1]["name"] == "James Holloway" and seats[1]["share"] == 1.0
-    assert seats[2]["name"] == "David Holloway" and seats[2]["share"] == 0.5
-    assert seats[3]["name"] == "Michaela Reed"
-    assert seats[4]["name"] == "Peter Holloway" and seats[4]["share"] == 0.25
-    assert seats[5]["name"] == "Kathleen Holloway"
-    assert seats[8]["name"] == "Thomas Holloway" and seats[8]["share"] == 0.125
-    assert seats[6]["id"] is None            # Michaela's father, not recorded
+    assert seats[1]["name"] == "Thomas Whitcombe" and seats[1]["share"] == 1.0
+    assert seats[2]["name"] == "William Whitcombe" and seats[2]["share"] == 0.5
+    assert seats[3]["name"] == "Sarah Pargeter"
+    assert seats[4]["name"] == "Joseph Whitcombe" and seats[4]["share"] == 0.25
+    assert seats[5]["name"] == "Margaret Whitcombe"
+    assert seats[8]["name"] == "Samuel Whitcombe" and seats[8]["share"] == 0.125
+    assert seats[6]["id"] is None            # Sarah's father, not recorded
     assert seats[6]["share"] == 0.25
 
 
@@ -639,16 +658,16 @@ def test_a_name_corrected_in_the_profile_changes_everywhere(family):
     the same person."""
     c, ids, _db = family
     c.post("person", {"id": ids["uncle"], "given": "Martyn",
-                      "surname": "Hollowaye", "sex": "M"})
-    assert c.get("person", id=ids["uncle"])["name"] == "Martyn Hollowaye"
+                      "surname": "Whitcumbe", "sex": "M"})
+    assert c.get("person", id=ids["uncle"])["name"] == "Martyn Whitcumbe"
     names = [p["name"] for grp in c.get("relatives")["groups"]
              for p in grp["people"]]
-    assert "Martyn Hollowaye" in names and "Martin Holloway" not in names
+    assert "Martyn Whitcumbe" in names and "Henry Whitcombe" not in names
     plan = c.get("plan", design="radial_family", focus="all")
     texts = [e.get("text", "") for e in plan["elements"] if e["kind"] == "text"]
-    assert any("Martyn" in t or "Hollowaye" in t for t in texts)
+    assert any("Martyn" in t or "Whitcumbe" in t for t in texts)
     sheet = _fetch(c, f"/print/profile?id={ids['uncle']}")
-    assert "Martyn Hollowaye" in sheet
+    assert "Martyn Whitcumbe" in sheet
 
 
 def test_saving_one_field_from_the_profile_leaves_the_others_alone(family):
@@ -672,7 +691,7 @@ def test_a_printed_profile_is_something_you_can_file(family):
     their own sheet."""
     c, ids, _db = family
     kath = next(p["id"] for grp in c.get("relatives")["groups"]
-                for p in grp["people"] if p["name"] == "Kathleen Holloway")
+                for p in grp["people"] if p["name"] == "Margaret Whitcombe")
     c.post("person/heritage", {"id": kath, "heritage": [{"label": "Irish"}]})
     sheet = _fetch(c, f"/print/profile?id={ids['me']}")
     assert "Where they came from" in sheet and "Irish" in sheet
