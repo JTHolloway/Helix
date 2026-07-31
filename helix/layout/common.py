@@ -317,6 +317,48 @@ def label_lines(style, person, gen: int, order: int) -> list[tuple[str, float, s
     return out
 
 
+def wrap_label(lines, room_mm: float, max_lines: int = 2):
+    """Turn a name that is too wide onto a second line, keeping every word.
+
+    THE WHOLE NAME, or the point of writing it down is gone. A chart that
+    says "Harriet Pargeter" where the record says "Harriet Florence
+    Pargeter" has thrown away the thing that tells two Harriet Pargeters
+    apart -- and the ladder in `place_radial_label` used to reach for that
+    abbreviation as its first move.
+
+    Wrapping is strictly better. It costs a line of DEPTH, of which a ring
+    band has plenty, in exchange for about 40% off the WIDTH, which is the
+    scarce thing on a radial chart. "Harriet Florence Pargeter" is 39 mm on
+    one line and 25 mm on two.
+
+    Split so the widest piece is as narrow as possible, which for an English
+    name almost always puts the surname on its own line -- the reading
+    people expect, arrived at by measuring rather than by rule. A single
+    word cannot be split and is returned untouched; hyphenating a surname is
+    a decision about somebody's name and not one a layout may take.
+    """
+    if not lines or room_mm <= 0:
+        return lines
+    text, size, colour = lines[0]
+    if est_text_width(text, size) <= room_mm:
+        return lines
+    words = text.split()
+    if len(words) < 2:
+        return lines
+    best = None
+    for i in range(1, len(words)):
+        a, b = " ".join(words[:i]), " ".join(words[i:])
+        worst = max(est_text_width(a, size), est_text_width(b, size))
+        if best is None or worst < best[0]:
+            best = (worst, a, b)
+    if best is None or best[0] >= est_text_width(text, size):
+        return lines
+    out = [(best[1], size, colour), (best[2], size, colour)]
+    # Keep whatever else the label carries -- the dates, the occupation --
+    # but never let one name push the stack past what the band can hold.
+    return (out + list(lines[1:]))[:max(max_lines, 2) + len(lines) - 1]
+
+
 def _lines_spec(style, gen: int) -> list[str]:
     by = style.get("labels.by_ring", {}) or {}
     for spec, val in by.items():

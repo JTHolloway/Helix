@@ -35,7 +35,7 @@ from .. import geometry as G
 from ..base import LayoutSettings, build_grid
 from ..common import (PolarLabelPlacer, add_border, add_title, colour_for,
                       dash_for, est_text_width, fill_template, label_lines,
-                      place_radial_label)
+                      place_radial_label, wrap_label)
 from ..plan import Canvas, Element, FontSpec, PlanMeta, RenderPlan
 from ..registry import register
 
@@ -61,6 +61,14 @@ _CURVE = 120        # samples along a stem that has to curve round
 # earns its keep. Anything replacing it has to be scored on names ACTUALLY
 # READABLE -- full, then shortened, then dropped -- not on the honesty of
 # the test.
+
+
+def _cells_by_id(g) -> dict:
+    """Every couple, by the id of the cell they share."""
+    out: dict[str, list[str]] = {}
+    for sl in g:
+        out.setdefault(sl.cell or sl.pid, []).append(sl.pid)
+    return out
 
 
 def _wrapped(d: float) -> float:
@@ -389,16 +397,54 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     widest: dict[int, float] = {}
     cells_in: dict[int, int] = {}
     seen_cell: set[tuple[int, str]] = set()
+    raw_lines: dict[str, list] = {}
     for sl in g:
         rows_in[sl.gen] = max(rows_in.get(sl.gen, 1), sl.row + 1)
         person = graph.people[sl.pid]
-        for text, sz, _ in label_lines(style, person, sl.gen, sl.order):
+        raw_lines[sl.pid] = label_lines(style, person, sl.gen, sl.order)
+        for text, sz, _ in raw_lines[sl.pid]:
             widest[sl.gen] = max(widest.get(sl.gen, 0.0),
                                  est_text_width(text, sz))
         key = (sl.gen, sl.cell or sl.pid)
         if key not in seen_cell:
             seen_cell.add(key)
             cells_in[sl.gen] = cells_in.get(sl.gen, 0) + 1
+
+    # HOW MUCH ARC EACH NAME ACTUALLY HAS: the distance to its neighbour in
+    # its own row, in turns. Not the cell's own width, which is one unit for
+    # every cell on the chart by construction and therefore says nothing.
+    # Multiplied by a radius this becomes millimetres, which is what a name
+    # is measured in.
+    slot_turn: dict[str, float] = {}
+    _rows: dict[tuple[int, int], list[tuple[float, str]]] = {}
+    for sl in g:
+        _rows.setdefault((sl.gen, sl.row), []).append((sl.tc, sl.pid))
+    for _rk, ts in _rows.items():
+        ts.sort()
+        for i, (t, pid) in enumerate(ts):
+            lo = (t - ts[i - 1][0]) if i else 1.0
+            hi = (ts[i + 1][0] - t) if i + 1 < len(ts) else 1.0
+            slot_turn[pid] = min(lo, hi)
+
+    def lines_for(sl, r: float, tangential: bool) -> list:
+        """The lines this person's label will really be set in.
+
+        A NAME IS NEVER CUT DOWN TO FIT. Where the whole of it will not go on
+        one line, it goes on two -- which costs a line of depth, of which a
+        ring band has plenty, and buys about 40% off the width, which is the
+        scarce thing on a disc. Decided here rather than inside the placer
+        because the marriage rule sits past the END of the name: worked out
+        after the fact, the rule was drawn through the second line of every
+        name that wrapped.
+
+        Only for type set AROUND the ring. Set along its own branch a name
+        costs its length in radius and its height in angle, so wrapping it
+        makes the crowded dimension worse.
+        """
+        base = raw_lines.get(sl.pid) or []
+        if not tangential or not base:
+            return base
+        return wrap_label(base, slot_turn.get(sl.pid, 1.0) * sweep * r)
 
     # ---- 1a. the partner nobody recorded ---------------------------------
     #
@@ -444,10 +490,23 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # A row has to be as deep as the LABEL that goes in it, not as deep as
     # one line of type: a name with its dates under it is two lines, and
     # sizing rows by one printed the wife's name through her husband's.
+    # AND AS DEEP AS A WRAPPED NAME, because a name that will not fit on one
+    # line goes on two rather than being cut down, and the row above it has
+    # to start clear of the second. Recomputed inside the sizing loop once a
+    # radius is on the table, since whether a name wraps depends on how much
+    # arc it has and arc is radius times angle.
     lab_h: dict[int, float] = {}
+
+    def _lab_h(gen: int, r: float, tangential: bool) -> float:
+        out = 0.0
+        for sl in g.by_gen.get(gen, ()):
+            slot = g.slots[sl]
+            out = max(out, sum(sz * 1.16 for _, sz, _
+                               in lines_for(slot, r, tangential)))
+        return out or size * 1.16
+
     for sl in g:
-        h = sum(sz * 1.16 for _, sz, _ in
-                label_lines(style, graph.people[sl.pid], sl.gen, sl.order))
+        h = sum(sz * 1.16 for _, sz, _ in raw_lines.get(sl.pid, ()))
         lab_h[sl.gen] = max(lab_h.get(sl.gen, 0.0), h)
     # 1.5, not 1.12: the label may be three lines deep (name, dates,
     # place) and the row under it has to start clear of the last of them,
@@ -625,6 +684,10 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                 # two rows of every stacked couple on any ring that came out
                 # radial -- and their marriage rule and their children's stem
                 # went with it, out past the ring beyond.
+                # A WRAPPED NAME IS TALLER, and the band has to hold it.
+                # Measured at the radius this candidate is proposing, which
+                # is what decides whether anything wraps at all.
+                lab_h[gen] = _lab_h(gen, ring_try[gen], fits)
                 pit = _pitch(gen, deep and not fits)
                 floor = rows_in[gen] * pit + stem + lane_room[gen]
                 if not fits:
@@ -714,8 +777,26 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     H = min(H, need_h) if panel else need_h
     cx, cy = (W - (bx1 - bx0)) / 2 - bx0, (H - (by1 - by0)) / 2 - by0
 
+    # ---- LENGTHEN THE BRANCH BEFORE SHORTENING THE NAME ------------------
+    #
+    # On a disc the room a name has is r x angle. The angle is fixed -- it is
+    # what the ordering decided, and moving it means moving somebody else --
+    # but the RADIUS is not. Push a couple a little further out along their
+    # own branch and their names get wider for nothing.
+    #
+    # So a couple whose names will not fit is moved out until they do. The
+    # whole cell goes together, both partners and the rule between them, so
+    # the spacing inside it is untouched and the only thing that shrinks is
+    # the gap above -- which is why the lift is capped at what that gap can
+    # spare, after the rows, the name, the marriage rule and the clearance
+    # the next ring's arcs need. Where that is not enough the name wraps
+    # instead, and where neither is enough it is abbreviated, in that order:
+    # each step gives up less than the one after it.
+    lift_of: dict[str, float] = {}
+
     def row_r(sl) -> float:
-        return ring_r[sl.gen] + sl.row * pitch[sl.gen]
+        return (ring_r[sl.gen] + sl.row * pitch[sl.gen]
+                + lift_of.get(sl.cell or sl.pid, 0.0))
 
     def theta(t: float) -> float:
         return start + t * sweep
@@ -797,6 +878,48 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         if orient in ('radial', 'tangential'):
             return orient
         return 'tangential' if tangential[gen] else 'radial'
+
+    if style.get("labels.lengthen_branch", True):
+        for cid, members in _cells_by_id(g).items():
+            gen = g.slots[members[0]].gen
+            nxt = ring_r.get(gen + 1)
+            if nxt is None:
+                continue
+            want = 0.0
+            for pid in members:
+                sl = g.slots[pid]
+                turn = slot_turn.get(pid, 1.0) * sweep
+                if turn <= 0:
+                    continue
+                tang = want_orient(gen) == "tangential"
+                need = max((est_text_width(t, z) for t, z, _
+                            in lines_for(sl, ring_r[gen], tang)), default=0.0)
+                if not tang or need <= 0:
+                    continue
+                # WITH ROOM TO SPARE. Lifted to exactly the width the name
+                # needs, a name lands a tenth of a millimetre short and is
+                # abbreviated anyway -- the whole lift wasted for the sake of
+                # a rounding. The margin costs nothing: the lift is capped by
+                # what the gap can spare either way.
+                want = max(want, need * 1.18 / turn - ring_r[gen])
+            if want <= 0.05:
+                continue
+            # THIS CELL'S OWN LABEL, not the tallest on the ring. The rule
+            # is placed from the ring-wide figure and clamped, so measuring
+            # the room with it too refused a lift to every couple with a
+            # short name on a ring that had one long one.
+            deep = max(g.slots[p].row for p in members)
+            mine = max((sum(z * 1.16 for _, z, _ in
+                            lines_for(g.slots[p], ring_r[gen],
+                                      want_orient(gen) == "tangential"))
+                        for p in members), default=size * 1.16)
+            top = (ring_r[gen] + deep * pitch[gen] + mine + size * 0.55)
+            spare = (nxt - stem * 0.55 - lane_gap * 1.6) - top
+            got = max(0.0, min(want, spare))
+            if got > 0.05:
+                lift_of[cid] = got
+
+
 
     plan = RenderPlan(
         canvas=Canvas(W, H, style.get("canvas.background", "#FBF8F2"), "circle"),
@@ -1128,7 +1251,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         person = graph.people[sl.pid]
         t = theta(sl.tc)
         arc = abs(sl.t1 - sl.t0) * sweep * max(row_r(sl), 1e-3)
-        lines = label_lines(style, person, sl.gen, sl.order)
+        # THE SAME LINES THE BAND WAS SIZED FOR. Worked out again here from
+        # the final radius, so a name that wrapped when the ring was being
+        # measured still wraps when it is drawn -- and the marriage rule,
+        # which was placed past the taller of the two, still clears it.
+        lines = lines_for(sl, row_r(sl), want_orient(sl.gen) == "tangential")
         # PER RING, not per name. Offered `auto` here the placer is greedy:
         # it tries tangential for every name, the roomy cells take the wide
         # slots first and their neighbours are left with none -- 27 names

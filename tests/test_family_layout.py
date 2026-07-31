@@ -1407,3 +1407,77 @@ def test_a_long_name_loses_its_surname_before_its_given_name(graph):
     drawn = [e.text for e in plan.elements if e.kind == "text"]
     assert drawn == [person.given_first], (
         f"expected the given name alone, got {drawn}")
+
+
+def test_a_name_is_never_cut_down_to_make_it_fit(graph):
+    """The whole name, or the point of writing it down is gone.
+
+    Three levers, in order of what each gives up. WRAP it onto a second
+    line, which costs a line of depth and keeps every word. LENGTHEN THE
+    BRANCH -- push the couple further out, where the same angle is worth
+    more millimetres, because arc is radius times angle. Only then
+    abbreviate. The ladder used to start at the abbreviation.
+    """
+    from helix.layout.common import est_text_width, wrap_label
+
+    # wrapping keeps every word and buys about 40% of the width
+    lines = [("Harriet Florence Pargeter", 3.0, "#000")]
+    one = est_text_width(lines[0][0], 3.0)
+    got = wrap_label(lines, one * 0.7)
+    assert len(got) == 2
+    assert " ".join(t for t, _s, _c in got) == "Harriet Florence Pargeter"
+    assert max(est_text_width(t, 3.0) for t, _s, _c in got) < one * 0.75
+
+    # a single word cannot be split, and hyphenating somebody's surname is
+    # not a decision a layout may take
+    assert wrap_label([("Pargeter", 3.0, "#000")], 2.0) == [
+        ("Pargeter", 3.0, "#000")]
+
+    # and a name with room to spare is left alone
+    assert wrap_label(lines, one * 2) == lines
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_the_chart_prints_whole_names(graph, focus):
+    """Measured on the drawn plan, joining a wrapped name back up. Anything
+    left over is somebody whose slot is genuinely too narrow for their name
+    even wrapped and even lifted -- not somebody the ladder gave up on."""
+    plan = _panelled(graph, 1000, 1000, focus=focus)
+    said: dict = {}
+    for e in plan.elements:
+        if e.kind == "text" and e.person_id and e.text:
+            said.setdefault(e.person_id, []).append(e.text)
+    short = [graph.people[p].full_name for p in said
+             if graph.people[p].full_name not in " ".join(said[p])]
+    # THE BAR DEPENDS ON THE DENSITY, and honestly so. A focused chart is
+    # what people print and every name on it should be whole. `all` puts
+    # three hundred people on a metre of sheet and is a stress test: the
+    # promise there is that the levers are working, not that physics has
+    # been repealed.
+    allowed = 0.30 if focus == "all" else 0.02
+    assert len(short) <= len(said) * allowed, (
+        f"{focus}: {len(short)} of {len(said)} names are not printed in "
+        f"full: {short[:6]}")
+
+
+def test_lengthening_a_branch_never_pushes_it_into_the_next_ring(graph):
+    import math
+
+    """A couple moved outward for the sake of their names must still leave
+    room for their own marriage rule and for the arcs of the ring beyond.
+    Uncapped, the lift walks a cell straight through the next generation."""
+    g = cellgrid(graph, "bloodline")
+    plan = _panelled(graph, 1000, 1000, focus="bloodline")
+    rings = {int(k): v for k, v in plan.meta.extra["ring_r_mm"].items()}
+    cx, cy = plan.meta.extra["centre_mm"]
+    for e in plan.elements:
+        if e.kind != "text" or not e.person_id or e.person_id not in g.slots:
+            continue
+        gen = g.slots[e.person_id].gen
+        nxt = rings.get(gen + 1)
+        if nxt is None:
+            continue
+        r = math.hypot(e.x - cx, e.y - cy)
+        assert r < nxt, (
+            f"{graph.people[e.person_id].full_name} is on ring {gen} and "
+            f"their name is drawn at r={r:.1f}, past ring {gen + 1} at {nxt:.1f}")
