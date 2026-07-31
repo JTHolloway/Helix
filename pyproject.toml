@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "helix-tree"
-version = "0.5.0"
-description = "Family trees as circular mazes, transit maps and laser-cut atlases"
+version = "1.0.0"
+description = "A genealogy program that keeps a family and cuts it into wood"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }

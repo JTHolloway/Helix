@@ -68,7 +68,8 @@ export async function show(host, pid, hooks) {
 
       <h4>What is known</h4>
       <form class="facts" id="facts">
-        ${field('fGiven', 'Given names', d.given, 'Harriet Florence')}
+        ${field('fFirst', 'First name', firstOf(d.given), 'Harriet')}
+        ${field('fMiddle', 'Middle names', middleOf(d.given), 'Florence Ann')}
         ${field('fSurname', 'Surname', d.surname)}
         <label>Sex
           <select id="fSex">
@@ -94,6 +95,8 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
 
       ${heritageBlock(d)}
       ${dnaBlock(d)}
+
+      ${inbreedingBlock(d)}
 
       <div id="lifeline"></div>
 
@@ -189,7 +192,16 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     // as "clear it", and that distinction is what stops saving a birthplace
     // from wiping a birth date.
     const body = { id: pid };
-    const map = { fGiven: ['given', d.given], fSurname: ['surname', d.surname],
+    // FIRST AND MIDDLE ARE TWO BOXES AND ONE FIELD. `given` holds the whole
+    // string -- that is what a certificate says and what GEDCOM writes --
+    // but nobody thinks of "Harriet Florence" as one thing to type, and a
+    // middle name was the commonest thing left out because there was
+    // nowhere obvious to put it.
+    const given = [host.querySelector('#fFirst').value.trim(),
+                   host.querySelector('#fMiddle').value.trim()]
+                  .filter(Boolean).join(' ');
+    if (given !== (d.given || '')) body.given = given;
+    const map = { fSurname: ['surname', d.surname],
                   fSex: ['sex', d.sex],
                   fBirth: ['birth', d.birth], fBPlace: ['birth_place', d.birth_place],
                   fDeath: ['death', d.death], fOcc: ['occupation', d.occupation],
@@ -424,6 +436,31 @@ function bloodTree(rows, who, gens) {
                 : 'Back to three generations'}</button>`;
 }
 
+// ------------------------------------------------ related before marrying
+//
+// F IS A STATEMENT ABOUT A PEDIGREE, NOT ABOUT ANYBODY'S HEALTH, and the
+// panel says so. It is also only as deep as the file: a tree that stops at
+// four generations cannot see the shared great-great-grandparents that
+// would raise it, so a zero is "none found here" and never "none".
+function inbreedingBlock(d) {
+  const f = d.inbreeding || {};
+  const mine = f.married_a_relative || [];
+  if (f.coefficient == null && !mine.length) return '';
+  return `<h4>Related lines</h4>
+    ${f.coefficient == null ? '' : `
+      <div class="inbreed${f.coefficient ? ' some' : ''}">
+        <b>${esc(f.percent)}</b>
+        <span>of their ancestry doubles back</span>
+        <small>${esc(f.why)} Worked out from this file only — a tree that
+          stops four generations back cannot see further.</small>
+      </div>`}
+    ${mine.length ? `<ul class="relmarried">${mine.map(m => `<li>
+      Married <b>${esc(m.name)}</b>, their ${esc(m.label)}${
+        m.ancestor_names.length
+          ? ` — both descend from ${esc(m.ancestor_names.join(' and '))}` : ''}.
+      </li>`).join('')}</ul>` : ''}`;
+}
+
 // ------------------------------------------------------- where to look next
 function gapsBlock(d) {
   const gs = d.gaps || [];
@@ -484,6 +521,14 @@ function gallery(photos) {
     `<figure><img src="/api/media?name=${encodeURIComponent(p.name)}" alt="">
       <button class="x" data-drop="${esc(p.media_id)}" title="Take this off
       this person">×</button></figure>`).join('') + '</div>';
+}
+
+// "Harriet Florence Ann" -> "Harriet" and "Florence Ann".
+function firstOf(given) {
+  return String(given || '').trim().split(/\s+/)[0] || '';
+}
+function middleOf(given) {
+  return String(given || '').trim().split(/\s+/).slice(1).join(' ');
 }
 
 function firstName(name) {

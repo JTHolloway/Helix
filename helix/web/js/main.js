@@ -418,7 +418,7 @@ function drawRelatives() {
 // THE SAME PEOPLE AS THE CHART. Ask for the gaps while looking at a chart
 // narrowed to first cousins and you get the gaps on that chart; a research
 // list about somebody who is not on screen is a list nobody acts on.
-let GAPN = 6;
+let GAPN = 6, GAPKIND = '';
 
 async function loadGaps() {
   const box = $('#gapList'), head = $('#gapHead');
@@ -426,15 +426,26 @@ async function loadGaps() {
   try {
     const d = await get('gaps', {
       focus: S.focus, kin: JSON.stringify(S.kin), limit: GAPN,
+      kind: GAPKIND,
     });
-    head.textContent = d.summary.headline +
-      (d.total > d.shown ? ` — showing the top ${d.shown} of ${d.total}.` : '.');
+    head.textContent = d.summary.headline + '.';
+    // ONE KIND OF JOB AT A TIME. Ranked purely by score a blood ancestor's
+    // missing birth year always beats a whole in-law family nobody has
+    // begun, so that job would never be seen. These pick it out.
+    $('#gapKinds').innerHTML = [{ key: '', label: 'Everything', n: d.all_total }]
+      .concat(d.groups).map(g => `<button class="chip${
+        g.key === d.kind ? ' on' : ''}" data-kind="${escAttr(g.key)}"
+        >${escAttr(g.label)} <b>${g.n}</b></button>`).join('');
+    $('#gapKinds').querySelectorAll('[data-kind]').forEach(b =>
+      b.addEventListener('click', () => {
+        GAPKIND = b.dataset.kind; GAPN = 6; loadGaps();
+      }));
     box.innerHTML = d.gaps.map(g => `<li>
       <button class="gapq" data-p="${escAttr(g.pid)}">${escAttr(g.question)}</button>
       <p class="who">${[g.relation, g.life].filter(Boolean).map(escAttr).join(' · ')}</p>
       <p class="why">${escAttr(g.why)}</p>
       ${g.where.length ? `<ul class="where"><li>${escAttr(g.where[0])}</li></ul>` : ''}
-    </li>`).join('');
+    </li>`).join('') || '<li class="none">Nothing of that kind left.</li>';
     box.querySelectorAll('.gapq').forEach(b =>
       b.addEventListener('click', () => { setMode('explore'); select(b.dataset.p); }));
     const more = $('#gapMore');
@@ -548,6 +559,15 @@ function wireImport() {
 
 // ───────────────────────────────────────── the whole file, not one person ──
 function wireInsight() {
+  $('#timelineBtn').addEventListener('click', async () => {
+    $('#tlDlg').showModal();
+    try {
+      await insight.showFamilyTimeline($('#tlBody'), {
+        onSelect: pid => { $('#tlDlg').close(); setMode('explore'); select(pid); },
+        scope: { focus: S.focus, kin: JSON.stringify(S.kin) },
+      });
+    } catch (e) { $('#tlBody').innerHTML = `<p class="warn">${escAttr(e.message)}</p>`; }
+  });
   $('#statsBtn').addEventListener('click', async () => {
     $('#statsDlg').showModal();
     try {
@@ -662,7 +682,7 @@ function wirePrint() {
         url = `/print/profile?id=${encodeURIComponent(SEL)}`;
       } else if (what === 'profiles-all') {
         url = '/print/profiles?all=1';
-      } else if (what === 'outline' || what === 'research') {
+      } else if (['outline', 'research', 'chronicle'].includes(what)) {
         url = `/print/${what}?${q}`;
       } else {
         url = `/print/profiles?${q}`;
@@ -844,6 +864,8 @@ function wireKeys() {
     if (k === 'l') { e.preventDefault(); showPeople(); }
     if (k === 'n') { e.preventDefault(); $('#statsBtn').click(); }
     if (k === 'o') { e.preventDefault(); $('#libBtn').click(); }
+    if (k === 't' && !e.shiftKey) { /* thread toggle keeps t */ }
+    if (k === 'y') { e.preventDefault(); $('#timelineBtn').click(); }
     if (k === 'i') { e.preventDefault(); $('#importBtn').click(); }
   });
 

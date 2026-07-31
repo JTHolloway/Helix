@@ -13,7 +13,7 @@
 ; be on a family computer they do not administer as on their own.
 
 #define AppName    "Helix"
-#define AppVersion "0.5.0"
+#define AppVersion "1.0.0"
 #define AppExe     "Helix.exe"
 
 [Setup]

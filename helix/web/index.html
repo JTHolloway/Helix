@@ -24,6 +24,7 @@
   <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷</button>
   <button id="importBtn" class="ghost" title="Add people from a GEDCOM or a spreadsheet">Import</button>
   <button id="statsBtn" class="ghost" title="What the file says about the family as a whole (N)">Numbers</button>
+  <button id="timelineBtn" class="ghost" title="Every birth, marriage and death in order (T)">Timeline</button>
   <button id="libBtn" class="ghost" title="Which family is open, and where your files are kept (O)">Family</button>
   <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
   <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
@@ -88,6 +89,7 @@
     <section class="panel open" data-panel="research">
       <h2>Where to look next</h2>
       <p class="hint" id="gapHead">Working out what is missing…</p>
+      <div id="gapKinds" class="chips gapkinds"></div>
       <ol id="gapList" class="gaps"></ol>
       <button id="gapMore" class="ghost wide" hidden>Show more</button>
     </section>
@@ -310,6 +312,14 @@
 <dialog id="listDlg"><h2 id="listTitle"></h2><div id="listBody"></div>
   <form method="dialog"><button class="ghost">Close</button></form></dialog>
 
+<!-- EVERY BIRTH, MARRIAGE AND DEATH IN ORDER. The chart says who was
+     related to whom and nothing about when. -->
+<dialog id="tlDlg">
+  <h2>The family, in order</h2>
+  <div id="tlBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
 <!-- WHICH FAMILY IS OPEN, AND WHERE THE FILES ARE. A desktop application
      has no address bar, so this is the only way to start a second family,
      go back to the first, or answer "where exactly is my data?" — which is
@@ -354,6 +364,7 @@
     <button data-pr="profiles">Everyone on the chart — one profile per page</button>
     <button data-pr="profiles-all">Everyone in the file — one profile per page</button>
     <button data-pr="outline">The tree as an indented outline</button>
+    <button data-pr="chronicle">Every birth, marriage and death, in order</button>
     <button data-pr="research">Where to look next — a list to take with you</button>
   </div>
   <form method="dialog"><button class="ghost">Close</button></form>

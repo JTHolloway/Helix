@@ -16,7 +16,7 @@ makes them on push of a tag.
 | | What you get | What to do with it |
 |---|---|---|
 | **macOS** | `Helix.app` | Drag into Applications. The first time, **right-click → Open** — macOS asks about any application it has not seen signed before. |
-| **Windows** | `Helix-0.5.0-Setup.exe` | Run it. Installs into your own account, so no administrator password. |
+| **Windows** | `Helix-1.0.0-Setup.exe` | Run it. Installs into your own account, so no administrator password. |
 | **Windows** | `Helix\` folder | Copy anywhere and run `Helix.exe`. |
 | **Linux** | `Helix/` folder | Copy anywhere and run `./Helix`. |
 

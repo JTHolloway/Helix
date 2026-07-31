@@ -369,3 +369,124 @@ def timeline(graph, pid: str) -> dict:
     rows.sort(key=lambda r: (r["year"], r["kind"] != "self"))
     return {"id": pid, "name": me.full_name, "events": rows,
             "span": [rows[0]["year"], rows[-1]["year"]] if rows else None}
+
+
+# ------------------------------------------------------ the whole family ----
+def family_timeline(graph, *, within=None, kin=None) -> dict:
+    """Every birth, marriage and death in the file, in order.
+
+    THE FAMILY AS ONE STORY. A chart shows who was related to whom and says
+    nothing about when; a person's own timeline shows one life. This is the
+    third view: 1841, a marriage; 1843, a birth; 1849, a death — the shape
+    of a household changing, and the years where nothing at all is recorded,
+    which are usually the years worth looking into.
+    """
+    rows: list[dict] = []
+    seen_union: set = set()
+
+    def ok(pid) -> bool:
+        return within is None or pid in within
+
+    for p in graph.people.values():
+        if not ok(p.id):
+            continue
+        rel = kin.label(p.id) if kin else ""
+        if p.birth.known and p.birth.sort_value is not None:
+            rows.append({"year": p.birth.sort_value, "kind": "birth",
+                         "date": p.birth.display, "id": p.id,
+                         "what": f"{p.full_name} was born"
+                                 + (f" in {p.birth_place}" if p.birth_place else ""),
+                         "relation": rel})
+        if p.death.known and p.death.sort_value is not None:
+            age = ""
+            if p.birth.sort_value is not None:
+                yrs = p.death.sort_value - p.birth.sort_value
+                if 0 <= yrs < 120:
+                    age = (f"aged {yrs:.0f}" if yrs >= 1 else "as an infant")
+            rows.append({"year": p.death.sort_value, "kind": "death",
+                         "date": p.death.display, "id": p.id,
+                         "what": f"{p.full_name} died"
+                                 + (f" in {p.death_place}" if p.death_place else ""),
+                         "detail": age, "relation": rel})
+
+    for u in graph.unions.values():
+        if u.id in seen_union or not u.date.known or u.date.sort_value is None:
+            continue
+        seen_union.add(u.id)
+        pair = [x for x in u.partners if x in graph.people and ok(x)]
+        if not pair:
+            continue
+        names = " and ".join(graph.people[x].full_name for x in pair)
+        rows.append({"year": u.date.sort_value, "kind": "marriage",
+                     "date": u.date.display, "id": pair[0],
+                     "what": f"{names} married"
+                             + (f" at {u.place}" if u.place else ""),
+                     "relation": ""})
+
+    rows.sort(key=lambda r: (r["year"], {"birth": 0, "marriage": 1,
+                                         "death": 2}[r["kind"]]))
+    for r in rows:
+        r["year"] = int(r["year"])
+
+    # A DECADE WITH NOTHING IN IT IS A FINDING. Between two dense stretches
+    # it is usually not a family that stopped happening; it is a register
+    # nobody has looked at.
+    years = [r["year"] for r in rows]
+    gaps = []
+    for a, b in zip(years, years[1:]):
+        if b - a >= 10:
+            gaps.append({"from": a, "to": b, "years": b - a})
+    return {
+        "events": rows,
+        "span": [years[0], years[-1]] if years else None,
+        "counts": {k: sum(1 for r in rows if r["kind"] == k)
+                   for k in ("birth", "marriage", "death")},
+        "quiet": gaps[:8],
+    }
+
+
+def anniversaries(graph, *, window: int = 31, kin=None) -> list[dict]:
+    """Birthdays and anniversaries falling in the next few weeks.
+
+    ONLY WHERE THE DAY IS KNOWN. A date recorded as "1841" has no day in it,
+    and offering somebody a birthday the program invented would be worse
+    than offering none. Living people first, then the ones to remember.
+    """
+    from datetime import date, timedelta
+    today = date.today()
+    out = []
+
+    def add(when, what, pid, kind, living):
+        if when is None:
+            return
+        try:
+            nxt = when.replace(year=today.year)
+        except ValueError:                     # 29 February
+            nxt = when.replace(year=today.year, day=28)
+        if nxt < today:
+            try:
+                nxt = nxt.replace(year=today.year + 1)
+            except ValueError:
+                return
+        if (nxt - today) > timedelta(days=window):
+            return
+        out.append({"in_days": (nxt - today).days, "on": nxt.isoformat(),
+                    "what": what, "id": pid, "kind": kind, "living": living,
+                    "years": today.year - when.year})
+
+    for p in graph.people.values():
+        if p.birth.precision == "day" and p.birth.earliest:
+            alive = _living(p)
+            add(p.birth.earliest,
+                f"{p.full_name}{'' if alive else ' would be'}", p.id,
+                "birthday", alive)
+    for u in graph.unions.values():
+        if u.date.precision == "day" and u.date.earliest:
+            pair = [x for x in u.partners if x in graph.people]
+            if pair:
+                add(u.date.earliest,
+                    " and ".join(graph.people[x].full_name for x in pair),
+                    pair[0], "anniversary",
+                    all(_living(graph.people[x]) for x in pair))
+    out.sort(key=lambda r: (r["in_days"], not r["living"]))
+    return out

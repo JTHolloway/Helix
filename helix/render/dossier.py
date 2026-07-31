@@ -65,6 +65,13 @@ li{margin:.5mm 0}
 .todo > li{margin:0 0 2mm}
 .todo .sub{display:block;margin:0}
 .todo ul{font-size:9pt;color:var(--muted)}
+.chron{width:100%;border-collapse:collapse;font-size:10pt}
+.chron td{padding:1mm 2mm 1mm 0;vertical-align:top;
+          border-bottom:1px solid var(--rule)}
+.chron .yr{width:16mm;font-variant-numeric:tabular-nums;color:var(--muted)}
+.chron .kd{width:22mm;color:var(--muted);font-size:8.5pt;text-transform:uppercase}
+.chron tr.gap td{border:0;color:var(--muted);font-style:italic;font-size:9pt;
+                 padding-top:3mm}
 .counts{display:flex;flex-wrap:wrap;gap:2mm 6mm;font-size:9.5pt;
         color:var(--muted);margin:2mm 0}
 .counts b{color:var(--ink);font-weight:600}
@@ -312,6 +319,36 @@ def research(graph, gaps: list[dict], *, title="") -> str:
     return page(title or "Where to look next",
                 body[0] + body[1] + "<ol class=todo>"
                 + "".join(body[2:]) + "</ol>", note=title)
+
+
+def chronicle(graph, tl: dict, *, title="") -> str:
+    """Every birth, marriage and death, in order, on paper.
+
+    THE FAMILY AS A DOCUMENT. A chart is a picture and cannot be read down a
+    column; this is the same family as a chronology, which is what you check
+    against a parish register.
+    """
+    body = [f"<h1>{esc(title or 'The family, in order')}</h1>"]
+    if tl.get("span"):
+        c = tl["counts"]
+        body.append(f"<p class=sub>{tl['span'][0]}–{tl['span'][1]} · "
+                    f"{c['birth']} births, {c['marriage']} marriages, "
+                    f"{c['death']} deaths</p>")
+    quiet = {g["from"]: g for g in tl.get("quiet", [])}
+    body.append("<table class=chron><tbody>")
+    for e in tl["events"]:
+        if e["year"] in quiet:
+            body.append(f"<tr class=gap><td colspan=3>nothing recorded for "
+                        f"{quiet[e['year']]['years']} years</td></tr>")
+        body.append(
+            f"<tr><td class=yr>{e['year']}</td>"
+            f"<td class=kd>{esc(e['kind'])}</td>"
+            f"<td>{esc(e['what'])}"
+            + (f" <span class=sub>{esc(e['detail'])}</span>"
+               if e.get("detail") else "")
+            + f"<div class=sub>{esc(e['date'])}</div></td></tr>")
+    body.append("</tbody></table>")
+    return page(title or "The family, in order", "".join(body), note=title)
 
 
 def one(graph, con, pid: str, *, kin=None, photos=None, title="") -> str:

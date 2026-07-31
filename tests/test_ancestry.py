@@ -714,3 +714,99 @@ def test_printing_everybody_still_works_with_the_new_sections(family):
     c, ids, _db = family
     sheet = _fetch(c, "/print/profiles?all=1")
     assert sheet.count("<article class=person>") == c.get("relatives")["total"]
+
+
+# ------------------------------------------------- the family, in order ----
+def test_the_whole_family_reads_as_one_story(family):
+    """A chart says who was related to whom and nothing about when; a
+    person's own timeline shows one life. This is the third view."""
+    c, ids, _db = family
+    d = c.get("family-timeline", **{"all": "1"})
+    kinds = [e["kind"] for e in d["events"]]
+    assert "birth" in kinds
+    assert d["counts"]["birth"] >= 7
+    years = [e["year"] for e in d["events"]]
+    assert years == sorted(years), "it has to be in order"
+    assert d["span"][0] <= d["span"][1]
+
+
+def test_a_stretch_with_nothing_in_it_is_reported(family):
+    """A decade with no events between two dense stretches is usually not a
+    family that stopped happening; it is a register nobody has looked at."""
+    c, ids, _db = family
+    d = c.get("family-timeline", **{"all": "1"})
+    assert isinstance(d["quiet"], list)
+    for g in d["quiet"]:
+        assert g["years"] >= 10 and g["to"] > g["from"]
+
+
+def test_only_a_known_day_becomes_an_anniversary(family):
+    """A date recorded as "1841" has no day in it, and offering somebody a
+    birthday the program invented is worse than offering none."""
+    c, ids, _db = family
+    d = c.get("family-timeline", **{"all": "1"})
+    for a in d["anniversaries"]:
+        assert 0 <= a["in_days"] <= 31
+        assert a["kind"] in ("birthday", "anniversary")
+
+
+def test_the_chronicle_prints(family):
+    c, ids, _db = family
+    h = _fetch(c, "/print/chronicle?all=1")
+    assert "in order" in h.lower()
+    assert "Thomas Whitcombe" in h
+
+
+# ------------------------------------------------ first and middle names ---
+def test_a_middle_name_is_two_boxes_and_one_field(family):
+    """`given` holds the whole string -- that is what a certificate says and
+    what GEDCOM writes -- but nobody thinks of "Harriet Florence" as one
+    thing to type, and a middle name was the commonest thing left out."""
+    c, ids, _db = family
+    c.post("person", {"id": ids["me"], "given": "Thomas Alexander"})
+    d = c.get("person", id=ids["me"])
+    assert d["given"] == "Thomas Alexander"
+    assert d["name"] == "Thomas Alexander Whitcombe"
+    # and it survives a trip through GEDCOM
+    import urllib.request
+    with urllib.request.urlopen(f"{c.base}/api/gedcom") as r:
+        text = r.read().decode()
+    assert "2 GIVN Thomas Alexander" in text
+
+
+# -------------------------------------------- families that married in ----
+def test_a_family_that_married_in_is_its_own_kind_of_job(family):
+    """Ranked purely by score a blood ancestor's missing birth year always
+    beats a whole in-law family nobody has begun -- correct arithmetic, and
+    it means that job is never seen. They are offered as their own list."""
+    c, ids, _db = family
+    d = c.get("gaps", limit=200, **{"all": "1"})
+    assert any(g["key"] == "in_laws" for g in d["groups"]), \
+        f"no in-law group in {[g['key'] for g in d['groups']]}"
+    only = c.get("gaps", limit=200, kind="in_laws", **{"all": "1"})
+    assert only["gaps"], "the in-law list is empty"
+    for g in only["gaps"]:
+        assert g["kind"] == "in_laws"
+        assert "branch nobody has started" in g["why"]
+        assert g["where"], "and it still says where to look"
+
+
+def test_the_summary_counts_the_unstarted_families(family):
+    c, ids, _db = family
+    d = c.get("gaps", limit=200, **{"all": "1"})
+    assert "married in" in d["summary"]["headline"]
+
+
+# ------------------------------------------------------- related lines ----
+def test_a_profile_says_whether_the_parents_were_related(family):
+    c, ids, _db = family
+    d = c.get("person", id=ids["me"])["inbreeding"]
+    assert d["coefficient"] == 0.0 and d["percent"] == "0%"
+    assert "in this file" in d["why"], "it must say how far it can see"
+    assert d["married_a_relative"] == []
+
+
+def test_somebody_with_one_parent_recorded_gets_no_figure(family):
+    c, ids, _db = family
+    d = c.get("person", id=ids["gran"])["inbreeding"]
+    assert d["coefficient"] is None

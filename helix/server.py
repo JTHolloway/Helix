@@ -251,6 +251,20 @@ class Handler(BaseHTTPRequestHandler):
         if route == "timeline":
             from .analysis import stats
             return self._json(stats.timeline(ST.graph, q["id"]))
+        if route == "family-timeline":
+            # THE FAMILY AS ONE STORY. A chart says who was related to whom
+            # and nothing about when; a person's timeline shows one life.
+            # This is the third view.
+            from .analysis import stats
+            within = None if q.get("all") == "1" else _scoped_ids(q)
+            d = stats.family_timeline(ST.graph, within=within, kin=ST.kin)
+            d["anniversaries"] = stats.anniversaries(ST.graph, kin=ST.kin)
+            d["scope"] = "everybody" if within is None else "this chart"
+            return self._json(d)
+        if route == "consanguinity":
+            from .analysis import consang
+            return self._json({"couples": consang.couples(ST.graph),
+                               **consang.summary(ST.graph)})
         if route == "gaps":
             # WHERE MORE RESEARCH IS NEEDED, ranked. Scoped to whatever is
             # on the chart when a focus is given, because a to-do list for
@@ -361,6 +375,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._html(dossier.everybody(
                 g, ST.con, ids, kin=k, photos_for=photos,
                 title=f"{ST.title} — profiles"))
+        if what == "chronicle":
+            from .analysis import stats
+            within = None if q.get("all") == "1" else _scoped_ids(q)
+            return self._html(dossier.chronicle(
+                g, stats.family_timeline(g, within=within, kin=k),
+                title=f"{ST.title} — in order"))
         if what == "research":
             # WHERE TO LOOK NEXT, on its own sheet. Deliberately not part of
             # a profile: a profile is filed and read again in ten years, and
@@ -690,7 +710,8 @@ def _gaps(st: State, q) -> dict:
     # "2 lines stop here" of a file with forty-one.
     rows = gapmod.rank(st.graph, st.con, country=q.get("country", "england"),
                        limit=10 ** 6, within=within,
-                       subject=q.get("subject") or st.subject)
+                       subject=q.get("subject") or st.subject,
+                       index=st.kin)
     n = int(q.get("limit", 40))
     # WHO THEY ARE TO YOU, added here because this is the only place that
     # knows. Two people recorded as nothing but "Harris" produce two
@@ -699,10 +720,65 @@ def _gaps(st: State, q) -> dict:
     for r in rows[:n]:
         k = st.kin.of(r["pid"])
         r["relation"] = "" if k.group in ("self", "unrelated") else k.label
-    return {"gaps": rows[:n], "summary": gapmod.summary(rows),
-            "shown": min(n, len(rows)), "total": len(rows),
+    # GROUPED BY WHAT KIND OF JOB IT IS. Ranked purely by score, a
+    # blood ancestor's missing birth year always outranks a whole in-law
+    # family nobody has begun -- correct arithmetic, and it means one kind
+    # of task is never seen. The panel offers them as separate lists.
+    kinds = {}
+    for r in rows:
+        kinds.setdefault(r["kind"], 0)
+        kinds[r["kind"]] += 1
+    want = q.get("kind") or ""
+    shown = [r for r in rows if r["kind"] == want] if want else rows
+    return {"gaps": shown[:n], "summary": gapmod.summary(rows),
+            "shown": min(n, len(shown)), "total": len(shown),
+            "all_total": len(rows), "kinds": kinds, "kind": want,
+            "groups": [{"key": k, "label": _GAP_GROUPS[k], "n": kinds.get(k, 0)}
+                       for k in _GAP_GROUPS if kinds.get(k)],
             "scope": "everybody" if within is None else "this chart",
             "considered": len(st.graph.people) if within is None else len(within)}
+
+
+# The name each kind of question goes under in the panel. Ordered by how
+# much of a family a single answer opens up.
+_GAP_GROUPS = {
+    "parents": "Lines that stop",
+    "in_laws": "Married in, not started",
+    "story": "Within living memory",
+    "name": "No full name",
+    "birth": "No birth date",
+    "birth_place": "No birthplace",
+    "death": "No death recorded",
+    "spouse": "No partner recorded",
+    "occupation": "No occupation",
+}
+
+
+def _inbreeding(st: State, pid: str) -> dict:
+    """Whether this person's own parents were already related, and by how
+    much. Zero is the ordinary answer and is said plainly."""
+    from .analysis import consang
+    d = consang.inbreeding(st.graph, pid)
+    # And whether THEY married a relative, which is a different question
+    # and the one people actually ask at a wedding.
+    mine = []
+    for uid in st.graph.people[pid].unions:
+        u = st.graph.unions.get(uid)
+        if not u:
+            continue
+        for other in u.partners:
+            if other == pid or other not in st.graph.people:
+                continue
+            rel = consang.between(st.graph, pid, other)
+            if rel.related:
+                mine.append({**rel.to_dict(),
+                             "name": st.graph.people[other].full_name,
+                             "ancestor_names": [
+                                 st.graph.people[x].full_name
+                                 for x in rel.ancestors
+                                 if x in st.graph.people]})
+    d["married_a_relative"] = mine
+    return d
 
 
 def _person_gaps(st: State, pid: str) -> list[dict]:
@@ -877,6 +953,7 @@ def _person_detail(st: State, pid: str) -> dict:
         "heritage": _heritage(st, pid),
         "dna": _dna(st, pid),
         "gaps": _person_gaps(st, pid),
+        "inbreeding": _inbreeding(st, pid),
         "relationship": kin.label if st.subject else "",
         "is_subject": pid == st.subject,
         "parents": [_brief(g, x) for x in g.parents(pid, False)],

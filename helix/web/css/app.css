@@ -646,3 +646,60 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 .libhits{display:grid;gap:3px;margin-top:5px}
 .libhit{text-align:left;padding:6px 10px;font-size:13.5px}
 .libhit span{color:var(--muted);font-size:12px;margin-left:6px}
+/* One kind of job at a time. Ranked purely by score a blood ancestor's
+   missing birth year always beats a whole in-law family nobody has begun,
+   so that job would never be seen at all. */
+.gapkinds{margin:8px 0 10px}
+.gapkinds .chip{cursor:pointer;font-size:11.5px;padding:2px 9px;
+  border:1px solid var(--rule);border-radius:12px;background:var(--paper)}
+.gapkinds .chip b{font-weight:600;color:var(--muted)}
+.gapkinds .chip.on{border-color:var(--accent);background:var(--accent-soft)}
+.gapkinds .chip.on b{color:var(--accent)}
+
+/* --- related lines ------------------------------------------------------ */
+/* A coefficient of inbreeding is a statement about a pedigree and not about
+   anybody's health, and it is only as deep as the file. Nothing here is
+   coloured as a warning. */
+.inbreed{background:var(--paper);border:1px solid var(--rule);border-radius:6px;
+  padding:9px 11px;margin:0 0 8px}
+.inbreed b{font-size:20px;font-weight:600;color:var(--muted)}
+.inbreed.some b{color:var(--ink)}
+.inbreed span{font-size:12.5px;color:var(--muted);margin-left:6px}
+.inbreed small{display:block;margin-top:5px;font-size:11px;color:var(--muted);
+  line-height:1.45}
+.relmarried{list-style:none;margin:0;padding:0;font-size:13px}
+.relmarried li{background:var(--accent-soft);border-radius:6px;padding:7px 10px;
+  margin:0 0 5px;line-height:1.4}
+
+/* --- the family in order ------------------------------------------------ */
+#tlDlg{max-width:min(720px,92vw)}
+#tlBody{max-height:68vh;overflow:auto;margin:14px 0}
+#tlBody h4{margin:16px 0 4px;font-size:12px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted)}
+.anniv{list-style:none;margin:0;padding:0;font-size:13.5px}
+.anniv li{margin:3px 0}
+.anniv b{display:inline-block;min-width:88px;color:var(--accent);font-size:12px}
+.ftl{list-style:none;margin:0;padding:0;font-size:13.5px;
+  border-left:2px solid var(--rule);padding-left:14px}
+.ftl li{position:relative;margin:4px 0;display:flex;gap:10px;align-items:baseline}
+.ftl li::before{content:"";position:absolute;left:-19px;top:7px;width:7px;
+  height:7px;border-radius:50%;background:var(--rule)}
+.ftl li.ev-birth::before{background:#3E6B70}
+.ftl li.ev-marriage::before{background:#9C6B3F}
+.ftl li.ev-death::before{background:var(--muted)}
+.ftl b{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:600;
+  flex:0 0 40px}
+.ftl span{flex:1;min-width:0}
+.ftl i{font-style:normal;color:var(--muted);font-size:12px}
+.ftl small{color:var(--muted);font-size:11px;white-space:nowrap}
+/* A decade with nothing in it is usually not a family that stopped
+   happening; it is a register nobody has looked at. */
+.ftl li.quiet{display:block;color:var(--muted);font-size:11.5px;
+  font-style:italic;padding:3px 0;margin:6px 0}
+.ftl li.quiet::before{background:none}
+.consang{list-style:none;margin:0;padding:0}
+.consang li{background:var(--paper);border:1px solid var(--rule);
+  border-radius:6px;padding:9px 12px;margin:0 0 6px;font-size:13.5px}
+.consang b{font-weight:600}
+.consang span{display:block;color:var(--muted);font-size:12.5px}
+.consang small{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}

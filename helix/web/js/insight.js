@@ -81,6 +81,9 @@ export async function showStats(host, onSelect) {
         ${x.count}${x.first ? ` <span class="sub">${x.first}–${x.last}</span>`
                             : ''}</li>`).join('')}</ul>` : ''}
 
+    <h4>Related lines</h4>
+    <div id="statsConsang"></div>
+
     ${d.places.length ? `<h4>Where they were</h4>
       <ul class="chips">${d.places.map(x => `<li><b>${esc(x.place)}</b>
         ${x.born + x.died}${x.first ? ` <span class="sub">${x.first}–${x.last}</span>`
@@ -90,6 +93,8 @@ export async function showStats(host, onSelect) {
 
   host.querySelectorAll('[data-go]').forEach(b =>
     b.addEventListener('click', () => onSelect(b.dataset.go)));
+  showConsanguinity(host.querySelector('#statsConsang'), onSelect)
+    .catch(() => {});
 }
 
 // TWO DIGITS IS AMBIGUOUS ACROSS A CENTURY, and a genealogy file always
@@ -198,4 +203,76 @@ export async function lifeline(pid) {
       </li>`).join('')}
     </ol>
     <p class="hint">Everything the file knows about them, in order.</p>`;
+}
+
+// ───────────────────────────────────────── the family as one story ───────
+//
+// A chart says who was related to whom and nothing about when; a person's
+// timeline shows one life. This is the third view — 1841 a marriage, 1843 a
+// birth, 1849 a death — the shape of a household changing, and the years
+// where nothing at all is recorded.
+export async function showFamilyTimeline(host, { onSelect, scope }) {
+  host.innerHTML = '<p class="hint">Putting it in order…</p>';
+  const d = await get('family-timeline', scope || {});
+  if (!d.events.length) {
+    host.innerHTML = `<p class="none">No dated events yet. Births, marriages
+      and deaths appear here as soon as they have a year on them.</p>`;
+    return;
+  }
+  const c = d.counts;
+  const quiet = new Map(d.quiet.map(g => [g.from, g]));
+
+  host.innerHTML = `
+    ${d.anniversaries.length ? `<h4>Coming up</h4>
+      <ul class="anniv">${d.anniversaries.slice(0, 6).map(a => `<li>
+        <b>${a.in_days === 0 ? 'today' : `in ${a.in_days} days`}</b>
+        <button class="link" data-go="${esc(a.id)}">${esc(a.what)}</button>
+        ${a.kind === 'birthday'
+          ? `${a.living ? 'turns' : 'would have been'} ${a.years}`
+          : `${a.years} years married`}
+      </li>`).join('')}</ul>` : ''}
+
+    <h4>${d.span[0]}–${d.span[1]}</h4>
+    <p class="hint">${c.birth} births · ${c.marriage} marriages ·
+      ${c.death} deaths, across ${d.scope}.</p>
+    <ol class="ftl">
+      ${d.events.map(e => `
+        ${quiet.has(e.year) ? `<li class="quiet">nothing recorded for
+          ${quiet.get(e.year).years} years</li>` : ''}
+        <li class="ev-${e.kind}">
+          <b>${e.year}</b>
+          <span><button class="link" data-go="${esc(e.id)}"
+            >${esc(e.what)}</button>${
+            e.detail ? ` <i>${esc(e.detail)}</i>` : ''}</span>
+          <small>${esc(e.date)}${e.relation && e.relation !== 'no known relationship'
+            ? ` · ${esc(e.relation)}` : ''}</small>
+        </li>`).join('')}
+    </ol>`;
+  host.querySelectorAll('[data-go]').forEach(b =>
+    b.addEventListener('click', () => onSelect(b.dataset.go)));
+}
+
+// ────────────────────────────────────── who married a relative ───────────
+export async function showConsanguinity(host, onSelect) {
+  host.innerHTML = '<p class="hint">Looking…</p>';
+  const d = await get('consanguinity');
+  if (!d.couples.length) {
+    host.innerHTML = `<p class="none">No two people who married were already
+      related, as far as this file goes. It only sees the ancestors you have
+      recorded — a shared great-great-grandparent four generations back
+      cannot be seen from a tree three deep.</p>`;
+    return;
+  }
+  host.innerHTML = `
+    <p class="hint">${d.related_couples} of ${d.marriages} marriages were
+      between people who already shared an ancestor.</p>
+    <ul class="consang">${d.couples.map(c => `<li>
+      <b>${esc(c.names.join(' and '))}</b>
+      <span>${esc(c.label)}${c.married ? `, married ${esc(c.married)}` : ''}</span>
+      <small>Both descend from ${esc(c.ancestor_names.join(' and '))}.
+        A child of theirs carries <b>${esc(c.percent)}</b> doubled ancestry.</small>
+      <button class="link" data-go="${esc(c.a)}">open</button>
+    </li>`).join('')}</ul>`;
+  host.querySelectorAll('[data-go]').forEach(b =>
+    b.addEventListener('click', () => onSelect(b.dataset.go)));
 }

@@ -426,3 +426,71 @@ parameters as the chart.
 Every chart route (`/api/plan`, `/api/svg`) accepts the filter, either as
 `kin=<json>` or as plain parameters: `max_cousin_degree`, `max_removal`,
 `max_steps`, `max_up`, `max_down`, `married_in`, `unrelated`, `groups`.
+
+
+---
+
+## Related lines: `helix/analysis/consang.py`
+
+Cousins marrying cousins is not an oddity of one family — before the
+railways most people married somebody from the same parish, and in a village
+of four hundred that means a shared great-grandparent more often than not.
+
+**Wright's coefficient of inbreeding**, over every ancestor two parents
+share:
+
+```
+F = Σ over shared ancestors A of  (1/2)^(n1 + n2 + 1) × (1 + F_A)
+```
+
+First cousins marrying give their children F = 1/16 = 6.25% exactly; second
+cousins, 1/64. `(1 + F_A)` — the ancestor's own inbreeding — is what makes
+this Wright's formula rather than an approximation of it, and in a village
+where cousins married for four generations the approximation is out by a
+fifth.
+
+**Two things the interface must say every time.** F is a statement about a
+*pedigree*, not about anybody's health, and it is only as deep as the file:
+a tree that stops four generations back cannot see the shared
+great-great-grandparents that would raise it. So a zero means "none found
+here", never "none", and the panel says so.
+
+`consang.couples()` lists every marriage in the file where the two were
+already related, with what they were to each other and which ancestors they
+share. It is as much a fact about a place as about a family: a village where
+this happens six times is a village people did not leave.
+
+---
+
+## The family in order: `stats.family_timeline`
+
+A chart says who was related to whom and nothing about when. A person's own
+timeline shows one life. This is the third view — 1841 a marriage, 1843 a
+birth, 1849 a death — the shape of a household changing.
+
+**A stretch with nothing in it is a finding.** Between two dense periods a
+quiet decade is usually not a family that stopped happening; it is a
+register nobody has looked at. Those gaps are marked.
+
+`stats.anniversaries()` reads the same data forwards: birthdays and wedding
+anniversaries in the next month, living people first. **Only where the day
+is actually recorded** — a date stored as "1841" has no day in it, and
+offering somebody a birthday the program invented is worse than offering
+none.
+
+---
+
+## Families that married in
+
+Somebody who married in and has no parents recorded is not a missing detail.
+They are the door to an entire branch that is not in the file at all, and
+half of every descendant's ancestry comes through it.
+
+Ranked purely by score they never surface: a blood ancestor's missing birth
+year blocks more people, which is correct arithmetic and means that job is
+never seen. So the research panel groups by **kind of job**, and "married
+in, not started" is one of them.
+
+The boost is by how close the relative they married is — your mother's
+husband's family is a real question and a fourth cousin's wife's family is
+not.

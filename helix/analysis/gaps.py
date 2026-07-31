@@ -47,6 +47,7 @@ from typing import Optional
 # in a county record office is 5; writing to an archive abroad is 10.
 EFFORT = {
     "parents":     2.0,     # index search, sometimes a certificate
+    "in_laws":     2.0,     # the same search, for somebody who married in
     "spouse":      2.0,
     "birth":       1.6,
     "death":       1.6,
@@ -64,6 +65,11 @@ EFFORT = {
 # colour to one person.
 WEIGHT = {
     "parents":     3.0,
+    # A WHOLE FAMILY NOBODY HAS STARTED. Somebody who married in and has no
+    # parents recorded is not a missing detail -- they are the door to an
+    # entire branch that is not in the file at all, and half of every
+    # descendant's ancestry comes through it.
+    "in_laws":     3.2,
     "spouse":      1.4,
     "birth":       1.5,
     "death":       0.9,
@@ -78,6 +84,7 @@ WEIGHT = {
 
 QUESTION = {
     "parents":     "Who were {name}'s parents?",
+    "in_laws":     "Who were {name}'s parents?",
     "spouse":      "Who did {name} marry?",
     "birth":       "When was {name} born?",
     "death":       "When did {name} die?",
@@ -306,7 +313,7 @@ def _is_dead(graph, p) -> bool:
 
 
 def _gaps_for(graph, pid: str, reach: dict[str, int], country: str,
-              placeholders: set[str]) -> list[Gap]:
+              placeholders: set[str], married_in: bool = False) -> list[Gap]:
     p = graph.people[pid]
     n = max(1, reach.get(pid, 1))
     year = _year_near(graph, pid)
@@ -324,9 +331,17 @@ def _gaps_for(graph, pid: str, reach: dict[str, int], country: str,
                        where=_where(kind, year, c)))
 
     if not graph.parents(pid, primary_only=False):
-        add("parents", f"The line stops here. {n} "
-                       f"{'person' if n == 1 else 'people'} descend from "
-                       f"{p.given_first or 'them'} with nothing beyond.")
+        if married_in:
+            add("in_laws",
+                f"{p.given_first or 'They'} married into the family and none "
+                f"of their own is in the file. Their parents are the whole "
+                f"of a branch nobody has started"
+                + (f", and {n} {'person' if n == 1 else 'people'} here "
+                   f"descend from it." if n > 1 else "."))
+        else:
+            add("parents", f"The line stops here. {n} "
+                           f"{'person' if n == 1 else 'people'} descend from "
+                           f"{p.given_first or 'them'} with nothing beyond.")
     if not p.given or not p.surname or pid in placeholders:
         add("name", "Recorded without a full name, so they cannot be "
                     "searched for in any index.")
@@ -352,7 +367,7 @@ def _gaps_for(graph, pid: str, reach: dict[str, int], country: str,
 
 def rank(graph, con=None, *, country: str = "england", limit: int = 40,
          within: Optional[set] = None, subject: Optional[str] = None,
-         ) -> list[dict]:
+         index=None) -> list[dict]:
     """The questions worth asking next, best first.
 
     `con` is accepted and unused for now: nothing here reads the database,
@@ -372,21 +387,39 @@ def rank(graph, con=None, *, country: str = "england", limit: int = 40,
         d = graph.descendants(pid)
         reach[pid] = sum(1 for x in d if x in pool)
 
-    # A subject makes 'blocks my own line' count for more than 'blocks a
-    # cousin's line' -- which is what somebody actually means by wanting to
-    # know where to look next.
+    # HOW MUCH IT MATTERS TO *YOU*. "Blocks my own line" counts for more
+    # than "blocks a cousin's line", which is what somebody means when they
+    # ask where to look next. Married-in people are scored by how close the
+    # relative they married is -- your mother's husband's family is a real
+    # question and a fourth cousin's wife's family is not.
     boost: dict[str, float] = {}
+    married: set = set()
+    kin = index
     if subject and subject in graph.people:
-        anc = graph.ancestors(subject)
-        for pid, up in anc.items():
-            boost[pid] = 3.0 if up <= 4 else 2.0
+        if kin is None:
+            from ..graph.kinship import Kinship
+            kin = Kinship(graph, subject)
+        for pid in people:
+            k = kin.of(pid)
+            if k.group == "married_in":
+                married.add(pid)
+                # through whoever they married: 1.9 for a parent's or
+                # sibling's spouse, falling away with distance
+                through = kin.of(k.through) if k.through else None
+                steps = through.steps if through and through.steps < 99 else 6
+                boost[pid] = max(0.7, 2.0 - 0.22 * steps)
+            elif k.blood and k.down == 0:            # a direct ancestor
+                boost[pid] = 3.0 if k.up <= 4 else 2.0
+            elif k.blood and k.steps < 99:
+                boost[pid] = max(0.8, 1.8 - 0.12 * k.steps)
 
     placeholders = {pid for pid, p in graph.people.items()
                     if p.is_placeholder}
 
     out: list[Gap] = []
     for pid in people:
-        for g in _gaps_for(graph, pid, reach, country, placeholders):
+        for g in _gaps_for(graph, pid, reach, country, placeholders,
+                           married_in=pid in married):
             g.score *= boost.get(pid, 1.0)
             out.append(g)
 
@@ -416,11 +449,15 @@ def summary(gaps: list[dict]) -> dict:
     for g in gaps:
         kinds[g["kind"]] = kinds.get(g["kind"], 0) + 1
     ends = kinds.get("parents", 0)
+    inlaw = kinds.get("in_laws", 0)
     bits = []
     if ends:
         bits.append(f"{ends} line{'s' if ends != 1 else ''} "
                     f"stop{'' if ends != 1 else 's'} at a person with no "
                     f"known parents")
+    if inlaw:
+        bits.append(f"{inlaw} {'family has' if inlaw == 1 else 'families have'} "
+                    f"married in and not been started")
     if kinds.get("story"):
         bits.append(f"{kinds['story']} within living memory with nothing "
                     f"written down")
