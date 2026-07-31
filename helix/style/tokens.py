@@ -103,7 +103,13 @@ DEFAULTS: dict[str, Any] = {
                "line_scale": [1.0, 0.76, 0.7],
                "line_colour": ["#22201D", "#6E675C", "#8A8073"],
                "template": "{given_first} {surname}", "by_ring": {},
-               "orientation": "auto", "show": True,
+               # TANGENTIAL: names run around the ring, which is how a
+               # chart on a wall is read. `radial` packs tighter -- a name
+               # then costs only its height in angle -- but asks somebody
+               # to turn the sheet for every person on it. `auto` picks per
+               # ring, which reads well in isolation and means neighbouring
+               # rings run in different directions.
+               "orientation": "tangential", "show": True,
                # inward | outward | upright. WHICH WAY UP every name is set.
                #
                #   inward   tops of the letters point toward the centre, so

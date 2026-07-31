@@ -44,6 +44,7 @@ _RECORD_ROUTES = {
     "/api/person/photo":  lambda con, b: _add_photo(con, b),
     "/api/person/photo/remove": lambda con, b: _drop_photo(con, b),
     "/api/person/heritage": lambda con, b: records.set_heritage(con, b),
+    "/api/person/merge":  lambda con, b: records.merge(con, b),
 }
 
 
@@ -210,6 +211,23 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(_kin_detail(ST, q["id"]))
         if route == "groups":
             return self._json(all_groups())
+        if route == "duplicates":
+            # THE SAME PERSON, ENTERED TWICE. Rare while you type -- the add
+            # dialogue catches those -- and the ordinary case the moment you
+            # import somebody else's tree, where four hundred people arrive
+            # in one step and nothing was checked against what you had.
+            from .analysis import duplicates
+            rows = duplicates.find(ST.graph, limit=int(q.get("limit", 60)),
+                                   threshold=float(q.get("threshold", 0.55)))
+            for r in rows:
+                r["people"] = [_dupe_brief(ST, r["a"]), _dupe_brief(ST, r["b"])]
+            return self._json({"pairs": rows, "checked": len(ST.graph.people)})
+        if route == "stats":
+            from .analysis import stats
+            return self._json(stats.report(ST.graph, ST.subject))
+        if route == "timeline":
+            from .analysis import stats
+            return self._json(stats.timeline(ST.graph, q["id"]))
         if route == "gaps":
             # WHERE MORE RESEARCH IS NEEDED, ranked. Scoped to whatever is
             # on the chart when a focus is given, because a to-do list for
@@ -320,6 +338,13 @@ class Handler(BaseHTTPRequestHandler):
             return self._html(dossier.everybody(
                 g, ST.con, ids, kin=k, photos_for=photos,
                 title=f"{ST.title} — profiles"))
+        if what == "research":
+            # WHERE TO LOOK NEXT, on its own sheet. Deliberately not part of
+            # a profile: a profile is filed and read again in ten years, and
+            # a to-do list printed onto it is stale in a week.
+            d = _gaps(ST, q)
+            return self._html(dossier.research(
+                g, d["gaps"], title=f"{ST.title} — where to look next"))
         if what == "outline":
             plan_ids = set(_print_cast(q))
             roots = [p for p in plan_ids
@@ -528,6 +553,30 @@ def _import(body: dict) -> dict:
         r["kind"] = "gedcom"
         r["file"] = name
         return {"ok": True, "dry_run": False, **r}
+
+
+def _dupe_brief(st: State, pid: str) -> dict:
+    """Enough about one of a pair to choose between them without leaving
+    the screen. Which record is right is a judgement about somebody's
+    research, and it cannot be made from two names alone."""
+    from .store import album
+    g = st.graph
+    p = g.people[pid]
+    port = album.portrait_of(st.con, pid)
+    return {
+        "id": pid, "name": p.full_name, "life": p.lifespan, "sex": p.sex,
+        "birth": p.birth.display, "death": p.death.display,
+        "birth_place": p.birth_place, "occupation": p.occupation,
+        "notes": (p.notes or "")[:200],
+        "relation": st.kin.label(pid),
+        "portrait": port["name"] if port else None,
+        "parents": [g.people[x].full_name for x in g.parents(pid, False)
+                    if x in g.people],
+        "partners": [g.people[x].full_name for x in g.partners(pid)
+                     if x in g.people],
+        "children": len(g.children(pid)),
+        "facts": _completeness(g, p),
+    }
 
 
 def _gaps(st: State, q) -> dict:

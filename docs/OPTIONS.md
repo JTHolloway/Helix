@@ -18,7 +18,7 @@ the flagship design.
 | `labels.line_scale` | `[1.0, 0.76, 0.7]` | Size multiplier per line. A date at the same weight as a name competes with it; at 76% it recedes and the name stays the thing you read first. |
 | `labels.line_colour` | `["#22201D", "#6E675C", "#8A8073"]` | Colour per line. Falls back to `type.colour`. |
 | `labels.by_ring` | `{}` | Override the whole stack per generation. Keys are `"0"`, `"0-2"`, `"5+"`. |
-| `labels.orientation` ★ | `radial` | `radial` \| `tangential` \| `auto`. See below. |
+| `labels.orientation` ★ | `tangential` | `radial` \| `tangential` \| `auto`. See below. |
 | `labels.flip_bottom` ★ | `true` | Turn text on the lower half so it never reads upside down. |
 | `labels.min_gap_mm` | `0.5` | Clear space demanded around every label. |
 | `labels.max_width_mm` ★ | `46` | Cap on how much ring width one long name may claim. |

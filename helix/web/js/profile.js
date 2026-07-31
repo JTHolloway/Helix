@@ -11,6 +11,7 @@
 // relatives — their brothers and sisters, their cousins — which is a second
 // measurement from a different origin, not a re-reading of yours.
 import { get, post } from './api.js';
+import { lifeline } from './insight.js';
 
 // Which relations get a colour when somebody is selected. Everything else is
 // left alone: a chart where forty groups all light up says nothing.
@@ -94,6 +95,8 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
 
       ${heritageBlock(d)}
       ${dnaBlock(d)}
+
+      <div id="lifeline"></div>
 
       ${(d.photos || []).length > 1 ? gallery(d.photos) : ''}
 
@@ -207,6 +210,15 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
       onChanged && onChanged();
     } catch (e) { onToast(e.message); }
   });
+
+  // ---- their life, in order -------------------------------------------
+  // Fetched after the panel is on screen rather than held up for: the
+  // profile is what somebody clicked for and a second request must not
+  // delay it.
+  lifeline(pid).then(html => {
+    const box = host.querySelector('#lifeline');
+    if (box) box.innerHTML = html;
+  }).catch(() => {});
 
   // ---- one more generation of the bloodline ----------------------------
   // Redrawn in place rather than reloading the profile: the whole pedigree

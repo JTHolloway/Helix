@@ -425,6 +425,146 @@ def retire(con, pid: str) -> dict:
             f"Nothing was deleted -- press Ctrl-Z to put them back."}
 
 
+def merge(con, body: dict) -> dict:
+    """POST /api/person/merge. Two records, one person.
+
+    The commonest thing that goes wrong in a family file, and now the
+    commonest thing that goes wrong the moment you import somebody else's
+    tree: the great-grandmother you already had arrives again under a
+    different spelling.
+
+    KEEP is the record that survives; GONE is folded into it and retired.
+    Nothing is deleted -- `retire` semantics, so one Ctrl-Z puts both back
+    exactly as they were, and the row for the person who was merged away is
+    still in the file with everything that was ever known about them.
+
+    THE SURVIVOR NEVER LOSES A FACT. A blank field on KEEP takes GONE's
+    value; a field they both have keeps KEEP's and puts GONE's into the
+    notes, because the whole reason two records exist is that somebody
+    recorded two different things and the disagreement is evidence.
+    """
+    keep, gone = body["keep"], body["gone"]
+    if keep == gone:
+        raise ValueError("That is the same person twice.")
+    kn, gn = display_name(con, keep), display_name(con, gone)
+
+    with Edit(con, f"Merge {gn} into {kn}") as e:
+        krow = _read(con, "person", {"id": keep}) or {}
+        grow = _read(con, "person", {"id": gone}) or {}
+
+        # -- the facts. An event type the survivor has no row for moves
+        #    across; one they both have leaves a note saying what the other
+        #    record said, because two dates for one birth is a conflict to
+        #    resolve later and not something to throw away today.
+        have = {r["type"] for r in con.execute(
+            "SELECT DISTINCT e.type FROM event e "
+            "JOIN event_role r ON r.event_id=e.id WHERE r.person_id=?", (keep,))}
+        carried, conflicts = [], []
+        for r in con.execute(
+                "SELECT e.id, e.type, e.date_json, e.description, pl.name place "
+                "FROM event e JOIN event_role r ON r.event_id=e.id "
+                "LEFT JOIN place pl ON pl.id=e.place_id "
+                "WHERE r.person_id=?", (gone,)).fetchall():
+            if r["type"] not in have:
+                e.update("event_role",
+                         {"event_id": r["id"], "person_id": gone,
+                          "union_id": None, "role": "principal"},
+                         {"person_id": keep})
+                carried.append(r["type"])
+                have.add(r["type"])
+            else:
+                from ..model.gendate import GenDate
+                d = GenDate.from_json(r["date_json"])
+                said = " ".join(x for x in [d.display, r["place"] or "",
+                                            r["description"] or ""] if x)
+                if said.strip():
+                    conflicts.append(f"{r['type']}: {said.strip()}")
+
+        # -- the links. A union either record was in becomes the survivor's.
+        for tbl in ("union_partner", "union_child"):
+            for r in con.execute(f"SELECT * FROM {tbl} WHERE person_id=?",
+                                 (gone,)).fetchall():
+                exists = con.execute(
+                    f"SELECT 1 FROM {tbl} WHERE union_id=? AND person_id=?",
+                    (r["union_id"], keep)).fetchone()
+                e.delete(tbl, {"union_id": r["union_id"], "person_id": gone})
+                if not exists:
+                    row = dict(r)
+                    row["person_id"] = keep
+                    e.insert(tbl, row)
+
+        # -- photographs, heritage and tags come across too
+        for r in con.execute("SELECT * FROM media_link WHERE person_id=?",
+                             (gone,)).fetchall():
+            e.delete("media_link", {"media_id": r["media_id"],
+                                    "person_id": gone,
+                                    "event_id": r["event_id"]})
+            if not con.execute("SELECT 1 FROM media_link WHERE media_id=? "
+                               "AND person_id=? AND event_id IS ?",
+                               (r["media_id"], keep, r["event_id"])).fetchone():
+                row = dict(r)
+                row["person_id"] = keep
+                # only one portrait, and the survivor's own wins
+                if row.get("is_portrait") and con.execute(
+                        "SELECT 1 FROM media_link WHERE person_id=? "
+                        "AND is_portrait=1", (keep,)).fetchone():
+                    row["is_portrait"] = 0
+                e.insert("media_link", row)
+        try:
+            for r in con.execute("SELECT * FROM person_heritage WHERE person_id=?",
+                                 (gone,)).fetchall():
+                e.delete("person_heritage", {"person_id": gone,
+                                             "label": r["label"]})
+                if not con.execute("SELECT 1 FROM person_heritage WHERE "
+                                   "person_id=? AND label=?",
+                                   (keep, r["label"])).fetchone():
+                    e.insert("person_heritage", {"person_id": keep,
+                                                 "label": r["label"],
+                                                 "share": r["share"]})
+        except Exception:
+            pass
+
+        # -- the name. Kept as an also-known-as rather than dropped: the
+        #    other spelling is what a record office index will have.
+        gname = con.execute("SELECT * FROM person_name WHERE person_id=? "
+                            "AND is_primary=1 LIMIT 1", (gone,)).fetchone()
+        if gname and gn != kn:
+            e.insert("person_name", {
+                "id": new_id(), "person_id": keep, "type": "also_known_as",
+                "is_primary": 0, "given": gname["given"],
+                "surname": gname["surname"],
+                "sort_key": f"{(gname['surname'] or '~').upper()}, "
+                            f"{gname['given'] or ''}"})
+
+        # -- what only the other record knew
+        changes = {}
+        if not (krow.get("notes") or "").strip() and (grow.get("notes") or "").strip():
+            changes["notes"] = grow["notes"]
+        elif (grow.get("notes") or "").strip():
+            changes["notes"] = (krow["notes"] or "") + \
+                f"\n\n[Merged from {gn}] {grow['notes']}"
+        if krow.get("sex") in (None, "U") and grow.get("sex") not in (None, "U"):
+            changes["sex"] = grow["sex"]
+        if conflicts:
+            note = changes.get("notes", krow.get("notes") or "")
+            changes["notes"] = (note + "\n\n" if note.strip() else "") + \
+                f"[Merged from {gn}] The other record said — " + \
+                "; ".join(conflicts)
+        if changes:
+            e.update("person", {"id": keep}, changes)
+
+        e.update("person", {"id": gone}, {"active": 0})
+
+    return {"ok": True, "id": keep, "merged": gone,
+            "carried": carried, "conflicts": conflicts,
+            "message": f"{gn} and {kn} are now one person" +
+                       (f", and {len(conflicts)} thing"
+                        f"{'s' if len(conflicts) != 1 else ''} the other "
+                        f"record said {'are' if len(conflicts) != 1 else 'is'} "
+                        f"in their notes" if conflicts else "") +
+                       ". Press Ctrl-Z to undo it."}
+
+
 def display_name(con, pid: str) -> str:
     r = con.execute("SELECT given,surname FROM person_name WHERE person_id=? "
                     "AND is_primary=1 LIMIT 1", (pid,)).fetchone()

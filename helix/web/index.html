@@ -23,6 +23,7 @@
   <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶</button>
   <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷</button>
   <button id="importBtn" class="ghost" title="Add people from a GEDCOM or a spreadsheet">Import</button>
+  <button id="statsBtn" class="ghost" title="What the file says about the family as a whole (N)">Numbers</button>
   <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
   <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
   <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
@@ -136,8 +137,8 @@
       </label>
       <label>Text direction
         <select id="orient">
-          <option value="radial" selected>Along the branch (fits the most)</option>
-          <option value="tangential">Around the ring (easiest to read)</option>
+          <option value="tangential" selected>Around the ring (easiest to read)</option>
+          <option value="radial">Along the branch (fits the most)</option>
           <option value="auto">Whichever fits</option>
         </select>
       </label>
@@ -313,15 +314,43 @@
 <dialog id="listDlg"><h2 id="listTitle"></h2><div id="listBody"></div>
   <form method="dialog"><button class="ghost">Close</button></form></dialog>
 
+<!-- WHAT THE FILE SAYS ABOUT THE FAMILY AS A WHOLE. A chart answers "who
+     was related to whom"; these are the questions it cannot: how long
+     people lived, where they were, and how much of your own ancestry is
+     actually written down. -->
+<dialog id="statsDlg">
+  <h2>Numbers</h2>
+  <p class="hint">Worked out from what is in the file. Where a date is
+    missing the person is simply not counted, so a figure with few people
+    behind it says so.</p>
+  <div id="statsBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- THE SAME PERSON, ENTERED TWICE. Rare while you type and ordinary the
+     moment you import somebody else's tree. Never merged automatically:
+     which of two records is right is a judgement about somebody's
+     research. -->
+<dialog id="dupeDlg">
+  <h2>Possible duplicates</h2>
+  <p class="hint" id="dupeHead"></p>
+  <div id="dupeBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
 <dialog id="printDlg">
   <h2>Print</h2>
   <p class="hint">These open in a new tab with a Print button. They cover the
     same people the chart does, so a narrowed chart gives a narrowed dossier.</p>
+  <p class="hint">A profile is what you <b>file</b> — it carries what is known
+    and nothing else. The research list is a separate sheet, because a to-do
+    list printed onto somebody's life is out of date in a week.</p>
   <div class="exports">
     <button data-pr="profile">This person's profile</button>
     <button data-pr="profiles">Everyone on the chart — one profile per page</button>
     <button data-pr="profiles-all">Everyone in the file — one profile per page</button>
     <button data-pr="outline">The tree as an indented outline</button>
+    <button data-pr="research">Where to look next — a list to take with you</button>
   </div>
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>

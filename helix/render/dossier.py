@@ -197,8 +197,16 @@ def _bloodline(graph, pid: str, subject: Optional[str]) -> str:
 def _next_steps(graph, pid: str) -> str:
     """What is worth going and looking up about this person.
 
-    On the sheet you take to the record office, which is the whole point of
-    printing one.
+    NOT ON THE PROFILE SHEET. A printed profile is what somebody FILES --
+    it goes in a folder with the certificates and is read again in ten
+    years, and a to-do list printed onto it is out of date the week after
+    it comes off the printer and looks like a reproach for the rest of its
+    life. The sheet carries what is known; the research list lives on
+    screen, where it is current.
+
+    Kept, and reachable at `/print/research`, because a list of questions
+    with the repositories named IS worth taking to a record office -- just
+    as its own page and not stapled to somebody's life.
     """
     from ..analysis.gaps import for_person
     gs = for_person(graph, pid)[:4]
@@ -280,8 +288,30 @@ def profile(graph, con, pid: str, *, kin: Optional[Kinship] = None,
   {_origins(graph, pid, declared)}
   {_bloodline(graph, pid, kin.subject if kin else None)}
   {gallery}
-  {_next_steps(graph, pid)}
 </article>"""
+
+
+def research(graph, gaps: list[dict], *, title="") -> str:
+    """The questions worth asking, as a page you take to a record office.
+
+    ITS OWN SHEET AND NOT STAPLED TO A PROFILE. A profile is filed and read
+    again in ten years; a research list is out of date the week after it is
+    printed. Kept apart, each one can be printed when it is wanted.
+    """
+    body = [f"<h1>{esc(title or 'Where to look next')}</h1>",
+            f"<p class=sub>{len(gaps)} questions, the ones that unblock the "
+            f"most people first. Tick them off as you go.</p>"]
+    for g in gaps:
+        where = ("<ul>" + "".join(f"<li>{esc(w)}</li>" for w in g["where"])
+                 + "</ul>") if g.get("where") else ""
+        who = " · ".join(x for x in [g.get("relation"), g.get("life")] if x)
+        body.append(
+            f"<li><b>☐ {esc(g['question'])}</b>"
+            f"{f'<div class=sub>{esc(who)}</div>' if who else ''}"
+            f"<div class=sub>{esc(g['why'])}</div>{where}</li>")
+    return page(title or "Where to look next",
+                body[0] + body[1] + "<ol class=todo>"
+                + "".join(body[2:]) + "</ol>", note=title)
 
 
 def one(graph, con, pid: str, *, kin=None, photos=None, title="") -> str:

@@ -338,19 +338,35 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     full = math.radians(style.get("layout.sweep_deg", 360))
     base_start = math.radians(style.get("layout.start_angle_deg", -90))
     sweep, start, inner = full, base_start, base_inner
-    # Which way a radial name reads. "outward" always runs from the
-    # middle out, the way the family grows -- you turn the chart, not
-    # your head. "upright" never sets a name upside down on the page,
-    # at the cost of half of them reading inward.
-    face = str(style.get("labels.face", "outward")).lower()
-    # And WHICH WAY UP. `radial` sets every name along its own branch,
-    # reading outward; `tangential` sets them all around the ring;
-    # `auto` picks per ring, which reads well but means neighbouring
-    # rings can run in different directions -- and on the left and
-    # lower parts of the disc a tangential name has to be turned to
-    # stay upright, so it ends up reading the opposite way to its
-    # neighbour. Radial is the default because it is CONSISTENT.
-    orient = str(style.get("labels.orientation", "radial")).lower()
+    # WHICH WAY UP EVERY NAME IS SET, and for tangential text the two words
+    # mean the opposite of what they sound like.
+    #
+    # Rotating text by r sends the tops of its letters toward r - 90. For a
+    # name set along the ring at angle t, `outward` is r = t + 90, which
+    # points the tops AWAY from the centre -- and at the bottom of the disc
+    # "away from the centre" is downward, so the whole bottom half comes out
+    # upside down. `inward` points them toward the centre, which at the
+    # bottom of the disc is upward: THE BOTTOM HALF READS THE RIGHT WAY UP,
+    # which is the half anybody looks at first because it holds the newest
+    # generations.
+    #
+    # So the default is `inward`, and the chart is turned once to read the
+    # top. `upright` is the third option: no name is ever upside down
+    # anywhere, at the cost of the two halves reading in opposite
+    # directions.
+    face = str(style.get("labels.face", "inward")).lower()
+    # AND WHICH WAY THEY RUN. `radial` sets every name along its own
+    # branch; `tangential` sets them all around the ring; `auto` picks per
+    # ring, which reads well in isolation but means neighbouring rings can
+    # run in different directions.
+    #
+    # TANGENTIAL BY DEFAULT, and reading outward. A name set along its own
+    # branch packs tighter -- it costs only its height in angle -- but it
+    # asks somebody to turn the sheet, and the whole point of the flagship
+    # design is that it can be read on a wall. `labels.lengthen_branch`
+    # exists to buy the extra width tangential needs, which is why this is
+    # affordable now and was not before.
+    orient = str(style.get("labels.orientation", "tangential")).lower()
 
     if not g.slots:
         plan = RenderPlan(canvas=Canvas(W, H, style.get("canvas.background", "#FBF8F2")),

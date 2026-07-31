@@ -664,7 +664,12 @@ def test_saving_one_field_from_the_profile_leaves_the_others_alone(family):
 
 
 # ----------------------------------------------------------- on paper ------
-def test_a_printed_profile_carries_the_heritage_dna_and_next_steps(family):
+def test_a_printed_profile_is_something_you_can_file(family):
+    """WHAT IS KNOWN, AND NOTHING ELSE. A printed profile goes in a folder
+    with the certificates and is read again in ten years; a research to-do
+    list printed onto it is out of date the week it comes off the printer
+    and looks like a reproach for the rest of its life. The questions get
+    their own sheet."""
     c, ids, _db = family
     kath = next(p["id"] for grp in c.get("relatives")["groups"]
                 for p in grp["people"] if p["name"] == "Kathleen Holloway")
@@ -672,10 +677,18 @@ def test_a_printed_profile_carries_the_heritage_dna_and_next_steps(family):
     sheet = _fetch(c, f"/print/profile?id={ids['me']}")
     assert "Where they came from" in sheet and "Irish" in sheet
     assert "Bloodline" in sheet and "Grandparents" in sheet
-    assert "Where to look next" in sheet
     # NEVER A BARE PERCENTAGE ON PAPER. Read in twenty years it would be
     # taken for something somebody measured.
     assert "not a test result" in sheet
+    assert "Where to look next" not in sheet
+
+
+def test_the_research_list_prints_on_its_own_sheet(family):
+    c, ids, _db = family
+    sheet = _fetch(c, "/print/research")
+    assert "where to look next" in sheet.lower()
+    assert "☐" in sheet, "a list you take with you wants ticking off"
+    assert "parents" in sheet.lower()
 
 
 def test_printing_everybody_still_works_with_the_new_sections(family):

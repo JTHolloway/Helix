@@ -10,6 +10,7 @@ import * as inspector from './inspector.js';
 import * as profile from './profile.js';
 import * as relatives from './relatives.js';
 import { addPerson as addFirstPerson } from './edit.js';
+import * as insight from './insight.js';
 
 const $ = s => document.querySelector(s);
 const wrap = $('#canvasWrap'), host = $('#canvas');
@@ -34,7 +35,7 @@ const S = {                       // everything the preview depends on
   tpl: '{given_first} {surname}', cmode: 'none', redact: false,
   threadOn: true, w: 1000, h: 1000, inner: 110, gamma: 50, timeScale: true,
   rings: true, fsize: 34, lw: 45, conn: 'orthogonal', start: -90, sweep: 360,
-  pitch: 25, entrygap: 0, cluster: 0, orient: 'radial', marr: true,
+  pitch: 25, entrygap: 0, cluster: 0, orient: 'tangential', marr: true,
   sibgap: 10, famgap: 60, cellcap: 12,
   leaf: 'auto', wedges: true, wedgeop: 13,
   // HOW FAR THE TREE SPREADS, by relation. Sent with every plan request, so
@@ -60,6 +61,7 @@ async function init() {
   wirePrint();
   wireGaps();
   wireImport();
+  wireInsight();
   undoLabels();
   await Promise.all([refresh(), loadRelatives(), loadGaps()]);
   view.fit();
@@ -88,6 +90,10 @@ async function _refresh() {
     });
     if (SEL) markSelected();
     if (MODE === 'explore' && SEL) showProfile(SEL);
+    // The chart that has just been drawn is a different size from the one
+    // it replaced -- narrowing takes a third of the family off it. Refit,
+    // unless the person has chosen a view of their own.
+    view.refit();
     readout();
   } catch (e) { fail(e); } finally { $('#loading').hidden = true; }
 }
@@ -180,10 +186,25 @@ function readout() {
     `<b>${m.people}</b> people · ${m.generations} generations · ` +
     `${m.year_min}–${m.year_max} · ${S.w}×${S.h} mm` +
     (el && el.marriages
-      ? `<br><span class="warn">${el.people} more not shown — look for the
-         ⊥ marks</span>` : '') +
+      ? `<br><span class="warn">${el.people} more not shown on
+         ${el.marriages} ${el.marriages === 1 ? 'family' : 'families'}</span>
+         <button class="link" id="findPruned">show me where</button>` : '') +
     (n ? `<br><span class="warn">${n} names did not fit.</span>`
        : `<br><span class="ok">Every name fits.</span>`);
+  // "LOOK FOR THE ⊥ MARKS" IS NOT AN INSTRUCTION ANYBODY CAN FOLLOW. At the
+  // zoom where a whole chart fits on a screen the marks are two pixels
+  // long, and the sentence was asking somebody to hunt for them. This makes
+  // the chart point at them instead.
+  const find = $('#findPruned');
+  if (find) find.addEventListener('click', () => {
+    const marks = host.querySelectorAll('[data-role="elided"]');
+    if (!marks.length) return;
+    view.fit();
+    marks.forEach(x => x.classList.add('findme'));
+    setTimeout(() => marks.forEach(x => x.classList.remove('findme')), 4000);
+    toast(`${marks.length} ${marks.length === 1 ? 'family has' : 'families have'}
+      children left off — each one is marked with a ⊥ on the chart.`);
+  });
 }
 
 // ───────────────────────────────────────────────────────────── gallery ───
@@ -510,6 +531,10 @@ function wireImport() {
       META = await get('meta');
       await Promise.all([refresh(), loadRelatives()]);
       undoLabels();
+      // THE MOMENT DUPLICATES MATTER. Four hundred people just arrived in
+      // one step and nothing was checked against what was already there.
+      const dup = await get('duplicates', { limit: 40 });
+      if (dup.pairs.length) reviewDuplicates();
     } catch (e) {
       report.innerHTML += `<p class="warn">${escAttr(e.message)}</p>`;
     } finally {
@@ -517,6 +542,40 @@ function wireImport() {
       $('#impGo').textContent = 'Add these people to my file';
     }
   });
+}
+
+// ───────────────────────────────────────── the whole file, not one person ──
+function wireInsight() {
+  $('#statsBtn').addEventListener('click', async () => {
+    $('#statsDlg').showModal();
+    try {
+      await insight.showStats($('#statsBody'), pid => {
+        $('#statsDlg').close(); setMode('explore'); select(pid);
+      });
+    } catch (e) { $('#statsBody').innerHTML = `<p class="warn">${escAttr(e.message)}</p>`; }
+  });
+}
+
+// Offered rather than forced. Duplicates are rare while you type and
+// ordinary after an import, so this is where it is put in front of you --
+// but merging is never automatic, because which of two records is right is
+// a judgement about somebody's research.
+async function reviewDuplicates() {
+  $('#dupeDlg').showModal();
+  $('#dupeHead').textContent = '';
+  try {
+    await insight.showDuplicates($('#dupeBody'), $('#dupeHead'), {
+      onSelect: pid => { $('#dupeDlg').close(); setMode('explore'); select(pid); },
+      onToast: toast,
+      onChanged: async () => {
+        META = await get('meta');
+        await Promise.all([refresh(), loadRelatives()]);
+        undoLabels();
+      },
+    });
+  } catch (e) {
+    $('#dupeBody').innerHTML = `<p class="warn">${escAttr(e.message)}</p>`;
+  }
 }
 
 function wireScope() {
@@ -572,8 +631,10 @@ function wirePrint() {
         url = `/print/profile?id=${encodeURIComponent(SEL)}`;
       } else if (what === 'profiles-all') {
         url = '/print/profiles?all=1';
+      } else if (what === 'outline' || what === 'research') {
+        url = `/print/${what}?${q}`;
       } else {
-        url = `/print/${what === 'outline' ? 'outline' : 'profiles'}?${q}`;
+        url = `/print/profiles?${q}`;
       }
       dlg.close();
       window.open(url, '_blank');
@@ -740,6 +801,7 @@ function wireKeys() {
     if (k === 't') { $('#threadOn').click(); }
     if (k === 'c') { $('#whatif').click(); }
     if (k === 'escape') {
+      if (document.querySelector('dialog[open]')) return;   // the dialog first
       clearWhatIf(); clearHalo();
       $('#right').hidden = true; SEL = null; markSelected();
     }
@@ -749,6 +811,8 @@ function wireKeys() {
     if (k === '+' || k === '=') view.zoom(1.35);
     if (k === '-') view.zoom(1 / 1.35);
     if (k === 'l') { e.preventDefault(); showPeople(); }
+    if (k === 'n') { e.preventDefault(); $('#statsBtn').click(); }
+    if (k === 'i') { e.preventDefault(); $('#importBtn').click(); }
   });
 
   // Undo and redo work while typing too, which is where mistakes happen.
