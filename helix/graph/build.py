@@ -34,6 +34,11 @@ class Person:
     # nowhere to put "she always said her mother came over on the Empire
     # Windrush" loses the only part nobody else can reconstruct.
     notes: str = ""
+    # WHERE THIS PERSON'S FAMILY CAME FROM, as {label: share}, and only what
+    # somebody was told directly. What their descendants inherit is worked
+    # out in `graph.kinship.heritage_of` and never written down: a computed
+    # value in a row goes stale the moment a grandparent is added.
+    heritage: dict = field(default_factory=dict)
     tags: list[str] = field(default_factory=list)
 
     # graph edges (filled by FamilyGraph)
@@ -299,6 +304,13 @@ def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
     for r in con.execute("SELECT id, notes FROM person WHERE notes IS NOT NULL"):
         if r["id"] in people:
             people[r["id"]].notes = r["notes"] or ""
+    try:
+        for r in con.execute(
+                "SELECT person_id, label, share FROM person_heritage"):
+            if r["person_id"] in people:
+                people[r["person_id"]].heritage[r["label"]] = r["share"]
+    except Exception:
+        pass                          # a file older than the heritage table
 
     for r in con.execute(
         "SELECT er.person_id pid, e.type t, e.description d, p.name pl "

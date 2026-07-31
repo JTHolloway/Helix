@@ -67,6 +67,17 @@ export async function show(host, pid, hooks) {
 
       <h4>What is known</h4>
       <form class="facts" id="facts">
+        ${field('fGiven', 'Given names', d.given, 'Harriet Florence')}
+        ${field('fSurname', 'Surname', d.surname)}
+        <label>Sex
+          <select id="fSex">
+            ${['U:not recorded', 'F:female', 'M:male', 'X:other'].map(o => {
+              const [v, t] = o.split(':');
+              return `<option value="${v}"${d.sex === v ? ' selected' : ''}
+                >${t}</option>`;
+            }).join('')}
+          </select>
+        </label>
         ${field('fBirth', 'Born', d.birth, '1834, abt 1834, 12 Mar 1841…')}
         ${field('fBPlace', 'Born in', d.birth_place)}
         ${field('fDeath', 'Died', d.death)}
@@ -77,15 +88,16 @@ export async function show(host, pid, hooks) {
 stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea>
         </label>
         <button class="primary wide" id="saveFacts">Save</button>
+        <p class="hint wide">Saved here, it changes everywhere — the chart,
+          the sidebar and every printout.</p>
       </form>
+
+      ${heritageBlock(d)}
+      ${dnaBlock(d)}
 
       ${(d.photos || []).length > 1 ? gallery(d.photos) : ''}
 
-      ${(d.missing || []).length ? `
-        <div class="missing">
-          <b>Still to find out</b>
-          <p>${d.missing.map(esc).join(' · ')}</p>
-        </div>` : ''}
+      ${gapsBlock(d)}
 
       <h4>Who is around them</h4>
       <div id="halo" class="halo"></div>
@@ -175,7 +187,9 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     // as "clear it", and that distinction is what stops saving a birthplace
     // from wiping a birth date.
     const body = { id: pid };
-    const map = { fBirth: ['birth', d.birth], fBPlace: ['birth_place', d.birth_place],
+    const map = { fGiven: ['given', d.given], fSurname: ['surname', d.surname],
+                  fSex: ['sex', d.sex],
+                  fBirth: ['birth', d.birth], fBPlace: ['birth_place', d.birth_place],
                   fDeath: ['death', d.death], fOcc: ['occupation', d.occupation],
                   fEdu: ['education', d.education], fNotes: ['notes', d.notes] };
     for (const [el, [key, was]] of Object.entries(map)) {
@@ -185,7 +199,53 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     if (Object.keys(body).length === 1) { onToast('Nothing had changed.'); return; }
     try {
       await post('person', body);
-      onToast('Saved.');
+      // EVERYWHERE, not just here. A name corrected in the profile has to
+      // reach the chart, the sidebar list and the label under the picture,
+      // or the file quietly holds two versions of the same person.
+      onToast('Saved. The chart and the sidebar have been updated too.');
+      show(host, pid, hooks);
+      onChanged && onChanged();
+    } catch (e) { onToast(e.message); }
+  });
+
+  // ---- one more generation of the bloodline ----------------------------
+  // Redrawn in place rather than reloading the profile: the whole pedigree
+  // already came down with it, and a round trip to fetch what is on the
+  // page loses the scroll position for nothing.
+  function wireTree() {
+    const b = host.querySelector('#btMore');
+    if (!b) return;
+    b.addEventListener('click', () => {
+      const box = host.querySelector('#dnaBox');
+      const keep = box.querySelector('.dnashare, .none');
+      box.innerHTML = (keep ? keep.outerHTML : '') +
+        bloodTree(d.dna.bloodline || [], d.name,
+                  Number(b.dataset.gens) <= 3 ? 4 : 3);
+      wireTree();
+      box.querySelectorAll('[data-kin]').forEach(g =>
+        g.addEventListener('click', () => onSelect(g.dataset.kin)));
+    });
+  }
+  wireTree();
+
+  // ---- where they came from -------------------------------------------
+  host.querySelectorAll('[data-herit]').forEach(b =>
+    b.addEventListener('click', () => {
+      const box = host.querySelector('#fHerit');
+      const have = box.value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!have.some(s => s.replace(/\s+[\d.]+%?$/, '') === b.dataset.herit))
+        have.push(b.dataset.herit);
+      box.value = have.join(', ');
+    }));
+  host.querySelector('#heritForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const { rows, given } = parseHeritage(host.querySelector('#fHerit').value);
+    try {
+      await post('person/heritage', { id: pid, heritage: rows,
+                                      shares_given: given });
+      onToast(rows.length
+        ? 'Saved. Everybody below them inherits a share of it.'
+        : 'Cleared.');
       show(host, pid, hooks);
       onChanged && onChanged();
     } catch (e) { onToast(e.message); }
@@ -206,6 +266,195 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     window.open(`/print/profile?id=${encodeURIComponent(pid)}`, '_blank'));
   host.querySelectorAll('[data-kin]').forEach(b =>
     b.addEventListener('click', () => onSelect(b.dataset.kin)));
+}
+
+// ---------------------------------------------------------------- heritage
+//
+// WHERE THEIR FAMILY CAME FROM. Typed as a sentence rather than built out of
+// repeating rows, because that is how anybody says it: "half Irish, half
+// Scottish" is one statement. Shares are optional and only wanted when
+// somebody actually knows them.
+function heritageBlock(d) {
+  const h = d.heritage || {};
+  const own = h.declared || [];
+  const mix = h.mix || [];
+  const known = (h.known_labels || []).filter(x => !own.some(o => o.label === x));
+  return `
+    <h4>Where they came from</h4>
+    <div class="herit">
+      ${mix.length && !(mix.length === 1 && mix[0].gap) ? `
+        <div class="hbar" title="Worked out from everybody above them">
+          ${mix.map(m => `<span class="hseg${m.gap ? ' gap' : ''}"
+            style="flex:${Math.max(m.share, 0.02)}"
+            title="${esc(m.label)} ${m.pct}%"></span>`).join('')}
+        </div>
+        <ul class="hlist">
+          ${mix.map(m => `<li${m.gap ? ' class="gap"' : ''}>
+            <b>${m.pct}%</b> ${esc(m.label)}</li>`).join('')}
+        </ul>
+        <p class="hint">${h.inherited
+          ? 'Worked out from what is recorded further up. A generalisation, not a test result.'
+          : 'Recorded for them directly.'}</p>` : ''}
+      <form class="hform" id="heritForm">
+        <label class="wide">${own.length ? 'Recorded for them' :
+          'Record it for them'}
+          <input id="fHerit" placeholder="Irish — or Irish 75, Scottish 25"
+            value="${esc(own.map(o => o.share > 0.999 ? o.label
+              : `${o.label} ${o.pct}`).join(', '))}">
+        </label>
+        ${known.length ? `<p class="hint">Already used in this file:
+          ${known.map(l => `<button type="button" class="chip"
+            data-herit="${esc(l)}">${esc(l)}</button>`).join(' ')}</p>` : ''}
+        <button class="ghost wide">Save where they came from</button>
+      </form>
+    </div>`;
+}
+
+// -------------------------------------------------------------------- DNA
+//
+// HOW MUCH BLOOD, and where it came from. The number is an expectation and
+// the panel says so: two brothers share 50% on average and rather more or
+// less than that in fact. Beyond second cousins it stops being a prediction
+// about anybody's genome at all, which is why the note is not optional.
+function dnaBlock(d) {
+  const dna = d.dna || {};
+  const line = (dna.display && !d.is_subject)
+    ? `<div class="dnashare">
+         <b>${esc(dna.display)}</b>
+         <span>expected shared DNA with ${esc(dna.with_name || 'you')}</span>
+         <small>${esc(dna.note)}</small>
+       </div>`
+    : (d.is_subject ? '' : `<p class="none">No shared blood — related by
+         marriage, so no DNA is expected in common.</p>`);
+  return `<h4>Bloodline</h4><div class="dna" id="dnaBox">${line}
+    ${bloodTree(dna.bloodline || [], d.name, 3)}</div>`;
+}
+
+// A pedigree drawn small. Half from each parent, a quarter from each
+// grandparent, an eighth from each great-grandparent -- the shape people
+// already carry in their heads, which is the whole reason it is worth
+// drawing rather than listing.
+//
+// THREE GENERATIONS BY DEFAULT, and not because four is uninteresting.
+// Four columns of legible names do not fit a 330px panel: drawn anyway they
+// either ran off the edge, so the great-grandparents could not be seen at
+// all, or shrank the type until nothing could be read. Three fits exactly;
+// the fourth is one click away and shrinks the boxes to earn its column.
+//
+// EMPTY SEATS ARE DRAWN, not skipped. A hole with an address is a research
+// gap; a tree that quietly closes up around it says the line ended when it
+// has only stopped.
+function bloodTree(rows, who, gens) {
+  if (!rows.length) return '';
+  rows = rows.filter(r => r.gen < gens);
+  const wide = gens <= 3;
+  // ROW is the spacing between the deepest generation's seats and must
+  // clear BH, or the boxes in the last column overlap each other -- which
+  // they did, by three pixels, and read as one box with two names in it.
+  const BW = wide ? 92 : 74, GAP = wide ? 10 : 8, BH = wide ? 26 : 24;
+  const ROW = wide ? 32 : 29, CLIP = wide ? 15 : 12;
+  const H = ROW * (1 << (gens - 1)), W = gens * (BW + GAP) - GAP;
+  const at = {};
+  for (const r of rows) {
+    const n = 1 << r.gen, i = r.slot - n;
+    at[r.slot] = { x: r.gen * (BW + GAP), y: (i + 0.5) * (H / n), r };
+  }
+  const links = [], boxes = [];
+  for (const r of rows) {
+    const a = at[r.slot];
+    for (const s of [r.slot * 2, r.slot * 2 + 1]) {
+      const b = at[s];
+      if (!b) continue;
+      const mx = a.x + BW + GAP / 2;
+      links.push(`<path d="M${a.x + BW} ${a.y}H${mx}V${b.y}H${b.x}"/>`);
+    }
+    const pct = r.share >= 0.01 ? +(r.share * 100).toFixed(1)
+                                : +(r.share * 100).toFixed(2);
+    boxes.push(r.id
+      ? `<g class="bt${r.gen === 0 ? ' me' : ''}" data-kin="${esc(r.id)}">
+           <rect x="${a.x}" y="${a.y - BH / 2}" width="${BW}" height="${BH}"
+                 rx="4"/>
+           <text x="${a.x + 6}" y="${a.y - 1}">${esc(clip(r.name, CLIP))}</text>
+           <text x="${a.x + 6}" y="${a.y + 9}" class="sub">${pct}%${
+             r.life && CLIP > 12 ? ' · ' + esc(clip(r.life, CLIP - 4)) : ''}</text>
+           <title>${esc(r.name)}${r.life ? ' (' + esc(r.life) + ')' : ''} — ${
+             pct}% expected shared DNA</title>
+         </g>`
+      : `<g class="bt none">
+           <rect x="${a.x}" y="${a.y - BH / 2}" width="${BW}" height="${BH}"
+                 rx="4"/>
+           <text x="${a.x + 6}" y="${a.y - 1}" class="sub">not known</text>
+           <text x="${a.x + 6}" y="${a.y + 9}" class="sub">${pct}%</text>
+           <title>${pct}% of ${esc(who || 'their')} DNA came from somebody
+             not yet recorded here.</title>
+         </g>`);
+  }
+  // ONLY THE FRONTIER COUNTS. An empty seat behind another empty seat is
+  // the same missing quarter counted twice: four unknown great-grandparents
+  // under two unknown grandparents added up to 100% of an ancestry that was
+  // half recorded.
+  const filled = new Set(rows.filter(r => r.id).map(r => r.slot));
+  const holes = rows.filter(r => !r.id);
+  const lost = +(holes.filter(r => filled.has(r.slot >> 1))
+                      .reduce((t, r) => t + r.share, 0) * 100).toFixed(1);
+  const back = ['themselves', 'their parents', 'their grandparents',
+                'their great-grandparents'][gens - 1];
+  return `<div class="btwrap">
+    <svg class="btree" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"
+         preserveAspectRatio="xMinYMin meet">
+      <g class="btlink">${links.join('')}</g>${boxes.join('')}
+    </svg></div>
+    <p class="hint">${holes.length
+      ? `${holes.length} of ${rows.length} seats are empty${lost
+          ? ` — ${lost}% of their ancestry with nobody's name on it yet` : ''}.`
+      : `Every seat filled back to ${back}.`}</p>
+    <button class="ghost wide" id="btMore" data-gens="${gens}">${
+      gens <= 3 ? 'Add the great-grandparents'
+                : 'Back to three generations'}</button>`;
+}
+
+// ------------------------------------------------------- where to look next
+function gapsBlock(d) {
+  const gs = d.gaps || [];
+  if (!gs.length) {
+    return (d.missing || []).length ? `
+      <div class="missing"><b>Still to find out</b>
+        <p>${d.missing.map(esc).join(' · ')}</p></div>` : '';
+  }
+  return `<h4>Where to look next</h4>
+    <ol class="gaps">
+      ${gs.map(g => `<li>
+        <b>${esc(g.question)}</b>
+        <p class="why">${esc(g.why)}</p>
+        ${g.where.length ? `<ul class="where">${
+          g.where.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      </li>`).join('')}
+    </ol>`;
+}
+
+// "Irish" -> all of it. "Irish, Scottish" -> half each, worked out by the
+// server. "Irish 75, Scottish 25" -> as typed. `given` is what tells the
+// two apart: without it, one label typed alone would be quietly halved.
+function parseHeritage(text) {
+  const rows = [];
+  let given = false;
+  for (const part of String(text || '').split(',')) {
+    const s = part.trim();
+    if (!s) continue;
+    const m = s.match(/^(.*?)[\s:]+([\d.]+)\s*%?$/);
+    if (m && m[1].trim()) {
+      given = true;
+      rows.push({ label: m[1].trim(), share: parseFloat(m[2]) / 100 });
+    } else {
+      rows.push({ label: s });
+    }
+  }
+  return { rows, given };
+}
+
+function clip(s, n) {
+  s = String(s || '');
+  return s.length > n ? s.slice(0, n - 1) + '…' : s;
 }
 
 function metric(n, label, sub) {

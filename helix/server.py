@@ -43,6 +43,7 @@ _RECORD_ROUTES = {
     "/api/redo":          lambda con, b: records.redo(con),
     "/api/person/photo":  lambda con, b: _add_photo(con, b),
     "/api/person/photo/remove": lambda con, b: _drop_photo(con, b),
+    "/api/person/heritage": lambda con, b: records.set_heritage(con, b),
 }
 
 
@@ -203,6 +204,11 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(_kin_detail(ST, q["id"]))
         if route == "groups":
             return self._json(all_groups())
+        if route == "gaps":
+            # WHERE MORE RESEARCH IS NEEDED, ranked. Scoped to whatever is
+            # on the chart when a focus is given, because a to-do list for
+            # a branch you are not looking at is not a to-do list.
+            return self._json(_gaps(ST, q))
         if route == "media":
             from .store import album
             p = album.resolve(ST.dbpath, q.get("name", ""))
@@ -435,6 +441,89 @@ def _print_elided(q) -> dict:
                   index=ST.kin).elided_union
 
 
+def _gaps(st: State, q) -> dict:
+    """Where more research is needed, best question first.
+
+    Scoped the same way the chart is: ask for the gaps while looking at a
+    chart narrowed to first cousins and you get the gaps on that chart. The
+    alternative -- always the whole file -- means the panel beside a
+    four-generation chart opens with a question about somebody who is not
+    on it.
+    """
+    from .analysis import gaps as gapmod
+    within = None if q.get("all") == "1" else _scoped_ids(q)
+    # Ranked in full, then cut. The headline counts how many lines really
+    # stop dead; worked out from the visible twenty it would have said
+    # "2 lines stop here" of a file with forty-one.
+    rows = gapmod.rank(st.graph, st.con, country=q.get("country", "england"),
+                       limit=10 ** 6, within=within,
+                       subject=q.get("subject") or st.subject)
+    n = int(q.get("limit", 40))
+    # WHO THEY ARE TO YOU, added here because this is the only place that
+    # knows. Two people recorded as nothing but "Harris" produce two
+    # identical questions; "your great-grandmother" and "your third cousin
+    # twice removed" are what tell them apart.
+    for r in rows[:n]:
+        k = st.kin.of(r["pid"])
+        r["relation"] = "" if k.group in ("self", "unrelated") else k.label
+    return {"gaps": rows[:n], "summary": gapmod.summary(rows),
+            "shown": min(n, len(rows)), "total": len(rows),
+            "scope": "everybody" if within is None else "this chart",
+            "considered": len(st.graph.people) if within is None else len(within)}
+
+
+def _person_gaps(st: State, pid: str) -> list[dict]:
+    from .analysis import gaps as gapmod
+    return gapmod.for_person(st.graph, pid)[:5]
+
+
+def _heritage(st: State, pid: str) -> dict:
+    """Where somebody's family came from: told, and worked out.
+
+    `declared` is what somebody was told about this person directly.
+    `mix` is what that person inherits from everybody above them, and is
+    never written to a row -- see the note in `kinship.heritage_of` for why
+    a computed percentage in a column goes wrong the day a grandparent is
+    added.
+    """
+    from .graph.kinship import heritage_display, heritage_of
+    g = st.graph
+    declared = {p: dict(p_.heritage) for p, p_ in g.people.items()
+                if p_.heritage}
+    mix = heritage_of(g, declared, pid)
+    own = declared.get(pid, {})
+    return {
+        "declared": [{"label": k, "share": v, "pct": round(v * 100, 1)}
+                     for k, v in sorted(own.items(), key=lambda kv: -kv[1])],
+        "mix": heritage_display(mix),
+        "inherited": not own,
+        # every label anybody in the file has used, so the box can offer
+        # them rather than making somebody spell "Northumbrian" twice
+        "known_labels": sorted({lab for d in declared.values() for lab in d}),
+    }
+
+
+def _dna(st: State, pid: str) -> dict:
+    """How much DNA this person and the subject are expected to share.
+
+    EXPECTED, not measured. Two full siblings share 50% on average and
+    anywhere from about 38% to 61% in fact; the number here is the average,
+    which is the only one that can be worked out from a tree.
+    """
+    from .graph.kinship import bloodline, dna_display, shared_dna
+    g, sub = st.graph, st.subject
+    share = shared_dna(g, sub, pid, kin=st.kin.of(pid)) if sub else None
+    return {
+        "share": share,
+        "display": dna_display(share),
+        "with_name": (g.people[sub].full_name
+                      if sub and sub in g.people else ""),
+        "bloodline": bloodline(g, pid, depth=4),
+        "note": "Expected average. Real DNA varies either side of it, "
+                "and beyond second cousins a pair may share none at all.",
+    }
+
+
 def _relatives(st: State) -> dict:
     """Everybody in the file, in tabs, closest first.
 
@@ -542,6 +631,12 @@ def _person_detail(st: State, pid: str) -> dict:
         "photos": album.photos_of(st.con, pid),
         "missing": _missing(g, st.con, p),
         "complete": _completeness(g, p),
+        # THE THREE THINGS A PROFILE ANSWERS BESIDES "who is this". Where
+        # their family came from, how much blood you share, and what is
+        # worth going and looking up about them next.
+        "heritage": _heritage(st, pid),
+        "dna": _dna(st, pid),
+        "gaps": _person_gaps(st, pid),
         "relationship": kin.label if st.subject else "",
         "is_subject": pid == st.subject,
         "parents": [_brief(g, x) for x in g.parents(pid, False)],

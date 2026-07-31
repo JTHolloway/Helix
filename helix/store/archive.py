@@ -27,7 +27,8 @@ from pathlib import Path
 
 TABLES = ["person", "person_name", "union_", "union_partner", "union_child",
           "place", "event", "event_role", "source", "citation", "media",
-          "media_link", "tag", "person_tag", "research_task", "dna_match",
+          "media_link", "tag", "person_tag", "person_heritage",
+          "research_task", "dna_match",
           "settings"]
 
 
@@ -143,6 +144,7 @@ def people_csv(con) -> str:
 RESTORE_ORDER = ["settings", "place", "person", "person_name", "union_",
                  "union_partner", "union_child", "source", "event",
                  "event_role", "citation", "media", "media_link", "tag",
+                 "person_heritage",
                  "person_tag", "research_task", "dna_match"]
 
 

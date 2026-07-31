@@ -58,8 +58,9 @@ async function init() {
   wireMode();
   wireScope();
   wirePrint();
+  wireGaps();
   undoLabels();
-  await Promise.all([refresh(), loadRelatives()]);
+  await Promise.all([refresh(), loadRelatives(), loadGaps()]);
   view.fit();
   status();
   setInterval(status, 30000);
@@ -371,6 +372,7 @@ async function loadRelatives() {
 }
 
 function drawRelatives() {
+  loadGaps();
   relatives.draw($('#kinList'), {
     selected: SEL,
     onSelect: pid => { setMode('explore'); select(pid); },
@@ -385,6 +387,42 @@ function drawRelatives() {
           : '');
     },
   });
+}
+
+// ────────────────────────────────────────────── where to look next ──────
+//
+// THE SAME PEOPLE AS THE CHART. Ask for the gaps while looking at a chart
+// narrowed to first cousins and you get the gaps on that chart; a research
+// list about somebody who is not on screen is a list nobody acts on.
+let GAPN = 6;
+
+async function loadGaps() {
+  const box = $('#gapList'), head = $('#gapHead');
+  if (!box) return;
+  try {
+    const d = await get('gaps', {
+      focus: S.focus, kin: JSON.stringify(S.kin), limit: GAPN,
+    });
+    head.textContent = d.summary.headline +
+      (d.total > d.shown ? ` — showing the top ${d.shown} of ${d.total}.` : '.');
+    box.innerHTML = d.gaps.map(g => `<li>
+      <button class="gapq" data-p="${escAttr(g.pid)}">${escAttr(g.question)}</button>
+      <p class="who">${[g.relation, g.life].filter(Boolean).map(escAttr).join(' · ')}</p>
+      <p class="why">${escAttr(g.why)}</p>
+      ${g.where.length ? `<ul class="where"><li>${escAttr(g.where[0])}</li></ul>` : ''}
+    </li>`).join('');
+    box.querySelectorAll('.gapq').forEach(b =>
+      b.addEventListener('click', () => { setMode('explore'); select(b.dataset.p); }));
+    const more = $('#gapMore');
+    more.hidden = d.total <= d.shown;
+    more.textContent = `Show more (${d.total - d.shown} left)`;
+  } catch { head.textContent = 'Nothing to look up yet.'; }
+}
+
+function wireGaps() {
+  const more = $('#gapMore');
+  if (!more) return;
+  more.addEventListener('click', () => { GAPN += 12; loadGaps(); });
 }
 
 function wireScope() {

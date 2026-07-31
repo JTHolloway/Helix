@@ -397,3 +397,81 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
   text-transform:uppercase;color:var(--muted);margin-bottom:3px}
 .missing p{margin:0;font-size:13px;color:var(--ink);line-height:1.45}
 .proacts + .proacts{margin-top:6px}
+
+/* --- where they came from ----------------------------------------------- */
+/* A generalisation drawn as a bar, with the unaccounted-for part left in it.
+   Hiding the remainder would turn "62% Irish and 38% not yet researched"
+   into "62% Irish" beside nothing, which reads as a rounding error rather
+   than as work still to do. */
+.facts select{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--rule);
+  border-radius:6px;background:var(--paper);color:var(--ink);font:inherit;font-size:13.5px}
+.facts .wide{grid-column:1/-1}
+.hbar{display:flex;height:13px;border-radius:7px;overflow:hidden;
+  border:1px solid var(--rule);margin:2px 0 8px}
+.hseg{background:var(--accent);opacity:.85}
+.hseg + .hseg{opacity:.6}
+.hseg + .hseg + .hseg{opacity:.42}
+.hseg.gap{background:repeating-linear-gradient(45deg,var(--rule) 0 4px,
+  var(--paper) 4px 8px);opacity:1}
+.hlist{list-style:none;margin:0 0 4px;padding:0;display:flex;flex-wrap:wrap;
+  gap:4px 12px;font-size:13px}
+.hlist b{font-weight:600}
+.hlist .gap{color:var(--muted)}
+.hform input{width:100%;margin-top:3px;padding:6px 8px;border:1px solid var(--rule);
+  border-radius:6px;background:var(--paper);color:var(--ink);font:inherit;font-size:13.5px}
+.hform label{display:block;margin:8px 0;font-size:13px}
+.chip{border-radius:12px;padding:1px 9px;font-size:12px;background:var(--paper)}
+
+/* --- the bloodline ------------------------------------------------------ */
+/* HOW MUCH BLOOD AND WHERE IT CAME FROM. The percentage is an expectation,
+   not a measurement, and the note under it says so every time -- a bare
+   "12.5%" beside a cousin's name would be read as a test result. */
+.dnashare{background:var(--accent-soft);border-radius:6px;padding:9px 11px;
+  margin:0 0 10px}
+.dnashare b{font-size:22px;font-weight:700;color:#6E2A20;
+  display:block;line-height:1.1}
+.dnashare span{font-size:12.5px;color:#6E2A20}
+.dnashare small{display:block;margin-top:5px;font-size:11px;color:var(--muted);
+  line-height:1.4}
+.btwrap{padding-bottom:4px;margin:0 -2px}
+/* Three generations fit the panel exactly; the fourth is 320px wide and the
+   panel is 298. Rather than scroll it sideways -- where the great-
+   grandparents are simply not there until somebody thinks to drag -- it
+   shrinks the last 7% to fit. `height:auto` is what keeps it in proportion:
+   without it the viewBox scales the width and leaves the height alone. */
+.btree{display:block;max-width:100%;height:auto}
+.btlink path{fill:none;stroke:var(--rule);stroke-width:1.2}
+.bt rect{fill:var(--paper);stroke:var(--rule);stroke-width:1}
+.bt text{font-size:10.5px;fill:var(--ink)}
+.bt text.sub{font-size:9px;fill:var(--muted)}
+.bt.me rect{fill:var(--accent-soft);stroke:var(--accent)}
+.bt[data-kin]{cursor:pointer}
+.bt[data-kin]:hover rect{stroke:var(--accent);stroke-width:1.6}
+.bt.none rect{fill:none;stroke-dasharray:3 3}
+
+/* --- where to look next ------------------------------------------------- */
+/* Ranked by how many people a gap is blocking, how likely the record is to
+   survive, and how much trouble it is to reach -- so the top of the list is
+   a findable question worth answering, not the oldest one. */
+.gaps{margin:0;padding-left:20px;font-size:13px}
+.gaps li{margin:0 0 10px}
+.gaps b{font-weight:600;font-size:13.5px}
+.gaps .why{margin:1px 0 3px;color:var(--muted);font-size:12px;line-height:1.4}
+.gaps .where{margin:0;padding-left:14px;font-size:11.5px;color:var(--muted)}
+.gaps .where li{margin:0 0 1px}
+/* Plain text with a hit area, not a button with a border. Six bordered
+   buttons stacked down a sidebar read as six commands; these are six
+   questions, and clicking one only walks over to the person it is about. */
+/* `display:block` and not inline: an inline-block first child pushes the
+   list marker down to whichever line box it shares, so a question that wrapped
+   onto two lines had its number sitting beside the second one. */
+.gaps .gapq{display:block;border:0;background:none;padding:0;text-align:left;
+  font:inherit;font-weight:600;font-size:13.5px;color:var(--ink);cursor:pointer}
+/* Underlined by decoration, not by a border: a border under a block runs the
+   full width of the panel, which under a two-line question reads as a rule
+   across the page rather than as a link. */
+.gaps .gapq:hover{color:var(--accent);text-decoration:underline}
+.gaps .who{margin:0;font-size:11.5px;color:var(--muted)}
+#gapList{padding-left:18px}
+#gapMore{margin-top:8px}
+.wide{width:100%}

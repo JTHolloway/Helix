@@ -24,7 +24,8 @@ from __future__ import annotations
 import html
 from typing import Optional
 
-from ..graph.kinship import Kinship, household, siblings_of
+from ..graph.kinship import (Kinship, bloodline, dna_display, heritage_display,
+                             heritage_of, household, shared_dna, siblings_of)
 
 CSS = """
 :root{--ink:#1a1a1a;--muted:#6b6b6b;--rule:#d8d2c6;--accent:#8a3324}
@@ -55,6 +56,15 @@ li{margin:.5mm 0}
 .gallery img{width:100%;border:1px solid var(--rule)}
 .gallery figcaption{font-size:8.5pt;color:var(--muted)}
 .none{color:var(--muted);font-style:italic}
+.plain{list-style:none;padding-left:0;columns:2;font-size:10pt}
+.note{color:var(--muted);font-size:9pt;margin:1mm 0 0}
+.share{background:#f7f1e8;border-left:2px solid var(--accent);
+       padding:2mm 3mm;margin:2mm 0;font-size:10pt}
+.share b{font-size:13pt;color:var(--accent)}
+.todo{padding-left:5mm;font-size:10pt}
+.todo > li{margin:0 0 2mm}
+.todo .sub{display:block;margin:0}
+.todo ul{font-size:9pt;color:var(--muted)}
 .counts{display:flex;flex-wrap:wrap;gap:2mm 6mm;font-size:9.5pt;
         color:var(--muted);margin:2mm 0}
 .counts b{color:var(--ink);font-weight:600}
@@ -125,8 +135,86 @@ def _kinlist(graph, ids: list[str], empty: str) -> str:
     return "<ul>" + "".join(out) + "</ul>"
 
 
+def _origins(graph, pid: str, declared: Optional[dict] = None) -> str:
+    """Where their family came from, on paper.
+
+    Says "worked out" or "recorded" every time. A percentage on a printed
+    sheet with no qualification beside it will be read in twenty years as
+    something somebody measured, and this is arithmetic over a family tree.
+    """
+    if declared is None:
+        declared = {q: dict(x.heritage) for q, x in graph.people.items()
+                    if x.heritage}
+    mix = heritage_of(graph, declared, pid)
+    if not mix:
+        return ""
+    rows = heritage_display(mix)
+    said = "Recorded for them" if declared.get(pid) else \
+           "Worked out from what is recorded further up — a generalisation"
+    return ("<h2>Where they came from</h2><ul class=plain>"
+            + "".join(f"<li><b>{r['pct']}%</b> {esc(r['label'])}</li>"
+                      for r in rows)
+            + f"</ul><p class=note>{said}, not a test result.</p>")
+
+
+def _bloodline(graph, pid: str, subject: Optional[str]) -> str:
+    """The direct line with the DNA share at each step, as a table.
+
+    A TABLE AND NOT THE LITTLE TREE THE SCREEN DRAWS. Four generations of
+    boxes are 320 pixels wide and legible on a panel; printed, the same
+    thing is a postage stamp in the corner of an A4 sheet. On paper the
+    seats read down a column, which is also what you can tick off in an
+    archive.
+    """
+    seats = bloodline(graph, pid, depth=4)
+    if len(seats) <= 1:
+        return ""
+    names = ["", "Parents", "Grandparents", "Great-grandparents"]
+    out = []
+    for gen in range(1, 4):
+        here = [s for s in seats if s["gen"] == gen]
+        if not any(s["id"] for s in here):
+            continue
+        pct = dna_display(0.5 ** gen)
+        out.append(f"<h3>{names[gen]} — {pct} each</h3><ul>"
+                   + "".join(
+                       f"<li>{esc(s['name'])}"
+                       + (f" <span class=sub>{esc(s['life'])}</span>"
+                          if s["life"] else "")
+                       + "</li>" if s["id"] else
+                       "<li class=none>not known</li>" for s in here)
+                   + "</ul>")
+    share = shared_dna(graph, subject, pid) if subject and subject != pid else None
+    head = ""
+    if share is not None:
+        who = graph.people[subject].full_name if subject in graph.people else "you"
+        head = (f"<p class=share><b>{dna_display(share)}</b> expected shared "
+                f"DNA with {esc(who)}. An average, not a measurement — real "
+                f"DNA varies either side of it.</p>")
+    return "<h2>Bloodline</h2>" + head + "".join(out)
+
+
+def _next_steps(graph, pid: str) -> str:
+    """What is worth going and looking up about this person.
+
+    On the sheet you take to the record office, which is the whole point of
+    printing one.
+    """
+    from ..analysis.gaps import for_person
+    gs = for_person(graph, pid)[:4]
+    if not gs:
+        return ""
+    out = []
+    for g in gs:
+        where = ("<ul>" + "".join(f"<li>{esc(w)}</li>" for w in g["where"])
+                 + "</ul>") if g["where"] else ""
+        out.append(f"<li><b>{esc(g['question'])}</b>"
+                   f"<div class=sub>{esc(g['why'])}</div>{where}</li>")
+    return "<h2>Where to look next</h2><ol class=todo>" + "".join(out) + "</ol>"
+
+
 def profile(graph, con, pid: str, *, kin: Optional[Kinship] = None,
-            photos=None) -> str:
+            photos=None, declared=None) -> str:
     """One person, everything known about them, on one sheet."""
     p = graph.people[pid]
     k = kin.of(pid) if kin else None
@@ -189,7 +277,10 @@ def profile(graph, con, pid: str, *, kin: Optional[Kinship] = None,
   <h3>Brothers and sisters</h3>
   {_kinlist(graph, siblings_of(graph, pid), 'None recorded.')}
   {''.join(fams) or ''}
+  {_origins(graph, pid, declared)}
+  {_bloodline(graph, pid, kin.subject if kin else None)}
   {gallery}
+  {_next_steps(graph, pid)}
 </article>"""
 
 
@@ -211,8 +302,12 @@ def everybody(graph, con, ids: list[str], *, kin=None, photos_for=None,
     body = [f"<h1>{esc(title or 'Family profiles')}</h1>"
             f"<p class=sub>{len(ids)} people. One to a page.</p>"
             f"<div style='page-break-after:always;break-after:page'></div>"]
+    # Gathered once. Read per person it is a scan of the whole file for each
+    # of four hundred sheets, which turned "print everybody" into a wait.
+    declared = {q: dict(x.heritage) for q, x in graph.people.items()
+                if x.heritage}
     for pid in ids:
-        body.append(profile(graph, con, pid, kin=kin,
+        body.append(profile(graph, con, pid, kin=kin, declared=declared,
                             photos=(photos_for(pid) if photos_for else [])))
     return page(title or "Family profiles", "".join(body), note=title)
 

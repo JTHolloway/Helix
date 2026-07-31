@@ -4,7 +4,10 @@ Helix began as a way to lay a family out and cut it into wood. This is the
 other half: somewhere to put what you know about the people on it, and to
 read the file rather than only render it.
 
-Four features, and all four are the same one underneath.
+Seven features, and every one of them reads the same measurement
+underneath: the relatives sidebar, narrowing a chart by relation, the
+profile, the highlighting, where a family came from, how much blood two
+people share, and what is worth going and looking up next.
 
 ---
 
@@ -217,6 +220,150 @@ file useful to more than one person in it.
 
 ---
 
+### Everything is editable from the profile
+
+Name, surname, sex, dates, places, occupation, education and notes, in the
+same panel that shows the relation and the photograph — because the moment
+you find out somebody's middle name is the moment you are looking at them,
+not the moment you go and find the Build screen.
+
+One save changes it **everywhere**: the chart is redrawn, the relatives
+sidebar reloaded, and every printout picks it up. Written to one of the
+three and not the others, a file quietly holds two versions of the same
+person.
+
+The absent-versus-empty rule (rule 10) is what makes this safe. The form
+sends only the fields that changed; a key that never arrives means "leave
+this alone" and an empty string means "clear it". Sent the same way, saving
+a birthplace wiped the birth date beside it.
+
+---
+
+## Where they came from
+
+`person_heritage` holds what somebody was **told**: `{person, label, share}`.
+`kinship.heritage_of` works out what everybody below them inherits — half
+from each parent, recursively, so a grandmother recorded as Irish makes her
+grandchild 25% Irish and two of them make it 50%.
+
+Three rules, and each of them was a decision:
+
+* **A computed share is never written to a row.** It would go stale the day
+  a great-grandparent is added. It is derived on every read, from the
+  declarations only.
+* **A person's own declaration wins outright** over anything they would have
+  inherited. Recording that your grandmother was Irish is a statement about
+  *her*, not a guess to be averaged with her parents'.
+* **The remainder is named, not hidden.** "62% Irish" on its own reads as a
+  rounding error; *"62% Irish, 38% not recorded"* reads as research still to
+  do, which is what it is. `heritage_display` adds that row.
+
+It is a generalisation and the interface says so every time it shows a
+number — on screen and on paper. It assumes a person's heritage is exactly
+the average of their parents', which is a reasonable way to talk about a
+family and not a fact about anybody's genome.
+
+Typed as a sentence rather than built out of repeating rows, because that is
+how anybody says it: "half Irish, half Scottish" is one statement. `Irish`
+means all of it; `Irish, Scottish` splits evenly; `Irish 75, Scottish 25` is
+taken as typed.
+
+---
+
+## How much blood: `shared_dna`
+
+The expected share of autosomal DNA, `0.5 ** steps`, **doubled when both
+members of the couple at the top are shared**. That doubling is the whole of
+the difference between a full relation and a half one, and it is why the
+number cannot be read off the label — a full aunt and a half-uncle are both
+filed under "aunts and uncles" and they are 25% and 12.5%.
+
+| Relation | Share |
+|---|---|
+| parent, child, full sibling | 50% |
+| grandparent, full aunt or uncle, half sibling | 25% |
+| great-grandparent, first cousin, half-uncle | 12.5% |
+| first cousin once removed, half-first-cousin | 6.25% |
+| second cousin | 3.13% |
+
+**Expected, never measured.** Two brothers share 50% on average and
+anywhere from about 38% to 61% in fact; beyond second cousins a pair may
+share none at all. Every place the number appears says so — a bare
+percentage beside a cousin's name will be read as a test result, and on a
+printed sheet it will still be there in twenty years with nobody left to ask.
+
+`dna_display` keeps two decimals and rounds half **up**. Every value here is
+`2^-n` or twice it, so one decimal turns the exact 6.25 of a
+half-first-cousin into "6.2" — a number that is neither right nor
+convincing — and Python's default half-to-even makes 3.125 into "3.12" when
+every table of cousin percentages ever printed says 3.13.
+
+### The little tree
+
+`bloodline(graph, pid, depth)` returns the direct ancestry with the share at
+every seat, numbered as an **Ahnentafel**: 1 is the person, 2 their father,
+3 their mother, `2n` and `2n+1` the parents of `n`.
+
+**Empty seats are returned, not skipped.** A hole with an address is a
+research gap; a tree that quietly closes up around it says the line ended
+when it has only stopped. The panel draws them dashed and counts what they
+cost — *"6 of 15 seats are empty — 50% of their ancestry with nobody's name
+on it yet"* — and only the **frontier** counts towards that percentage. Four
+unknown great-grandparents sitting behind two unknown grandparents are the
+same missing half counted twice, which once made a half-recorded ancestry
+read as 100% unknown.
+
+Three generations by default, because four columns of legible names do not
+fit a 330px panel: drawn anyway they either ran off the edge, so the
+great-grandparents could not be seen at all, or shrank the type until
+nothing could be read. The fourth is one click away and earns its column by
+shrinking the boxes.
+
+---
+
+## Where to look next: `helix/analysis/gaps.py`
+
+The chart as a to-do list, which is the difference between a poster and a
+working research tool.
+
+```
+score = reach * findability(year, kind, country) / effort
+```
+
+* **reach** — how many people are standing behind the gap. A missing 1790
+  birth that blocks 400 descendants beats a missing 1890 occupation that
+  blocks nobody. Ancestors of the subject are weighted up again: "blocks my
+  own line" is what somebody means by asking where to look next.
+* **findability** — England & Wales civil registration from July 1837,
+  censuses 1841–1921, parish registers from 1538 with the Commonwealth gap
+  1642–1660; Scotland statutory from 1855 and far richer; Ireland weighted
+  down for 1922. Deliberately coarse: 0.9 means "the register almost
+  certainly survives", not "you will find them".
+* **effort** — free online (1) through a record-office visit (5).
+
+**Why three factors and not one.** Ranked by reach alone the list opens with
+a 1600s couple whose records burned; ranked by findability alone it opens
+with a great-aunt's middle name. The product puts a findable, cheap,
+high-reach question at the top — the only kind worth doing on a Saturday
+morning.
+
+**Every question says where to go and look**, by name, and never returns an
+empty list: rule 8 applies to a research prompt as much as to an error, and
+a question with nowhere to look is a nag. **Every question also says who it
+is about** — two ancestors recorded as nothing but "Harris" produce two
+identical lines, and the relation is what tells them apart.
+
+Scoped like everything else: ask for the gaps while looking at a chart
+narrowed to first cousins and you get the gaps on that chart. A to-do list
+about somebody who is not on screen is a list nobody acts on. Pass `all=1`
+for the whole file.
+
+The headline is worked out over the **whole** ranked list before it is cut,
+or a panel showing six would report "2 lines stop here" of a file with
+forty-one.
+
+---
+
 ## Printing
 
 `/print/profile?id=…`, `/print/profiles`, `/print/outline`.
@@ -244,7 +391,9 @@ what you take to an archive.
 ## Where things live
 
 ```
-helix/graph/kinship.py     the measurement, the groups, the filter
+helix/graph/kinship.py     the measurement, the groups, the filter,
+                           shared DNA, the bloodline seats, heritage
+helix/analysis/gaps.py     what is worth looking up next, ranked
 helix/store/album.py       photographs on disk
 helix/render/dossier.py    profiles and the outline, as HTML
 helix/web/js/relatives.js  the tabs
@@ -264,7 +413,15 @@ tests/test_ancestry.py     all of it over real HTTP
 | `GET /api/media?name=` | a stored photograph |
 | `POST /api/person/photo` | add one, as a `data:` URL |
 | `POST /api/person/photo/remove` | take it off a person; the file stays |
+| `POST /api/person` | edit anything about them, from the profile |
+| `POST /api/person/heritage` | where their family came from, as a whole list |
+| `GET /api/gaps` | where more research is needed, ranked |
 | `GET /print/profile\|profiles\|outline` | pages meant for paper |
+
+`/api/person` also carries `heritage` (declared and inherited), `dna` (the
+share and the bloodline seats) and `gaps` (the five worth doing about that
+person). `/api/gaps` takes `limit`, `country`, `all=1`, and the same scoping
+parameters as the chart.
 
 Every chart route (`/api/plan`, `/api/svg`) accepts the filter, either as
 `kin=<json>` or as plain parameters: `max_cousin_degree`, `max_removal`,

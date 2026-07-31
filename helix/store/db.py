@@ -24,7 +24,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 _SCHEMA = Path(__file__).with_name("schema.sql")
 
 
@@ -51,6 +51,25 @@ MIGRATIONS: dict[int, list[str]] = {
         "ALTER TABLE change_log ADD COLUMN undone INTEGER NOT NULL DEFAULT 0",
         "CREATE INDEX IF NOT EXISTS ix_log_batch ON change_log(batch)",
         "CREATE INDEX IF NOT EXISTS ix_log_undone ON change_log(undone,id)",
+    ],
+    3: [
+        # v4 records where a person's family came from. A weight rather than
+        # a tag, because somebody can be half one thing and half another and
+        # a tag cannot say so; a table rather than a column, because most
+        # people have one and some have four.
+        #
+        # Recorded on whoever is KNOWN to have it. Everyone below inherits
+        # the average of their parents, which `graph.kinship.heritage_of`
+        # works out and never writes down -- a computed value in a row is a
+        # value that goes stale the moment somebody adds a grandparent.
+        """CREATE TABLE IF NOT EXISTS person_heritage (
+             person_id TEXT NOT NULL REFERENCES person(id) ON DELETE CASCADE,
+             label     TEXT NOT NULL,
+             share     REAL NOT NULL DEFAULT 1.0,
+             notes     TEXT,
+             PRIMARY KEY (person_id, label)
+           )""",
+        "CREATE INDEX IF NOT EXISTS ix_herit_person ON person_heritage(person_id)",
     ],
 }
 

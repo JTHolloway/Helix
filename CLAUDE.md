@@ -2,7 +2,7 @@
 
 A genealogy program that renders family trees as laser-cuttable charts, and
 keeps everything you know about the people on them. Python 3.11+, **zero
-required dependencies**, 419 tests.
+required dependencies**, 442 tests.
 
 ## Read this before anything else
 
@@ -32,10 +32,12 @@ writer first.
 **It is also an ancestry program now, not only a chart generator.**
 `helix/graph/kinship.py` is the keystone: it turns "how are we related" into
 structure — steps up, steps down, cousin degree, removal, a stable group key
-— and four features read it rather than each deciding for themselves what a
+— and seven features read it rather than each deciding for themselves what a
 cousin is. The relatives sidebar, narrowing a chart by relation, the profile
-panel with its photograph and facts, and the highlighting. Read
-**`docs/ANCESTRY.md`** before touching any of it.
+panel with its photograph and facts, the highlighting, where a family came
+from, how much DNA two people are expected to share, and what is worth
+looking up next (`helix/analysis/gaps.py`). Read **`docs/ANCESTRY.md`**
+before touching any of it.
 
 Two rules from there that reach into the layout:
 
@@ -78,7 +80,7 @@ Then read, in this order:
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 295 tests, must stay green
+python3 -m pytest tests -q      # 442 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 

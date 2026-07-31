@@ -40,6 +40,7 @@ relative he is married to, and sorts next to them.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 # ------------------------------------------------------------------ groups --
@@ -638,3 +639,176 @@ def narrow(graph, subject: Optional[str], filt: KinFilter,
                      if d in people and d not in keep}
         below[pid] = len(seen)
     return Narrowed(keep, elided, below, per_union, added)
+
+
+# ------------------------------------------------------------------- DNA ----
+#
+# HOW MUCH OF YOUR DNA SOMEBODY SHARES, from where they stand in the tree.
+# This is the coefficient of relationship, and it falls straight out of the
+# same two numbers everything else here reads.
+#
+#     you and a parent .......  50%     (1, 0)
+#     you and a full sibling .  50%     (1, 1), two shared ancestors
+#     you and a half sibling .  25%     (1, 1), one shared ancestor
+#     you and a grandparent ..  25%     (2, 0)
+#     you and an aunt ........  25%     (2, 1)
+#     you and a first cousin .  12.5%   (2, 2)
+#
+# One rule produces all of them: halve for every step of the path, and
+# double it when the path runs through a COUPLE both of whom you descend
+# from, because there are then two paths and not one. That is exactly the
+# difference between a brother and a half-brother.
+#
+# WHAT THIS IS NOT. It is an average, not a measurement. Beyond parents and
+# children, inheritance is a lottery: real first cousins share anywhere from
+# about 7% to 18%, and past third cousins two people can genuinely share
+# none at all while being related exactly as the chart says. Every screen
+# that shows this number has to say so, or it reads as a test result.
+def shared_dna(graph, a: str, b: str, kin: Optional[Kin] = None) -> Optional[float]:
+    """Expected share of autosomal DNA, 0..1. None if not blood relatives."""
+    if a == b:
+        return 1.0
+    k = kin if kin is not None else Kinship(graph, a).of(b)
+    if not k.blood or k.steps >= 99:
+        return None
+    if k.up == 0 or k.down == 0:            # a straight line up or down
+        return 0.5 ** k.steps
+    return _paths(graph, a, b, k.up, k.down) * 0.5 ** k.steps
+
+
+def _paths(graph, a: str, b: str, up: int, down: int) -> int:
+    """How many of the shared ancestors at this distance both descend from.
+
+    Two, for a full sibling: mother and father. One, for a half sibling. It
+    is the only thing that tells the two apart, and it is worth double the
+    DNA.
+    """
+    A, B = graph.ancestors(a), graph.ancestors(b)
+    shared = [x for x in A if x in B and A[x] == up and B[x] == down]
+    return max(1, min(2, len(shared)))
+
+
+def dna_display(share: Optional[float]) -> str:
+    """A percentage somebody can read, and never more precision than the
+    number deserves. 50%, 12.5%, 6.25%, 3.13%, 0.78% -- not 0.78125%.
+
+    TWO DECIMALS AND NOT ONE, because every value here is 2^-n or twice it,
+    and one decimal turns the exact 6.25 of a half-first-cousin into "6.2" --
+    a number that is not right and does not look right either. Rounded to
+    none at all, an earlier version made a first cousin "12%" and lost the
+    half that is the whole point: 12.5 is a cousin and 12 is nothing in
+    particular.
+
+    HALF UP, not Python's half-to-even, for the same reason. `f"{3.125:.2f}"`
+    is "3.12"; every table of cousin percentages ever printed says 3.13.
+    """
+    if share is None:
+        return ""
+    pct = Decimal(share) * 100
+    if pct < Decimal("0.01"):
+        return "under 0.01%"
+    q = pct.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return f"{q}".rstrip("0").rstrip(".") + "%"
+
+
+def bloodline(graph, pid: str, depth: int = 4) -> list[dict]:
+    """Somebody's direct ancestry with the DNA share at every step.
+
+    Half from each parent, a quarter from each grandparent, an eighth from
+    each great-grandparent. The shape people already have in their heads,
+    which is why it is worth drawing small on a profile: it says at a glance
+    where somebody's DNA came from and which of those seats are empty.
+
+    Positions are numbered as in an Ahnentafel -- 1 is the person, 2 their
+    father, 3 their mother, 2n and 2n+1 the parents of n -- so an empty seat
+    is a hole in the research with an address, not a missing item in a list.
+    """
+    out: list[dict] = []
+    seats = {1: pid}
+    for slot in range(1, 2 ** depth):
+        gen = slot.bit_length() - 1
+        here = seats.get(slot)
+        row = {"slot": slot, "gen": gen, "share": 0.5 ** gen,
+               "id": here, "name": "", "life": "", "sex": ""}
+        if here and here in graph.people:
+            p = graph.people[here]
+            row.update(name=p.full_name, life=p.lifespan, sex=p.sex)
+            pars = graph.parents(here, primary_only=True) or graph.parents(here)
+            pars = [x for x in pars if x in graph.people]
+            father = next((x for x in pars if graph.people[x].sex == "M"), None)
+            mother = next((x for x in pars if graph.people[x].sex == "F"), None)
+            rest = [x for x in pars if x not in (father, mother)]
+            if father is None and rest:
+                father = rest.pop(0)
+            if mother is None and rest:
+                mother = rest.pop(0)
+            if father:
+                seats[slot * 2] = father
+            if mother:
+                seats[slot * 2 + 1] = mother
+        out.append(row)
+    return out
+
+
+# ------------------------------------------------------------- heritage ----
+#
+# WHERE SOMEBODY CAME FROM, carried down the tree the same way DNA is. An
+# Irish grandmother makes you a quarter Irish; two of them make you half.
+# Recorded on whoever is known to have it and inherited by everybody below.
+#
+# THIS IS A GENERALISATION AND THE INTERFACE MUST SAY SO. It assumes a
+# person's heritage is exactly the average of their parents', which is a
+# reasonable way to talk about a family and not a fact about anybody's
+# genome. Where a parent is unrecorded that half is simply unaccounted for,
+# which is the honest answer -- not something to normalise away, because the
+# gap is the interesting part.
+def heritage_of(graph, declared: dict, pid: str,
+                depth: int = 12) -> dict[str, float]:
+    """The mix somebody inherits, as {label: share}, shares summing to <= 1.
+
+    `declared` is {person: {label: share}} -- what somebody has been told
+    about directly. A person's OWN declaration wins outright over anything
+    inherited: recording that your grandmother was Irish is a statement
+    about her, not a guess to be averaged with her parents'.
+    """
+    seen: dict[str, dict[str, float]] = {}
+
+    def walk(who: str, left: int) -> dict[str, float]:
+        if who in seen:
+            return seen[who]
+        mine = declared.get(who)
+        if mine:
+            seen[who] = dict(mine)
+            return seen[who]
+        if left <= 0:
+            seen[who] = {}
+            return seen[who]
+        seen[who] = {}                       # guard against a cycle in the file
+        pars = [x for x in (graph.parents(who, primary_only=True)
+                            or graph.parents(who)) if x in graph.people][:2]
+        out: dict[str, float] = {}
+        for par in pars:
+            for label, share in walk(par, left - 1).items():
+                out[label] = out.get(label, 0.0) + share / 2.0
+        seen[who] = out
+        return out
+
+    got = walk(pid, depth)
+    return {k: v for k, v in sorted(got.items(), key=lambda kv: -kv[1])
+            if v > 0.0005}
+
+
+def heritage_display(mix: dict[str, float]) -> list[dict]:
+    """Ready to show: label, percentage, and what is unaccounted for.
+
+    The remainder is named rather than hidden. "62% Irish" with nothing else
+    on the line reads as a rounding error; "62% Irish, 38% not recorded"
+    reads as research still to do, which is what it is.
+    """
+    out = [{"label": k, "share": v, "pct": round(v * 100, 1)}
+           for k, v in mix.items()]
+    known = sum(x["share"] for x in out)
+    if known < 0.999:
+        out.append({"label": "not recorded", "share": 1 - known,
+                    "pct": round((1 - known) * 100, 1), "gap": True})
+    return out

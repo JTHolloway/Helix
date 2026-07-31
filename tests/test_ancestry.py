@@ -448,3 +448,237 @@ def test_every_design_says_what_it_left_off(family):
                      max_cousin_degree=0)
         el = plan["meta"]["extra"].get("elided")
         assert el and el["people"] > 0, f"{design} says nothing about what it cut"
+
+
+# ---------------------------------------------------------- where they came from
+def test_a_grandmother_recorded_as_irish_makes_you_a_quarter_irish(family):
+    """The example the whole feature exists for. Recorded on one
+    grandmother, a quarter of it should arrive on her grandchild -- and the
+    other three quarters should be NAMED as unrecorded rather than quietly
+    dropped, because "25% Irish" beside nothing reads as a rounding error
+    and "25% Irish, 75% not recorded" reads as research still to do."""
+    c, ids, _db = family
+    gran = [p["id"] for p in c.get("relatives")["groups"][0]["people"]]  # noqa
+    kath = next(p["id"] for grp in c.get("relatives")["groups"]
+                for p in grp["people"] if p["name"] == "Kathleen Holloway")
+    c.post("person/heritage", {"id": kath, "heritage": [{"label": "Irish"}]})
+
+    her = c.get("person", id=kath)["heritage"]
+    assert her["declared"] == [{"label": "Irish", "share": 1.0, "pct": 100.0}]
+    assert her["inherited"] is False
+
+    mine = c.get("person", id=ids["me"])["heritage"]
+    assert mine["inherited"] is True
+    assert {m["label"]: m["pct"] for m in mine["mix"]} == {
+        "Irish": 25.0, "not recorded": 75.0}
+
+    dad = c.get("person", id=ids["dad"])["heritage"]
+    assert {m["label"]: m["pct"] for m in dad["mix"]}["Irish"] == 50.0
+
+
+def test_two_heritages_split_evenly_unless_you_say_otherwise(family):
+    c, ids, _db = family
+    me = ids["me"]
+    c.post("person/heritage", {"id": me, "heritage": [
+        {"label": "Irish"}, {"label": "Scottish"}]})
+    got = {m["label"]: m["pct"] for m in c.get("person", id=me)["heritage"]["mix"]}
+    assert got == {"Irish": 50.0, "Scottish": 50.0}
+
+    c.post("person/heritage", {"id": me, "shares_given": True, "heritage": [
+        {"label": "Irish", "share": 0.75}, {"label": "Scottish", "share": 0.25}]})
+    got = {m["label"]: m["pct"] for m in c.get("person", id=me)["heritage"]["mix"]}
+    assert got == {"Irish": 75.0, "Scottish": 25.0}
+
+
+def test_a_persons_own_heritage_beats_what_they_would_inherit(family):
+    """Recording that somebody was Irish is a statement about THEM, not a
+    guess to be averaged with their parents'."""
+    c, ids, _db = family
+    c.post("person/heritage", {"id": ids["gran"],
+                               "heritage": [{"label": "Cornish"}]})
+    c.post("person/heritage", {"id": ids["dad"],
+                               "heritage": [{"label": "Irish"}]})
+    got = {m["label"]: m["pct"]
+           for m in c.get("person", id=ids["dad"])["heritage"]["mix"]}
+    assert got == {"Irish": 100.0}
+
+
+def test_heritage_can_be_undone(family):
+    c, ids, _db = family
+    c.post("person/heritage", {"id": ids["me"], "heritage": [{"label": "Irish"}]})
+    assert c.get("person", id=ids["me"])["heritage"]["declared"]
+    c.post("undo", {})
+    assert c.get("person", id=ids["me"])["heritage"]["declared"] == []
+
+
+# ------------------------------------------------------------------- DNA ---
+def test_how_much_dna_you_share_with_each_relation(family):
+    """Halved at every step, and doubled again when BOTH members of the
+    couple at the top are shared. That doubling is the whole of the
+    difference between a full relation and a half one, and it is why the
+    number cannot be read off the label: `Sarah` and `Martin` are both
+    filed as your aunt and uncle and they are 25% and 12.5%."""
+    c, ids, _db = family
+    # A full aunt: a sibling of your father, so both grandparents are shared.
+    # Added here rather than in the fixture so nothing else shifts under it.
+    add(c, "Sarah", "Holloway", ids["dad"], "sibling", birth="1965", sex="F")
+    want = {"David Holloway": "50%",       # father
+            "Anthony Holloway": "50%",     # full brother, both parents
+            "Peter Holloway": "25%",       # grandfather
+            "Sarah Holloway": "25%",       # full aunt, both grandparents
+            "Thomas Holloway": "12.5%",    # great-grandfather
+            "Martin Holloway": "12.5%",    # half-uncle: Peter only
+            "Alice Holloway": "6.25%",     # his daughter, a half-first-cousin
+            "Doreen Holloway": "3.13%"}    # great-uncle's daughter
+    for grp in c.get("relatives")["groups"]:
+        for p in grp["people"]:
+            if p["name"] in want:
+                got = c.get("person", id=p["id"])["dna"]["display"]
+                assert got == want[p["name"]], f"{p['name']}: {got}"
+
+
+def test_the_percentage_keeps_the_precision_that_means_something(family):
+    """6.25 is a half-first-cousin. "6.2" is neither right nor convincing,
+    and "6%" has thrown away the part that identifies the relation."""
+    c, ids, _db = family
+    from helix.graph.kinship import dna_display
+    assert dna_display(0.5) == "50%"
+    assert dna_display(0.125) == "12.5%"
+    assert dna_display(0.0625) == "6.25%"
+    assert dna_display(0.03125) == "3.13%"      # half up, not half to even
+    assert dna_display(0.0000001) == "under 0.01%"
+    assert dna_display(None) == ""
+
+
+def test_somebody_married_in_shares_no_dna(family):
+    c, ids, _db = family
+    laura = next(p["id"] for grp in c.get("relatives")["groups"]
+                 for p in grp["people"] if p["name"] == "Laura Holloway")
+    assert c.get("person", id=laura)["dna"]["share"] is None
+    assert c.get("person", id=laura)["dna"]["display"] == ""
+
+
+def test_the_bloodline_seats_are_numbered_like_an_ahnentafel(family):
+    """1 is the person, 2 the father, 3 the mother, 2n and 2n+1 the parents
+    of n. An empty seat is a hole in the research WITH AN ADDRESS, which is
+    why the empty ones are returned rather than skipped."""
+    c, ids, _db = family
+    bl = c.get("person", id=ids["me"])["dna"]["bloodline"]
+    seats = {r["slot"]: r for r in bl}
+    assert len(bl) == 15
+    assert seats[1]["name"] == "James Holloway" and seats[1]["share"] == 1.0
+    assert seats[2]["name"] == "David Holloway" and seats[2]["share"] == 0.5
+    assert seats[3]["name"] == "Michaela Reed"
+    assert seats[4]["name"] == "Peter Holloway" and seats[4]["share"] == 0.25
+    assert seats[5]["name"] == "Kathleen Holloway"
+    assert seats[8]["name"] == "Thomas Holloway" and seats[8]["share"] == 0.125
+    assert seats[6]["id"] is None            # Michaela's father, not recorded
+    assert seats[6]["share"] == 0.25
+
+
+# ------------------------------------------------------- where to look next --
+def test_the_research_list_ranks_a_blocked_line_above_a_missing_occupation(family):
+    c, ids, _db = family
+    d = c.get("gaps", limit=200)
+    kinds = [g["kind"] for g in d["gaps"]]
+    assert "parents" in kinds
+    first_parents = kinds.index("parents")
+    if "occupation" in kinds:
+        assert first_parents < kinds.index("occupation")
+    assert d["summary"]["count"] == d["total"] > d["shown"] or d["total"] == d["shown"]
+    assert "stop" in d["summary"]["headline"] or d["summary"]["count"]
+
+
+def test_every_research_question_says_where_to_look(family):
+    """Rule 8: an error message -- or a prompt -- that does not say what to
+    do next is a nag."""
+    c, ids, _db = family
+    for g in c.get("gaps", limit=25)["gaps"]:
+        assert g["question"].endswith("?")
+        assert g["why"]
+        assert g["where"], f"{g['question']} says nowhere to look"
+
+
+def test_the_research_list_follows_the_chart_not_the_whole_file(family):
+    """Ask for the gaps while looking at a chart narrowed to first cousins
+    and you get the gaps on that chart. A to-do list about somebody who is
+    not on screen is a list nobody acts on."""
+    c, ids, _db = family
+    wide = c.get("gaps", limit=500, focus="all")
+    narrow = c.get("gaps", limit=500, focus="all", max_cousin_degree=0)
+    assert narrow["considered"] < wide["considered"]
+    assert narrow["scope"] == "this chart"
+    assert c.get("gaps", limit=500, **{"all": "1"})["scope"] == "everybody"
+
+
+def test_two_people_with_the_same_name_are_told_apart(family):
+    """The case the list is FOR: two ancestors recorded as nothing but a
+    surname produce two identical questions."""
+    c, ids, _db = family
+    gs = c.get("gaps", limit=200)["gaps"]
+    seen: dict[str, set] = {}
+    for g in gs:
+        seen.setdefault(g["question"], set()).add(g["pid"])
+    for q, pids in seen.items():
+        if len(pids) < 2:
+            continue
+        rels = {next(x["relation"] for x in gs if x["pid"] == p) for p in pids}
+        assert len(rels) == len(pids), f"{q} is ambiguous: {rels}"
+
+
+def test_a_profile_says_what_to_look_up_about_that_person(family):
+    c, ids, _db = family
+    gaps = c.get("person", id=ids["ggran"])["gaps"]
+    assert gaps and all(g["pid"] == ids["ggran"] for g in gaps)
+
+
+# ------------------------------------------------ editing from the profile --
+def test_a_name_corrected_in_the_profile_changes_everywhere(family):
+    """One save, and the chart, the sidebar and the printout all say the new
+    name. Written to only one of them, a file quietly holds two versions of
+    the same person."""
+    c, ids, _db = family
+    c.post("person", {"id": ids["uncle"], "given": "Martyn",
+                      "surname": "Hollowaye", "sex": "M"})
+    assert c.get("person", id=ids["uncle"])["name"] == "Martyn Hollowaye"
+    names = [p["name"] for grp in c.get("relatives")["groups"]
+             for p in grp["people"]]
+    assert "Martyn Hollowaye" in names and "Martin Holloway" not in names
+    plan = c.get("plan", design="radial_family", focus="all")
+    texts = [e.get("text", "") for e in plan["elements"] if e["kind"] == "text"]
+    assert any("Martyn" in t or "Hollowaye" in t for t in texts)
+    sheet = _fetch(c, f"/print/profile?id={ids['uncle']}")
+    assert "Martyn Hollowaye" in sheet
+
+
+def test_saving_one_field_from_the_profile_leaves_the_others_alone(family):
+    """The trap that cost a birth date: an absent key means 'leave this
+    alone' and an empty string means 'clear it'."""
+    c, ids, _db = family
+    before = c.get("person", id=ids["dad"])
+    c.post("person", {"id": ids["dad"], "birth_place": "Bath"})
+    after = c.get("person", id=ids["dad"])
+    assert after["birth_place"] == "Bath"
+    assert after["birth"] == before["birth"]
+    assert after["name"] == before["name"]
+
+
+# ----------------------------------------------------------- on paper ------
+def test_a_printed_profile_carries_the_heritage_dna_and_next_steps(family):
+    c, ids, _db = family
+    kath = next(p["id"] for grp in c.get("relatives")["groups"]
+                for p in grp["people"] if p["name"] == "Kathleen Holloway")
+    c.post("person/heritage", {"id": kath, "heritage": [{"label": "Irish"}]})
+    sheet = _fetch(c, f"/print/profile?id={ids['me']}")
+    assert "Where they came from" in sheet and "Irish" in sheet
+    assert "Bloodline" in sheet and "Grandparents" in sheet
+    assert "Where to look next" in sheet
+    # NEVER A BARE PERCENTAGE ON PAPER. Read in twenty years it would be
+    # taken for something somebody measured.
+    assert "not a test result" in sheet
+
+
+def test_printing_everybody_still_works_with_the_new_sections(family):
+    c, ids, _db = family
+    sheet = _fetch(c, "/print/profiles?all=1")
+    assert sheet.count("<article class=person>") == c.get("relatives")["total"]

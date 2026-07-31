@@ -59,6 +59,7 @@ KEYS: dict[str, tuple[str, ...]] = {
     # never true of anything.
     "media": ("id",),
     "media_link": ("media_id", "person_id", "event_id"),
+    "person_heritage": ("person_id", "label"),
 }
 
 ATTACHMENTS = ("father", "mother", "partner", "child", "sibling")
@@ -356,6 +357,51 @@ def update_person(con, body: dict) -> dict:
         if changes:
             e.update("person", {"id": pid}, changes)
     return {"ok": True, "id": pid, "warnings": warnings_for(con, pid)}
+
+
+def set_heritage(con, body: dict) -> dict:
+    """POST /api/person/heritage. Where this person's family came from.
+
+    A whole list at a time, because that is how somebody thinks about it --
+    "she was half Irish and half Scottish" is one statement, not two. Shares
+    are normalised only when they overshoot: somebody who says "Irish" and
+    nothing else means all of it, and somebody who says "Irish 50" means
+    half and does not want the other half invented for them.
+    """
+    pid = body["id"]
+    want: dict[str, float] = {}
+    for row in body.get("heritage") or []:
+        label = (row.get("label") or "").strip()
+        if not label:
+            continue
+        try:
+            share = float(row.get("share", 1.0))
+        except (TypeError, ValueError):
+            share = 1.0
+        want[label] = max(0.0, min(1.0, share))
+    if want and not body.get("shares_given"):
+        each = 1.0 / len(want)
+        want = {k: each for k in want}
+    total = sum(want.values())
+    if total > 1.0001:
+        want = {k: v / total for k, v in want.items()}
+
+    with Edit(con, f"Set heritage for {display_name(con, pid)}") as e:
+        have = {r["label"]: r["share"] for r in con.execute(
+            "SELECT label, share FROM person_heritage WHERE person_id=?", (pid,))}
+        for label in have:
+            if label not in want:
+                e.delete("person_heritage", {"person_id": pid, "label": label})
+        for label, share in want.items():
+            if label in have:
+                if abs(have[label] - share) > 1e-9:
+                    e.update("person_heritage",
+                             {"person_id": pid, "label": label},
+                             {"share": share})
+            else:
+                e.insert("person_heritage", {"person_id": pid, "label": label,
+                                             "share": share})
+    return {"ok": True, "id": pid}
 
 
 def retire(con, pid: str) -> dict:
