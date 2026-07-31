@@ -540,6 +540,8 @@ def _person_detail(st: State, pid: str) -> dict:
         "kin": kin.to_dict(),
         "counts": household(g, pid),
         "photos": album.photos_of(st.con, pid),
+        "missing": _missing(g, st.con, p),
+        "complete": _completeness(g, p),
         "relationship": kin.label if st.subject else "",
         "is_subject": pid == st.subject,
         "parents": [_brief(g, x) for x in g.parents(pid, False)],
@@ -585,6 +587,37 @@ def _families(g, pid: str) -> list[dict]:
             "partner": _brief(g, others[0]) if others else None,
             "children": [_brief(g, c) for c in u.children],
         })
+    return out
+
+
+def _missing(g, con, p) -> list[str]:
+    """What is NOT recorded about somebody, named rather than scored.
+
+    `_completeness` gives a percentage, which is the right thing for sorting
+    a list and the wrong thing to show a person: 43% tells you to feel bad
+    and not what to do. This says "no birth date, no parents, no
+    photograph", which is a next action.
+
+    Never a reproach and never a demand. Plenty of these will stay unknown
+    forever, and a file that nags about a great-grandmother nobody
+    photographed is a file people stop opening.
+    """
+    from .store import album
+    out = []
+    if not p.birth.known:
+        out.append("when they were born")
+    if not p.birth_place:
+        out.append("where they were born")
+    if p.living is not True and not p.death.known and (p.birth_year or 0) < 1930:
+        out.append("when they died")
+    if not g.parents(p.id, primary_only=False):
+        out.append("their parents")
+    if not p.occupation:
+        out.append("what they did")
+    if not album.portrait_of(con, p.id):
+        out.append("a photograph")
+    if not p.notes:
+        out.append("anything you remember")
     return out
 
 

@@ -17,6 +17,13 @@ without a legend. `python3 tools/diagnose_layout.py <file> --cells`.
 sequence at the end of `docs/DATA_ENTRY_UI.md` runs start to finish in the
 browser; `tests/test_records.py` drives the same sequence over HTTP.
 
+**The ancestry half is built.** Kinship as structure, a relatives sidebar,
+narrowing a chart by relation (which re-lays it out rather than hiding
+branches), profiles with photographs and facts, and printouts. See
+`docs/ANCESTRY.md`. It is not one of the three blockers below — those were
+about making the program usable at all — but it is what makes the file worth
+keeping between renders.
+
 **Start at Blocker 3.**
 
 ---

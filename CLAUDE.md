@@ -1,7 +1,8 @@
 # Helix — instructions for Claude Code
 
-A genealogy program that renders family trees as laser-cuttable charts.
-Python 3.11+, **zero required dependencies**, 295 tests.
+A genealogy program that renders family trees as laser-cuttable charts, and
+keeps everything you know about the people on them. Python 3.11+, **zero
+required dependencies**, 419 tests.
 
 ## Read this before anything else
 
@@ -28,6 +29,24 @@ built-in face in `helix/fab/strokefont.py`, reports islands, and runs a
 pre-flight that passes. **Next up is Blocker 3 in `BLOCKERS.md`** — GEDCOM,
 writer first.
 
+**It is also an ancestry program now, not only a chart generator.**
+`helix/graph/kinship.py` is the keystone: it turns "how are we related" into
+structure — steps up, steps down, cousin degree, removal, a stable group key
+— and four features read it rather than each deciding for themselves what a
+cousin is. The relatives sidebar, narrowing a chart by relation, the profile
+panel with its photograph and facts, and the highlighting. Read
+**`docs/ANCESTRY.md`** before touching any of it.
+
+Two rules from there that reach into the layout:
+
+* **Narrowing happens BEFORE the grid is built**, never after. Hiding a
+  branch afterwards leaves the chart arranged around a family that is no
+  longer on it. Removed from the cast list instead, the ordering search runs
+  again on what is left.
+* **A narrowed chart says what it left off.** You cannot tell a family of two
+  from a family of nine you narrowed down, so every marriage that lost
+  children carries a pruned-branch mark with the number.
+
 ## Do this first, before anything else
 
 ```bash
@@ -48,7 +67,10 @@ Then read, in this order:
 3. **`docs/DATA_ENTRY_UI.md`** — full spec for Blocker 1. Screens, endpoints,
    payloads, a ten-step acceptance sequence.
 4. **`docs/ARCHITECTURE.md`** — how the pieces fit, which way dependencies flow.
-5. **`docs/OPTIONS.md`** — every style token. Check here before adding an
+5. **`docs/ANCESTRY.md`** — the kinship model, narrowing, profiles,
+   photographs and printing. The half of the program that keeps a family
+   rather than drawing one.
+6. **`docs/OPTIONS.md`** — every style token. Check here before adding an
    option; it is probably already specified.
 
 `PROMPTS.md` holds the prompts the user will give you, in order.
@@ -82,6 +104,13 @@ hard way and each names the failure it prevents.
    is how. Undo of a person's creation does the same rather than deleting.
 8. **Every error message says what to do next.** No stack traces reach the
    user. `fab/preflight.py` is the standard.
+9. **One module decides what a cousin is.** `graph/kinship.py`. The sidebar,
+   the filter, the profile and the highlighting all read it. Written out
+   twice they drift, and somebody appears under "first cousins" and vanishes
+   when you allow first cousins.
+10. **An absent field is not an empty one.** A request that never mentions a
+    key means "leave this alone"; an empty string means "clear it". Read the
+    same way, saving a birthplace wiped the birth date beside it.
 
 ## Traps already hit — do not re-introduce them
 
@@ -102,6 +131,13 @@ hard way and each names the failure it prevents.
 - **`_auto_apexes` must exclude people who married in.** "Everyone with no
   known parents" includes every spouse, which gave 130 root sectors and an
   unreadable chart.
+- **A highlight rule must not set `fill` on linework.** The chart's paths are
+  drawn with `fill:none` and mean it; one rule setting both stroke and fill
+  turned the whole disc into a solid red shape.
+- **The window opens on `radial_family`.** It opened on `radial_rings` for a
+  long time, so the flagship — the design every layout document describes,
+  and the only one that draws the pruned-branch marks — was something you had
+  to go and find.
 
 ## Adding a design
 

@@ -388,3 +388,12 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 #canvas text[data-kin-group="grandchildren"]  {fill:#B08A3E!important}
 #canvas text.kin-centre{fill:var(--accent)!important;font-weight:800}
 #canvas path.kin-centre{stroke:var(--accent)!important;stroke-width:2.4}
+
+/* Named, not scored. A percentage tells somebody to feel bad; a list of the
+   things nobody has written down yet is a next action. */
+.missing{margin:14px 0;padding:9px 11px;background:var(--paper);
+  border:1px dashed var(--rule);border-radius:6px}
+.missing b{display:block;font-size:11.5px;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.missing p{margin:0;font-size:13px;color:var(--ink);line-height:1.45}
+.proacts + .proacts{margin-top:6px}

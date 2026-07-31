@@ -81,9 +81,22 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
 
       ${(d.photos || []).length > 1 ? gallery(d.photos) : ''}
 
+      ${(d.missing || []).length ? `
+        <div class="missing">
+          <b>Still to find out</b>
+          <p>${d.missing.map(esc).join(' · ')}</p>
+        </div>` : ''}
+
       <h4>Who is around them</h4>
       <div id="halo" class="halo"></div>
 
+      <div class="proacts">
+        ${d.is_subject ? '' :
+          `<button class="ghost wide" id="goSubject"
+            title="Redraw the whole chart with them at the centre, and read
+            every relation from where they stood">See the family from
+            ${esc(firstName(d.name))}'s side</button>`}
+      </div>
       <div class="proacts">
         <button class="ghost" id="goEdit">Edit this person</button>
         <button class="ghost" id="goPrint">Print this profile</button>
@@ -178,6 +191,16 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     } catch (e) { onToast(e.message); }
   });
 
+  const sub = host.querySelector('#goSubject');
+  if (sub) sub.addEventListener('click', async () => {
+    // WHOSE CHART IT IS, changed. Every relation on the screen is measured
+    // from one person, so this is not a camera move -- it re-reads the
+    // whole family from where somebody else stood. It is also the thing
+    // that makes a shared file useful to more than one person in it.
+    await post('subject', { id: pid });
+    onToast(`Now reading the family from ${firstName(d.name)}'s side.`);
+    onChanged && onChanged();
+  });
   host.querySelector('#goEdit').addEventListener('click', () => onEdit(pid));
   host.querySelector('#goPrint').addEventListener('click', () =>
     window.open(`/print/profile?id=${encodeURIComponent(pid)}`, '_blank'));
@@ -201,6 +224,10 @@ function gallery(photos) {
     `<figure><img src="/api/media?name=${encodeURIComponent(p.name)}" alt="">
       <button class="x" data-drop="${esc(p.media_id)}" title="Take this off
       this person">×</button></figure>`).join('') + '</div>';
+}
+
+function firstName(name) {
+  return (name || 'their').split(/\s+/)[0];
 }
 
 function initials(name) {
