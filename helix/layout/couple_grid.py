@@ -1141,9 +1141,23 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     if g.year_max - g.year_min < 20:
         g.year_max = g.year_min + 20
 
+    # WHAT WAS NARROWED AWAY, carried out to the engine. Only for people who
+    # are actually on this chart: a mark can only be drawn on somebody the
+    # reader can see, and a count against a person who is not here is a
+    # number with nowhere to go.
+    got = getattr(s, "narrowed", None)
+    if got is not None:
+        g.elided = {p: n for p, n in got.elided.items() if p in g.slots}
+        g.elided_below = {p: n for p, n in got.elided_below.items()
+                          if p in g.slots}
+        g.elided_union = {u: n for u, n in got.elided_union.items()
+                          if any(p in g.slots for p in graph.unions[u].partners)}
+
     missing = len(graph.people) - len(g.slots)
     if missing > 0:
+        why = ("the relations you chose to show" if g.elided
+               else f"you asked for '{s.focus}'")
         g.warnings.append(
-            f"{missing} people in the file are not on this chart, because you "
-            f"asked for '{s.focus}'. Choose 'all' to include everyone.")
+            f"{missing} people in the file are not on this chart, because "
+            f"{why}. Choose 'all' to include everyone.")
     return g

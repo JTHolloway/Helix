@@ -546,7 +546,19 @@ def _settle_sibling_rings(graph, scope: set[str], ring_of: dict[str, int]) -> No
 
 
 def _scope(graph, s: LayoutSettings, subj: str) -> set[str]:
-    """Who belongs on the chart."""
+    """Who belongs on the chart.
+
+    Two questions, asked in order. FOCUS picks the broad cast -- everyone
+    descended from an ancestor of mine, my direct line only, everybody in
+    the file. Then `s.kin`, if it is set, asks the narrower one: of those,
+    how distant a relative is worth drawing? See `graph.kinship.narrow`,
+    which also keeps the answer connected -- a tree cannot have a hole in
+    the middle of it.
+    """
+    return _kin_narrow(graph, s, subj, _by_focus(graph, s, subj))
+
+
+def _by_focus(graph, s: LayoutSettings, subj: str) -> set[str]:
     line = set(graph.ancestors(subj))
     keep = set(line)
     if s.focus in ("thread_siblings", "subtree", "bloodline", "all"):
@@ -561,3 +573,24 @@ def _scope(graph, s: LayoutSettings, subj: str) -> set[str]:
         keep |= set(graph.partners(pid))
     keep |= set(graph.descendants(subj))
     return keep
+
+
+def _kin_narrow(graph, s: LayoutSettings, subj: str, keep: set) -> set:
+    """The second gate: how distant a relative is worth drawing.
+
+    Kept apart from the focus modes above because the two questions are
+    genuinely different and people ask them separately -- "my blood
+    relatives" is one answer, "and not the fourth cousins" is another. It
+    also has to run in exactly one place, or the flagship chart and the
+    older designs would narrow differently.
+
+    The narrowing result is stashed on the settings so `build_grid` can put
+    the elision counts on the Grid without measuring them twice.
+    """
+    filt = getattr(s, "kin", None)
+    if filt is None or not getattr(filt, "active", False):
+        return keep
+    from ..graph.kinship import narrow
+    got = narrow(graph, subj, filt, within=keep)
+    s.narrowed = got                       # read by build_grid, then dropped
+    return got.keep

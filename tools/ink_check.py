@@ -194,7 +194,7 @@ def _coerce(v: str):
 
 
 def report(db, style_name, focus, engine, gap_mm, quiet=False,
-           panel=None, sets=()) -> dict:
+           panel=None, sets=(), kin=None) -> dict:
     g = build.load(connect(db, create=False, backup_daily=False))
     style = Style.load(style_name) if style_name else Style.load()
     if panel:
@@ -205,7 +205,7 @@ def report(db, style_name, focus, engine, gap_mm, quiet=False,
         k, _, v = s.partition("=")
         style.set(k.strip(), _coerce(v))
     st = LayoutSettings(engine=engine, subject_id=g.subject_id, focus=focus,
-                        cells=True)
+                        cells=True, kin=kin)
     plan = registry.get(engine).fn(g, st, style)
     # NOT the middle of the sheet. A fan is recentred on the box round its
     # own sector; measuring from the sheet centre put every radius tens of

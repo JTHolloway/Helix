@@ -30,6 +30,27 @@ class LayoutSettings:
     grandparents' whole families, your siblings, half-siblings, aunts,
     uncles, cousins, nieces and nephews -- and nobody else's in-laws.
     """
+    kin: Optional[object] = None
+    """A `graph.kinship.KinFilter`: how far the chart spreads, by RELATION.
+
+    Different from `focus`, which picks a broad cast -- everyone descended
+    from an ancestor of mine, say. This one asks the second question people
+    actually have: of those, how distant a relative is worth drawing? No
+    fourth cousins. No children of great-aunts. Cousins but not their
+    children.
+
+    Applied BEFORE the grid is built, never after, and that is the whole
+    point. Hiding a branch after the fact leaves the chart laid out around
+    a family that is no longer on it -- a gap where the cousins were, and
+    every angle still allotted as though they were coming back. Removed
+    from the cast list instead, `couple_grid`'s ordering search runs again
+    on what is left and finds the arrangement that is best for THIS chart.
+    """
+    narrowed: Optional[object] = None
+    """Set by `_scope` when `kin` did any narrowing: the `Narrowed` result,
+    so the grid can carry the elision counts out to the engine without
+    measuring what was cut a second time. Written by the scoping pass and
+    read by `build_grid`; nothing else should touch it."""
     max_people: Optional[int] = None
     redact_living: bool = False
     privacy_age_cutoff: int = 100
@@ -126,6 +147,15 @@ class Grid:
     # engine then draws, because a search that optimises a model the chart
     # does not follow is worse than no search at all.
     search: dict = field(default_factory=dict)
+    # WHO WAS LEFT OFF, and from whom. `elided[pid]` is how many of that
+    # person's children are not on this chart; `elided_below[pid]` is how
+    # many people in total hang from those children. The engine draws a mark
+    # carrying the number, because a chart that silently drops a branch is
+    # worse than one that never had it: you cannot tell a family of two from
+    # a family of nine you narrowed down.
+    elided: dict = field(default_factory=dict)
+    elided_below: dict = field(default_factory=dict)
+    elided_union: dict = field(default_factory=dict)
 
     def __iter__(self):
         for pid in self.order:

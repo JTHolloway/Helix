@@ -1043,6 +1043,44 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              dash=style.get("lines.marriage_dash", "1.6,1.2"),
                              person_id=a, role="married_across", z=7))
 
+    # ---- 5b. the branch that is not drawn ---------------------------------
+    #
+    # WHAT A NARROWED CHART OWES THE READER. Ask for a chart without cousins
+    # and the cousins come off -- but the chart must not then pretend they
+    # never existed. You cannot tell a family of two from a family of nine
+    # you narrowed down, and a chart that silently drops people is worse
+    # than one that never had them, because it reads as complete.
+    #
+    # So a marriage whose children were cut gets a PRUNED BRANCH: the stem
+    # starts out of the couple exactly where a real one would, goes a short
+    # way, and stops at a cross-tick with the number beside it. The stub
+    # says "this goes on"; the tick says "and it was cut here, deliberately";
+    # the number says how many. It is the mark a gardener leaves, and it
+    # needs no legend.
+    #
+    # Deliberately NOT a dotted line trailing off. On a laser the dots are
+    # islands that fall out of the sheet, and on paper a line that fades is
+    # indistinguishable from one the printer lost.
+    # Worked out here, drawn after the names, so the stub can book its
+    # corridor alongside the real stems and a name cannot land across it.
+    pruned: list[dict] = []
+    for uid, n_gone in sorted(getattr(g, "elided_union", {}).items()):
+        u = graph.unions.get(uid)
+        if not u:
+            continue
+        here = [p for p in u.partners if p in g.slots]
+        if not here or g.slots[here[0]].gen + 1 not in ring_r:
+            continue                    # nothing outside them to point into
+        anchor = max(here, key=lambda p: g.slots[p].row)
+        sl = g.slots[anchor]
+        r0 = max(min(rule_at.get(frozenset(here), rule_r(sl)),
+                     band_top(sl.gen)), rule_r(sl))
+        r0 = min(r0, ring_r[sl.gen + 1] - stem * 0.55 - lane_gap * 1.6)
+        pruned.append({"uid": uid, "anchor": anchor, "n": n_gone,
+                       "t": theta(sl.tc), "r0": r0,
+                       "r1": r0 + max(stem * 0.5, size * 1.1),
+                       "arc": sweep * abs(sl.t1 - sl.t0)})
+
     # ---- 6. names ---------------------------------------------------------
     placer = PolarLabelPlacer()
     # THE STEMS GO DOWN FIRST -- not drawn, reserved. A stem leaves its couple
@@ -1082,6 +1120,10 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     for job in jobs:
         placer.take(job["head"], job["r_from"],
                     max(job["r_arc"] - job["r_from"], 0.0), lw * 3.0)
+    # the pruned-branch stubs book theirs the same way: a name may move, a
+    # line saying "there are four more children here" may not
+    for pr in pruned:
+        placer.take(pr["t"], pr["r0"], pr["r1"] - pr["r0"], lw * 3.0)
     for sl in sorted(g, key=lambda x: (x.gen, x.tc, x.row)):
         person = graph.people[sl.pid]
         t = theta(sl.tc)
@@ -1098,7 +1140,47 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                            orientation=want_orient(sl.gen),
                            arc_available=arc)
 
+    # ---- 6b. and the branches that are not drawn --------------------------
+    #
+    # A PRUNED BRANCH: the stem starts out of the couple exactly where a real
+    # one would, goes a short way, and stops at a cross-tick with the number
+    # beside it. The stub says "this goes on", the tick says "and it was cut
+    # here, deliberately", the number says how many. It is the mark a
+    # gardener leaves and it needs no legend.
+    #
+    # Deliberately NOT a line trailing off into dots. On a laser the dots are
+    # islands that fall out of the sheet, and on paper a line that fades is
+    # indistinguishable from one the printer lost.
+    col_e = style.get("lines.elided_colour", style.get("type.colour", col))
+    for pr in pruned:
+        half = size * 0.42 / max(pr["r1"], 1e-3)
+        plan.add(Element(
+            kind="path", layer="ENGRAVE",
+            d=(G.polyline([G.polar(cx, cy, pr["r0"], pr["t"]),
+                           G.polar(cx, cy, pr["r1"], pr["t"])])
+               + G.arc_path(cx, cy, pr["r1"], pr["t"] - half, pr["t"] + half)),
+            stroke=col_e, stroke_width=lw * 0.7, fill="none",
+            person_id=pr["anchor"], union_id=pr["uid"], role="elided", z=9))
+        if style.get("labels.show", True) and style.get("lines.elided_count", True):
+            place_radial_label(
+                plan, placer, graph.people[pr["anchor"]],
+                [(f"+{pr['n']}", size * 0.72, col_e)],
+                # CLEAR OF THE STUB'S OWN CORRIDOR. Booked above so no name
+                # lands across the stub, that corridor also blocked the one
+                # thing that belongs at the end of it: at 0.3 of a text size
+                # the count fell inside its own reservation and every single
+                # one was dropped.
+                pr["t"], pr["r1"] + size * 0.8, cx, cy, style,
+                flip=_flip(pr["t"]) and face == "upright", face=face,
+                orientation="tangential",
+                arc_available=pr["arc"] * pr["r1"])
+
     plan.meta.extra["labels_hidden"] = placer.dropped
+    plan.meta.extra["elided"] = {
+        "marriages": len(pruned),
+        "people": sum(p["n"] for p in pruned),
+        "below": sum(getattr(g, "elided_below", {}).values()),
+    }
 
     # ---- 4b. a lane of its own for every elbow ----------------------------
     #
