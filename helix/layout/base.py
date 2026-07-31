@@ -120,6 +120,12 @@ class Grid:
     year_max: float = 2025.0
     lineages: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # What the ordering search believed it had achieved: how many brackets it
+    # expects to cross, and how far they reach in cells. The couple grid fills
+    # this in; `tests/test_family_layout.py` checks it against what the engine
+    # then draws, because a search that optimises a model the chart does not
+    # follow is worse than no search at all.
+    search: dict = field(default_factory=dict)
 
     def __iter__(self):
         for pid in self.order:

@@ -42,6 +42,26 @@ from ..registry import register
 TAU = math.tau
 _CURVE = 120        # samples along a stem that has to curve round
 
+# TANG_SHARE = 0.90, TRIED AND REVERTED.
+#
+# Whether a ring is set around the circle or along its branches is decided
+# below by asking whether the longest name on it fits the AVERAGE cell on
+# it. That average flatters a crowded ring badly -- on the sample file's
+# 461-person chart ring three averages 30 mm a cell and its names are really
+# 4 mm apart -- so the obvious repair is to ask what share of the names fit
+# the room they have, counting each one's distance to its neighbour in its
+# own row. Measured, that is WORSE, and not marginally: names shortened to
+# initials 30 -> 0, but names left off the chart altogether 42 -> 80. A
+# radial name costs its whole length in radius, and once every ring claims
+# that depth there is no sheet left to grow them into, so the placer drops
+# what it cannot fit. Initials are a worse name; no name is worse than that.
+#
+# The average is not measuring what it appears to measure. It is a proxy for
+# "is this ring roomy compared with the others", calibrated by use, and it
+# earns its keep. Anything replacing it has to be scored on names ACTUALLY
+# READABLE -- full, then shortened, then dropped -- not on the honesty of
+# the test.
+
 
 def _wrapped(d: float) -> float:
     """An angular difference brought into -pi..pi."""
@@ -122,9 +142,22 @@ def _stem_runs(graph, g, wraps: bool):
         if not kids or not parents:
             continue
         gen_k = g.slots[kids[0]].gen
-        # the stem leaves from the row of the partner this family belongs to,
-        # so a second marriage is visibly a second marriage
-        anchor = max(parents, key=lambda p: g.slots[p].row)
+        # THE PARENT ON THE RING THE CHILDREN HANG FROM, first; then the row
+        # of the partner this family belongs to, so a second marriage is
+        # visibly a second marriage.
+        #
+        # When both partners were born into the tree their two families can
+        # sit at different depths -- marry your second cousin once removed
+        # and one of you is a ring further out than the other. Only one of
+        # the two can hold the cell the children hang beneath, and picking
+        # the other one sent the stem across every ring in between: on the
+        # sample file John Fenwick sat two rings OUTSIDE his own children,
+        # so his bracket started out beyond them, ran inward through three
+        # other families' descent lines and ended in mid-air. The chord in
+        # section 5 is what says he is married to her; the bracket says
+        # whose cell the children are in, and that is hers.
+        anchor = max(parents,
+                     key=lambda p: (g.slots[p].gen == gen_k - 1, g.slots[p].row))
 
         # WHERE THE STEM LEAVES FROM. Between the two people whose family it
         # is -- literally between, when they have a leaf each, because that

@@ -111,6 +111,14 @@ class _Cell:
     # block would clear a crossing that neither does alone. The search sets
     # this; 0 means "no opinion, let `outward` choose".
     flip: int = 0
+    # WHERE A COUPLE WITH NO CHILDREN OF THEIR OWN HERE SITS. `over` cannot
+    # say it: there is no group of children for them to be over, because
+    # their one child is out in the cell this whole block hangs from. They
+    # used to go after everything, hard against one end, which put the two
+    # families behind them BOTH on one side and gave whichever ended up
+    # further away a bracket right across the other. `seat` is how many of
+    # `kids` go before them.
+    seat: int = -1
     ups_n: int = 0                             # how many kids are ancestral
     rel: float = 0.0
     x: float = 0.0
@@ -213,12 +221,25 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
     o0 = cell.over if cell.members else -1
     o1 = o0 + cell.over_n - 1
     acc: dict[int, tuple[float, float]] = {}
+    # A couple with no children of their own in this block still has to sit
+    # SOMEWHERE among the families behind them, and `seat` says how many of
+    # them go first. Unset means last, which is where they always used to go.
+    cut = (max(o0, 0) if o0 >= 0
+           else (max(0, min(cell.seat, len(cell.kids))) if cell.seat >= 0
+                 else len(cell.kids)))
 
     # 1 -- everything to the left of the couple's own children
-    for k in cell.kids[:max(o0, 0)]:
+    for k in cell.kids[:cut]:
         if k.contour:
             k.rel = _clear(acc, k.contour, gap, fam, near)
             _merge(acc, k.contour, k.rel)
+
+    # 1b -- and the couple themselves, when that is all the seat they get
+    if cell.members and o0 < 0:
+        half = cell.width / 2
+        x = half if not acc else max(v[1] for v in acc.values()) + fam + half
+        cell.x = x
+        _merge(acc, {cell.depth: (x - half, x + half)}, 0.0)
 
     # 2 -- the children, then the couple centred over them
     if o0 >= 0:
@@ -260,18 +281,12 @@ def _tidy(cell: _Cell, sib: float, fam: float) -> None:
             o0 = -1
 
     # 3 -- everything to the right
-    for k in cell.kids[max(o1 + 1, 0):]:
+    for k in cell.kids[max(o1 + 1, 0) if o0 >= 0 else cut:]:
         if k.contour:
             k.rel = _clear(acc, k.contour, gap, fam, near)
             _merge(acc, k.contour, k.rel)
 
-    if cell.members and o0 < 0:
-        # no children of their own: stand clear of whatever is here
-        half = cell.width / 2
-        x = half if not acc else max(v[1] for v in acc.values()) + fam + half
-        cell.x = x
-        _merge(acc, {cell.depth: (x - half, x + half)}, 0.0)
-    elif not cell.members:
+    if not cell.members:
         cell.x = 0.0
     cell.contour = acc
 
@@ -537,6 +552,22 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             cell.over = (len(ups) if side < 0 else 0) if groups else -1
         cell.over_n = len(groups)
         cell.ups_n = len(ups)
+        # AND WHEN THERE ARE NO CHILDREN HERE, BETWEEN THE TWO LINES.
+        #
+        # This is FLANK, which measured badly and is off -- for the case it
+        # was written for. Putting a couple between their two families when
+        # they have children in this block moves those children off the edge
+        # nearest the descendant the block hangs from, and the stem down to
+        # them then needs a bracket: crossings 5 -> 12 on the owner's tree.
+        #
+        # With NO children here there is nothing to move off the edge, and
+        # the objection evaporates. What is left is the whole point of the
+        # shape -- his family behind him, hers behind her, the two meeting at
+        # the marriage -- and both families reach their own child without
+        # crossing the other. On the smallest chart that has the case at all,
+        # two families of three, it is the difference between two brackets
+        # sweeping 116 degrees each and no bracket at all.
+        cell.seat = 1 if (len(ups) > 1 and not groups) else len(cell.kids)
         # WHICH WAY THIS COUPLE LEANS OVER THEIR CHILDREN. `pid` is one of
         # them and is NOT in this block -- he is out in the cell this block
         # hangs from -- so the line to him is the long one, and every
@@ -666,27 +697,47 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
                 at[p] = base
         xs = at
         depth = {p: cell_of[p].depth for p in xs}
-        on_ring: dict[int, set] = {}
-        with_kids: dict[int, set] = {}
+        rows: dict[int, list] = {}
         for p, x in xs.items():
-            on_ring.setdefault(depth[p], set()).add(round(x, 6))
-        for uid, u in graph.unions.items():
-            ps = [p for p in u.partners if p in xs]
-            if ps and any(c in xs for c in u.children):
-                with_kids.setdefault(depth[ps[0]], set()).add(
-                    round(xs[ps[0]], 6))
-        rows = {d: sorted(v) for d, v in on_ring.items()}
-        spokes = {d: sorted(v) for d, v in with_kids.items()}
-        cross, reach = 0, 0.0
+            rows.setdefault(depth[p], set()).add(round(x, 6))
+        rows = {d: sorted(v) for d, v in rows.items()}
+
+        # WHERE EVERY STEM LEAVES AND LANDS, worked out the same way the
+        # engine will draw it. This has to mirror `family._stem_runs`; where
+        # the two disagree the search optimises something the chart does not
+        # do.
+        #
+        # ONE ENTRY PER MARRIAGE, not per cell. Modelled per cell, a man who
+        # married twice had both his stems at one point, so the reach of one
+        # marriage could never be seen to cross the stem of the other -- and
+        # that is the commonest crossing on the chart. Lorain and David's
+        # children crossed Michaela and David's for exactly this reason and
+        # the search could not see it.
+        stems = []
         for uid, u in graph.unions.items():
             kids = [c for c in u.children
                     if c in xs and graph.people[c].child_of == uid]
             ps = [p for p in u.partners if p in xs]
             if not kids or not ps:
                 continue
-            here = xs[ps[0]]
-            d_me, d_kid = depth[ps[0]], depth[kids[0]]
-            kset = {round(xs[c], 6) for c in kids}
+            d_kid = depth[kids[0]]
+            # THE PARENT ON THE RING THE CHILDREN HANG FROM. Mirrors the
+            # anchor rule in `family._stem_runs`: when both partners were
+            # born into the tree their families can sit at different depths,
+            # and only the one directly inside the children can carry the
+            # bracket.
+            head_p = max(ps, key=lambda p: (depth[p] == d_kid + 1, ))
+            c = cell_of[head_p]
+            same = [p for p in ps if cell_of[p] is c]
+            if c.split and len(same) > 1:
+                ts = sorted(xs[p] for p in same)
+                lo_h = ts[0] + (ts[-1] - ts[0]) * 0.2
+                hi_h = ts[0] + (ts[-1] - ts[0]) * 0.8
+            else:
+                base = xs[head_p]
+                lo_h, hi_h = base - c.width * 0.20, base + c.width * 0.20
+            mid_h = (lo_h + hi_h) / 2
+            kset = {round(xs[k], 6) for k in kids}
             runs, cur = [], []
             for x in rows.get(d_kid, ()):
                 if x in kset:
@@ -697,13 +748,28 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
             if cur:
                 runs.append(cur)
             for run in runs or [sorted(kset)]:
-                foot = min(max(here, run[0]), run[-1])
-                if abs(foot - here) < 1e-9:
-                    continue                       # straight out; no bracket
-                a, b = min(here, foot), max(here, foot)
-                cross += sum(1 for x in spokes.get(d_me, ())
-                             if a + 1e-6 < x < b - 1e-6)
-                reach += b - a
+                lo_r, hi_r = run[0], run[-1]
+                head = (mid_h if lo_r - 1e-9 <= mid_h <= hi_r + 1e-9
+                        else min(max((lo_r + hi_r) / 2, lo_h), hi_h))
+                stems.append((d_kid, head, min(max(head, lo_r), hi_r), uid))
+
+        # A reach travels the gap between two rings. Everything else in that
+        # gap is a radial line -- another family's stem, or the drop at the
+        # far end of another family's reach -- so anything whose angle falls
+        # strictly inside the reach is a line it has to pass through.
+        cross, reach = 0, 0.0
+        for d, h, f, uid in stems:
+            if abs(f - h) < 1e-9:
+                continue                        # straight out; no bracket
+            a, b = min(h, f), max(h, f)
+            reach += b - a
+            for d2, h2, f2, uid2 in stems:
+                if d2 != d or uid2 == uid:
+                    continue
+                if a + 1e-6 < h2 < b - 1e-6:
+                    cross += 1
+                if abs(f2 - h2) > 1e-9 and a + 1e-6 < f2 < b - 1e-6:
+                    cross += 1
         return cross, round(reach, 4)
 
     def every(c: _Cell, out: list) -> list:
@@ -760,46 +826,155 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     # A hill-climb cannot find that -- neither half is an improvement on its
     # own -- so the hinges are enumerated instead: four arrangements each,
     # every combination, best kept. Few enough that it is cheap and complete.
-    hinges = [c for c in every(root, [])
-              if c.split and len(c.members) > 1 and c.ups_n > 1
-              and 0 <= c.over]
-    if hinges and best[0]:
-        import itertools
-        state = [(list(c.kids), c.over, c.flip) for c in hinges]
+    # A HINGE IS ANY CELL WITH A REAL CHOICE TO MAKE. Two ancestral lines to
+    # order, or two sets of children to put on one side or the other, or a
+    # pair of leaves that could go either way round. Each of those is free --
+    # nothing in the family says which -- and each changes what crosses.
+    #
+    # It was only the couples where two documented lines meet. That missed
+    # every REMARRIAGE, and a remarriage has the most obvious choice of the
+    # lot: David's children by Lorain and his children by Michaela sat on
+    # sides that made their two stems cross, when swapping them costs
+    # nothing. Anything with a choice is enumerated now.
+    #
+    # AND THE ORDER OF BROTHERS AND SISTERS. A container holds one union's
+    # children, and which of them sits at which end decides how far the one
+    # who married out has to reach back. Margret Reed's parents had to cross
+    # three families to reach her because she was at the wrong end of her own
+    # sibling group, and nothing was free to move her.
+    # AND A COUPLE WITH NO CHILDREN OF THEIR OWN ON THE CHART STILL HAS TWO
+    # LINES TO ORDER. `over` is -1 for them -- there is no group of children
+    # for the couple to sit over, because their one child is out in the cell
+    # this whole block hangs from -- and requiring `over >= 0` quietly
+    # excluded exactly the couples where two families meet and nothing else
+    # is going on. Margret Reed's is one: her parents and Paul's are both
+    # behind her, the Murraycarrs were put on the far side, and their arc
+    # back to her crossed three Reed families. One swap fixes it, and the
+    # search was not allowed to try it.
+    def pick_hinges() -> list[_Cell]:
+        h = [c for c in every(root, [])
+             if (c.members
+                 and (c.ups_n > 1 or c.over_n > 1
+                      or (c.split and len(c.members) > 1)))
+             or (not c.members and len(c.kids) > 1)]
+        h.sort(key=lambda c: -(c.ups_n + c.over_n + len(c.kids)))
+        return h[:32]
 
-        def variants(c: _Cell):
-            # FOUR DECISIONS, all of them free, none of them any use alone:
-            #   which of the two lines sits nearer the couple
-            #   whether the couple sits beyond both or BETWEEN them
-            #   which way round the couple's own two leaves go
-            # Eight arrangements. Every combination across every hinge.
-            lo = c.over - c.ups_n            # where this cell's ups start
-            base = []
-            k0 = list(c.kids)
-            base.append((k0, c.over))
-            if lo >= 0 and c.ups_n >= 2:
-                sw = list(k0)
-                sw[lo], sw[lo + 1] = sw[lo + 1], sw[lo]
-                base.append((sw, c.over))
+    def variants(c: _Cell):
+        if not c.members:
+            # A CONTAINER of one union's children: any of them may take
+            # either end, and the one who married out wants the end nearest
+            # the family they married into.
+            n = len(c.kids)
+            seen = {tuple(id(k) for k in c.kids)}
+            yield list(c.kids), c.over, c.flip, c.seat
+            for k in (c.kids[::-1], *(
+                    [c.kids[i]] + c.kids[:i] + c.kids[i + 1:] for i in range(n)),
+                    *(c.kids[:i] + c.kids[i + 1:] + [c.kids[i]]
+                      for i in range(n))):
+                key = tuple(id(x) for x in k)
+                if key not in seen:
+                    seen.add(key)
+                    yield list(k), c.over, c.flip, c.seat
+            return
+        # FOUR FREE DECISIONS, none of them any use alone:
+        #   which of two ancestral lines sits nearer the couple
+        #   which side each family's children go on
+        #   whether the couple sits beyond both lines or BETWEEN them
+        #   which way round the couple's own two leaves go
+        # WHERE THIS CELL'S ANCESTRAL BLOCKS ACTUALLY ARE. They are contiguous
+        # and lie on one side of the couple's own children, but WHICH side
+        # depends on which way the block was built: `ups + groups` on the
+        # left, `groups + ups` reversed on the right. Derived as
+        # `over - ups_n` it was right for the left-hand case and negative for
+        # the right-hand one, so half the couples on any chart never had
+        # their two lines swapped at all.
+        n = len(c.kids)
+        if c.over < 0:
+            ulo, uhi = 0, n                  # no children here: all ancestry
+        elif c.over > 0:
+            ulo, uhi = 0, c.over
+        else:
+            ulo, uhi = c.over_n, n
+        base = [(list(c.kids), c.over)]
+        if uhi - ulo >= 2 and c.ups_n >= 2:
+            sw = list(c.kids)
+            sw[ulo:uhi] = sw[ulo:uhi][::-1]
+            base.append((sw, c.over))
+        if c.over >= 0 and c.over_n > 1:
             for kids, over in list(base):
-                if over > 0:                 # the couple, moved BETWEEN them
-                    k = list(kids)
-                    moved = k.pop(over - 1)
-                    k.insert(over - 1 + c.over_n, moved)
-                    base.append((k, over - 1))
-            for kids, over in base:
-                for flip in (1, -1):
-                    yield kids, over, flip
+                k = list(kids)
+                k[over:over + c.over_n] = k[over:over + c.over_n][::-1]
+                base.append((k, over))
+        for kids, over in list(base):
+            if over > 0:
+                k = list(kids)
+                k.insert(over - 1 + c.over_n, k.pop(over - 1))
+                base.append((k, over - 1))
+        # ...and WHERE AMONG THEM THE COUPLE SITS, when they have no children
+        # here to be over. Between their two families is the right answer
+        # nearly always -- it is the shape the whole layout is named for --
+        # but it costs them adjacency to the one child of theirs who IS drawn
+        # elsewhere, so on some trees an end is better. Offered as a choice
+        # rather than fixed, the search keeps whichever measures.
+        seats = (range(len(c.kids) + 1) if c.over < 0 and len(c.kids) > 1
+                 else (c.seat,))
+        for kids, over in base:
+            for flip in ((1, -1) if c.split and len(c.members) > 1
+                         else (c.flip,)):
+                for seat in seats:
+                    yield kids, over, flip, seat
+    # ROUND AND ROUND THE HINGES until nothing moves. Every arrangement of
+    # every hinge was tried as a product first, which is exponential and
+    # took twenty seconds on a 142-name chart -- and a chart with new
+    # families added to it is the whole point. One hinge at a time, holding
+    # the rest still, repeated to convergence: the same answer on every tree
+    # tried, in time that grows with the number of hinges rather than as a
+    # power of it.
+    def sweep_hinges() -> None:
+        nonlocal best
+        hinges = pick_hinges()
+        if not hinges or not best[0]:
+            return
+        for _sweep in range(6):
+            shifted = False
+            for c in hinges:
+                if not best[0]:
+                    break
+                keep = (list(c.kids), c.over, c.flip, c.seat)
+                best_here = best
+                for kids, over, flip, seat in list(variants(c)):
+                    c.kids, c.over, c.flip, c.seat = (list(kids), over,
+                                                      flip, seat)
+                    got = cost(place())
+                    if got < best_here:
+                        best_here = got
+                        keep = (list(kids), over, flip, seat)
+                        shifted = True
+                c.kids, c.over, c.flip, c.seat = keep
+                best = best_here
+            if not shifted or not best[0]:
+                break
 
-        for combo in itertools.product(*(list(variants(c)) for c in hinges)):
-            for c, (kids, over, flip) in zip(hinges, combo):
-                c.kids, c.over, c.flip = list(kids), over, flip
-            got = cost(place())
-            if got < best:
-                best = got
-                state = [(list(c.kids), c.over, c.flip) for c in hinges]
-        for c, st in zip(hinges, state):
-            c.kids, c.over, c.flip = st
+    # WHOSE FAMILY A MARRIED COUPLE HANGS FROM was written as a move too,
+    # and removed. The idea is sound: a couple's cell hangs beneath one
+    # family, his or hers, and when both are documented the walk takes
+    # whichever it reached first -- so the other family may have to reach
+    # right across the chart to draw its own child. Lifting the cell into the
+    # other partner's sibling group would settle that by measurement instead
+    # of by walk order.
+    #
+    # It can never fire, and the reason is structural: the walk marks a
+    # spouse USED the moment it takes them into a cell, so the family they
+    # were born into never forms a group containing them. There is no second
+    # home to move to. Nought candidates on all three sample files at every
+    # focus setting. Fixing that class means changing the WALK -- letting
+    # both families claim a couple and choosing afterwards -- not adding
+    # another move to this search.
+    #
+    # What did fix the case it was written for was letting a couple with no
+    # children of their own on the chart be a hinge at all; see `pick_hinges`.
+    sweep_hinges()
 
     if best[0]:
         for _round in range(8):
@@ -822,6 +997,11 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
                 break
 
     xs = place()
+    # ON THE RECORD, so the engine's drawing can be checked against it. The
+    # scale goes with the numbers: the search measures in cells and the chart
+    # in fractions of a turn, and without the divisor the two cannot be
+    # compared at all.
+    g.search = {"crossings": best[0], "reach_cells": best[1]}
     if not xs:
         g.warnings.append("Nobody could be placed on this chart.")
         return g
@@ -833,6 +1013,7 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     raw = (max(xs.values()) + 0.5) - lo
     width = max(raw + SEAM, float(s.min_cells or MIN_CELLS))
     pad = (width - raw) / 2
+    g.search["cells_per_turn"] = width
     # ---- which way round a SPLIT leaf goes -------------------------------
     #
     # A split couple takes two leaves side by side, and the one that is NOT a

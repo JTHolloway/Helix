@@ -1145,3 +1145,172 @@ def test_every_relationship_in_the_file_is_drawn(graph, focus):
             assert set(ps) & tied, (
                 f"{focus}: nothing joins {graph.people[ps[0]].full_name} and "
                 f"{graph.people[ps[1]].full_name}, who are married")
+
+
+@pytest.fixture
+def cousins(tmp_path):
+    """Two documented families that marry into each other.
+
+    The one case the couple grid cannot draw without a bracket: both
+    partners were born on the chart, so only one of them can hold the cell
+    and the other's family has to reach across to draw its own child. A
+    generated sample family never does this -- every spouse in it married in
+    from nowhere -- so without this fixture the checks on the search pass
+    whatever the cost model says, which is exactly how two broken cost
+    models got through.
+    """
+    from helix.graph import build
+    from helix.store import records
+    from helix.store.db import connect, set_setting
+    con = connect(tmp_path / "c.helix")
+
+    def add(given, surname, to=None, how=None, union=None, **kw):
+        body = {"given": given, "surname": surname, **kw}
+        if to:
+            body["attach"] = {"to": to, "as": how, "union": union}
+        return records.add_person(con, body)["id"]
+
+    reed = add("Walter", "Reed", birth="1901")
+    add("Ada", "Reed", reed, "partner", birth="1903")
+    paul = add("Paul", "Reed", reed, "child", birth="1930")
+    add("Derek", "Reed", reed, "child", birth="1932")
+    add("Gorden", "Reed", reed, "child", birth="1935")
+
+    murray = add("Thomas", "Murraycarr", birth="1900")
+    add("Gurtrude", "Murraycarr", murray, "partner", birth="1902")
+    margret = add("Margret", "Murraycarr", murray, "child", birth="1931")
+    add("David", "Murraycarr", murray, "child", birth="1934")
+
+    # the cousin marriage: both of them were already on the chart
+    records.link_person(con, {"id": margret,
+                              "attach": {"to": paul, "as": "partner"}})
+    g0 = build.load(con)
+    sarah = add("Sarah", "Reed", paul, "child",
+                union=g0.people[paul].unions[0], birth="1958")
+    add("Colin", "Tye", sarah, "partner", birth="1957")
+    g1 = build.load(con)
+    # THE SUBJECT IS TWO GENERATIONS BELOW THE MARRIAGE, and it has to be:
+    # the couple where two lines meet is only walked as ANCESTRY -- with both
+    # families behind them on one side, which is the arrangement being tested
+    # -- when somebody below them is whose chart it is. Made the subject
+    # himself, Paul's cell is walked as a descent instead, his wife's family
+    # is a separate block altogether, and there is nothing here to measure.
+    emma = add("Emma", "Tye", sarah, "child",
+               union=g1.people[sarah].unions[0], birth="1985")
+    set_setting(con, "subject_person_id", emma)
+    return build.load(con)
+
+
+@pytest.mark.parametrize("focus", FOCUSES)
+def test_the_search_optimises_what_the_chart_draws(graph, focus):
+    """The ordering search counts the crossings it expects in cells; the
+    engine then draws them in angles. This checks the two agree.
+
+    It is the invariant the whole search rests on, and it has been broken
+    twice. The cost model recorded one position per CELL, so a married-in
+    partner was invisible to it and the cost came out zero on a chart with
+    five crossings on it -- the search never ran, and everything it was
+    supposed to fix was fixed by hand instead. Then it modelled one stem per
+    cell rather than one per MARRIAGE, so a man who married twice had both
+    his families leaving from the same point and the commonest crossing of
+    the lot could not be seen.
+
+    Both times the numbers looked healthy and the chart did not. Nothing
+    catches that except counting the same thing twice, from the two ends.
+    """
+    from helix.layout.engines.family import _stem_runs
+
+    g = cellgrid(graph, focus)
+    assert g.search, "the couple grid did not record what the search found"
+
+    stems = []
+    for uid, gen_k, _anchor, _parents, head_t, run in _stem_runs(graph, g, False):
+        ts = [g.slots[c].tc for c in run]
+        stems.append((gen_k, head_t, min(max(head_t, min(ts)), max(ts)), uid))
+    drawn = 0
+    for gen, head, foot, uid in stems:
+        if abs(foot - head) < 1e-9:
+            continue                     # straight out; no bracket to cross
+        lo, hi = min(head, foot), max(head, foot)
+        for gen2, head2, foot2, uid2 in stems:
+            if gen2 != gen or uid2 == uid:
+                continue
+            drawn += lo + 1e-6 < head2 < hi - 1e-6
+            drawn += (abs(foot2 - head2) > 1e-9
+                      and lo + 1e-6 < foot2 < hi - 1e-6)
+
+    assert drawn == g.search["crossings"], (
+        f"{focus}: the search settled for {g.search['crossings']} crossings "
+        f"and the chart draws {drawn}. The cost model in couple_grid.py has "
+        f"drifted from family._stem_runs, so the search is optimising "
+        f"something this chart does not do.")
+
+
+def test_the_search_and_the_chart_agree_about_reach(cousins):
+    """The same check with the numbers that are never zero.
+
+    Counting crossings alone is not enough to catch drift: a small tidy
+    family has none, so the assertion above passes on a cost model that has
+    been thoroughly broken. REACH -- how far the brackets travel to gather
+    up children who are not beside each other -- is non-zero the moment two
+    documented families intermarry, which is the case the whole search
+    exists for. The search measures it in cells and the chart in turns;
+    `cells_per_turn` is what makes them the same number.
+    """
+    from helix.layout.engines.family import _stem_runs
+
+    graph = cousins
+    g = cellgrid(graph, "all")
+    scale = g.search["cells_per_turn"]
+    reach = 0.0
+    for _uid, _gen, _a, _p, head_t, run in _stem_runs(graph, g, False):
+        ts = [g.slots[c].tc for c in run]
+        reach += abs(min(max(head_t, min(ts)), max(ts)) - head_t)
+    assert reach > 1e-6, (
+        "this family was built so the brackets have somewhere to reach; if "
+        "they do not, the fixture no longer tests anything")
+    assert abs(reach * scale - g.search["reach_cells"]) < 0.05, (
+        f"the search believes its brackets reach {g.search['reach_cells']:.2f} "
+        f"cells and the chart draws {reach * scale:.2f}. The cost model in "
+        f"couple_grid.py has drifted from family._stem_runs.")
+
+
+def test_a_couple_sits_between_the_two_families_they_join(cousins):
+    """The shape this whole layout is named for, in the one place it was
+    not being drawn.
+
+    His family behind him, hers behind her, the two meeting at the marriage.
+    A couple with children of their own in the block has to sit over those
+    children instead -- that is what keeps the descent radial -- but a couple
+    whose only child is drawn elsewhere has nothing to sit over, and used to
+    be shoved against one end with BOTH families on one side. Whichever
+    family ended up further away then had a bracket right across the other
+    to reach its own child: on this eleven-person chart, two of them
+    sweeping 116 degrees each.
+    """
+    graph = cousins
+    g = cellgrid(graph, "all")
+    at = {graph.people[p].full_name: sl.tc for p, sl in g.slots.items()}
+    ring = {graph.people[p].full_name: sl.gen for p, sl in g.slots.items()}
+    assert ring["Paul Reed"] == ring["Margret Murraycarr"], (
+        "the couple whose two families meet are not even on one ring")
+    # his brothers on his side, her brother on hers, and the couple between
+    for reed in ("Derek Reed", "Gorden Reed"):
+        assert at[reed] < at["Paul Reed"] < at["Margret Murraycarr"] \
+            or at[reed] > at["Paul Reed"] > at["Margret Murraycarr"], (
+                f"{reed} is not on Paul's side of the marriage: "
+                f"{sorted(at, key=at.get)}")
+    assert (at["David Murraycarr"] - at["Margret Murraycarr"]) * \
+           (at["Margret Murraycarr"] - at["Paul Reed"]) > 0, (
+        "Margret's brother is not on Margret's side of the marriage: "
+        f"{sorted(at, key=at.get)}")
+    # ...which is the whole point: neither set of parents needs a bracket
+    from helix.layout.engines.family import _stem_runs
+    for uid, _gen, _a, _p, head_t, run in _stem_runs(graph, g, False):
+        if not {"Walter Reed", "Thomas Murraycarr"} & {
+                graph.people[q].full_name for q in graph.unions[uid].partners}:
+            continue
+        ts = [g.slots[c].tc for c in run]
+        assert min(ts) - 1e-9 <= head_t <= max(ts) + 1e-9, (
+            f"{' + '.join(graph.people[q].full_name for q in graph.unions[uid].partners)}"
+            " still has to reach round to their own children")
