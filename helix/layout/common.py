@@ -41,9 +41,10 @@ def template_for(style, gen: int) -> str:
     for spec, tpl in by.items():
         if _ring_match(spec, gen):
             return tpl[0] if isinstance(tpl, list) else tpl
-    lines = style.get("labels.lines")
-    if lines:
-        return lines[0] if isinstance(lines, list) else lines
+    if not _chose_template(style):
+        lines = style.get("labels.lines")
+        if lines:
+            return lines[0] if isinstance(lines, list) else lines
     return style.get("labels.template", "{given_first} {surname}")
 
 
@@ -321,10 +322,25 @@ def _lines_spec(style, gen: int) -> list[str]:
     for spec, val in by.items():
         if _ring_match(spec, gen):
             return val if isinstance(val, list) else [val]
-    val = style.get("labels.lines")
-    if val:
-        return val if isinstance(val, list) else [val]
+    if not _chose_template(style):
+        val = style.get("labels.lines")
+        if val:
+            return val if isinstance(val, list) else [val]
     return [style.get("labels.template", "{given_first} {surname}")]
+
+
+def _chose_template(style) -> bool:
+    """Did this style DELIBERATELY ask for the single-line form?
+
+    `labels.lines` beats `labels.template` -- but a preset is merged over the
+    defaults rather than replacing them, so once full name and dates became
+    the default stack, every style that says only `template` would have had
+    that stack imposed on it. Circuit asks for surnames alone and would have
+    got three lines of biography. Asked for by name, a template wins; left
+    alone, the fuller default does.
+    """
+    chose = getattr(style, "chose", None)
+    return bool(chose and chose("labels.template"))
 
 
 def place_radial_label(plan, placer: PolarLabelPlacer, person,
@@ -355,11 +371,37 @@ def place_radial_label(plan, placer: PolarLabelPlacer, person,
     fallbacks = [lines]
     if len(lines) > 1:
         fallbacks.append(lines[:1])                      # drop the extra lines
-    if short and short != lines[0][0]:
-        fallbacks.append([(short, lines[0][1], lines[0][2])])
-    if person.initials:
-        fallbacks.append([(person.initials, lines[0][1], lines[0][2])])
+    seen_txt = {v[0][0] for v in fallbacks}
 
+    def rung(txt: str) -> None:
+        if txt and txt not in seen_txt:
+            seen_txt.add(txt)
+            fallbacks.append([(txt, lines[0][1], lines[0][2])])
+
+    rung(short)
+    # THE GIVEN NAME, before initials. Without this rung the ladder drops
+    # from a whole name straight to two letters for anybody whose short form
+    # IS their whole name -- which is everyone with a single given name. On
+    # the owner's chart Peter Holloway needed 21.8 mm, had 23.6, lost the
+    # slot to his wife's longer name by half a millimetre, and appeared as
+    # "PH" beside her. "Peter" fits with room to spare, and the surname is
+    # the one thing a family tree never has to repeat: it is written on the
+    # branch he is standing on. Initials say nothing that the position does
+    # not already say.
+    rung(person.given_used or person.given_first)
+    rung(person.initials)
+
+    # TURNING A NAME INSTEAD OF ABBREVIATING IT was tried here and does not
+    # work, though it looks like it should. Offering a tangential ring the
+    # radial mode as a last resort keeps far more names -- on the owner's
+    # tree the abbreviated ones went from three to one -- but a name set
+    # along its own branch runs OUTWARD from its row, and the first thing it
+    # meets is the rule that means that person is married. Two names crossed
+    # their own marriage rules immediately. The room a turned name really has
+    # is `rule_r - row_r`, which on a ring set tangentially is one label
+    # height, because that is exactly what the band was sized for. There is
+    # no room to turn into without resizing the band, and that was measured
+    # separately and is worse. The rung below is what fixed the case.
     if orientation == "tangential":
         modes = ["tangential"]
     elif orientation == "auto":

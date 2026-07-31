@@ -85,7 +85,24 @@ DEFAULTS: dict[str, Any] = {
     "type": {"family": "Georgia, 'Iowan Old Style', serif", "size_mm": 3.0,
              "min_size_mm": 2.2, "weight": 400, "tracking": 0.0,
              "colour": "#22201D", "case": "as_typed"},
-    "labels": {"template": "{given_first} {surname}", "by_ring": {},
+    # WHAT A NAME SAYS, and the whole name is the point of writing it down.
+    # A chart that says "Harry Reed" when the record says "Harry Albert Reed"
+    # has quietly thrown away the thing that tells two Harry Reeds apart, and
+    # a chart with no years on it cannot be checked against a certificate.
+    # Both lines come from the SAME record, so somebody with no dates
+    # recorded simply has no second line -- the gap in the research shows as
+    # a gap, which is the honest way round.
+    #
+    # `lines` is a list, one entry per line, and `line_scale` is why the two
+    # do not fight: dates at 76% recede and the name stays the thing the eye
+    # lands on first. `template` below is the legacy single-line form and
+    # still works -- a style that sets it deliberately keeps it, which is
+    # what stops this default from being imposed on the eleven presets that
+    # ask for something else. See `common._chose_template`.
+    "labels": {"lines": ["{full_name}", "{lifespan}"],
+               "line_scale": [1.0, 0.76, 0.7],
+               "line_colour": ["#22201D", "#6E675C", "#8A8073"],
+               "template": "{given_first} {surname}", "by_ring": {},
                "orientation": "auto", "show": True,
                # inward | outward | upright. WHICH WAY UP every name is set.
                #

@@ -14,15 +14,27 @@ the flagship design.
 | Token | Default | What it does |
 |---|---|---|
 | `labels.show` | `true` | Master switch. Off gives a pure-structure chart. |
-| `labels.lines` | `["{given_first} {surname}"]` | **A list, one entry per line.** This is how you get dates under the name. |
+| `labels.lines` | `["{full_name}", "{lifespan}"]` | **A list, one entry per line.** The default is the whole name as recorded, with the years under it — a chart that says "Harry Reed" when the record says "Harry Albert Reed" has thrown away the thing that tells two Harry Reeds apart, and one with no years cannot be checked against a certificate. Somebody with no dates recorded simply has no second line. |
 | `labels.line_scale` | `[1.0, 0.76, 0.7]` | Size multiplier per line. A date at the same weight as a name competes with it; at 76% it recedes and the name stays the thing you read first. |
-| `labels.line_colour` | `[]` | Colour per line. Falls back to `type.colour`. |
+| `labels.line_colour` | `["#22201D", "#6E675C", "#8A8073"]` | Colour per line. Falls back to `type.colour`. |
 | `labels.by_ring` | `{}` | Override the whole stack per generation. Keys are `"0"`, `"0-2"`, `"5+"`. |
 | `labels.orientation` ★ | `radial` | `radial` \| `tangential` \| `auto`. See below. |
 | `labels.flip_bottom` ★ | `true` | Turn text on the lower half so it never reads upside down. |
 | `labels.min_gap_mm` | `0.5` | Clear space demanded around every label. |
 | `labels.max_width_mm` ★ | `46` | Cap on how much ring width one long name may claim. |
-| `labels.template` | — | Legacy single-line form. `labels.lines` supersedes it. |
+| `labels.template` | `{given_first} {surname}` | Legacy single-line form. `labels.lines` supersedes it — **unless a style sets this one deliberately**, in which case the template wins. That is what stops the default stack from being imposed on the presets that ask for something else: `circuit` wants surnames alone and gets them. |
+
+### When a name will not fit
+
+Every label is tried at full detail first and then stepped down, in this
+order, until one fits: **all the lines** → **the first line alone** (the name
+without its dates) → **short name** → **given name alone** → **initials**.
+
+The given-name rung matters more than it looks. Without it the ladder drops
+from a whole name straight to two letters for anybody whose short form *is*
+their whole name — which is everyone with a single given name. A surname is
+the one thing a family tree never has to repeat: it is written on the branch
+the person is standing on.
 
 ### Available fields in a template
 

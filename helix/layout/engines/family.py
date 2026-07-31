@@ -729,8 +729,23 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         their children come from. Computed separately, the stem began inside
         it and crossed it at right angles, which is the one shape a chart
         must never make: two lines that mean different things, crossing.
+
+        AND NEVER OUTSIDE THE ARC IT FEEDS. Past the end of the name is
+        where the rule WANTS to be, and on a crowded ring set radially --
+        two rows, each as deep as a name is long -- that is past the ring
+        beyond. The stem then starts outside its own children's arc and is
+        drawn inward, ending in mid-air over somebody else's names. The
+        elbow lanes already refuse to go outside-out for exactly this
+        reason; so does this. Crowding is a crowded chart's problem, and a
+        rule set a little close to its name is what crowding looks like.
+        Inside-out is a broken chart, and looks like nothing at all.
         """
-        return row_r(sl) + reach(sl.gen) + size * 0.55
+        want = row_r(sl) + reach(sl.gen) + size * 0.55
+        nxt = ring_r.get(sl.gen + 1)
+        if nxt is None:
+            return want
+        return max(min(want, nxt - stem * 0.55 - lane_gap * 1.6),
+                   row_r(sl) + size * 0.55)
 
     def reach(gen: int) -> float:
         """How far a name actually extends along the radius.

@@ -1313,3 +1313,97 @@ def test_a_couple_sits_between_the_two_families_they_join(cousins):
         assert min(ts) - 1e-9 <= head_t <= max(ts) + 1e-9, (
             f"{' + '.join(graph.people[q].full_name for q in graph.unions[uid].partners)}"
             " still has to reach round to their own children")
+
+
+def test_a_name_is_the_whole_name_with_its_years(graph):
+    """What the default chart says about a person.
+
+    Two things, and both are about being able to check the chart against a
+    record. The WHOLE name as it was entered -- "Harry Albert Reed", not
+    "Harry Reed", because the middle name is often the only thing telling
+    two of them apart -- and the years under it. Somebody with no dates
+    recorded gets no second line, so a gap in the research reads as a gap
+    rather than being papered over.
+    """
+    from helix.layout.common import label_lines
+    style = Style.load()
+    both = named = 0
+    for person in graph.people.values():
+        lines = [t for t, _sz, _c in label_lines(style, person, 3, 0)]
+        assert lines, f"{person.full_name} got no label at all"
+        assert lines[0] == person.full_name, (
+            f"the first line should be the whole name: {lines[0]!r} against "
+            f"{person.full_name!r}")
+        named += 1
+        if person.birth_year:
+            assert len(lines) > 1 and str(person.birth_year) in lines[1], (
+                f"{person.full_name} was born in {person.birth_year} and the "
+                f"chart does not say so: {lines}")
+            both += 1
+        elif not person.death_year:
+            assert len(lines) == 1, (
+                f"{person.full_name} has no dates recorded, so there is "
+                f"nothing to put on a second line: {lines}")
+    assert named and both, "this family has no dates in it to check"
+
+
+def test_a_style_that_asks_for_one_line_still_gets_one_line(graph):
+    """`labels.lines` beats `labels.template` -- but a preset is MERGED over
+    the defaults rather than replacing them, so once full name and dates
+    became the default stack every style that says only `template` would
+    have had that stack imposed on it. Circuit asks for surnames alone."""
+    from helix.layout.common import label_lines, template_for
+    person = next(p for p in graph.people.values() if p.surname)
+    for preset, want in (("circuit", "{surname}"),
+                         ("nordic", "{surname}"),
+                         ("botanical", "{given_first} {surname}")):
+        style = Style.load(preset)
+        lines = label_lines(style, person, 3, 0)
+        assert len(lines) == 1, (
+            f"{preset} asked for {want!r} and got {len(lines)} lines: {lines}")
+        assert template_for(style, 3) == want, (
+            f"{preset} should still resolve to {want!r}")
+
+
+def test_a_long_name_loses_its_surname_before_its_given_name(graph):
+    """The rung that keeps a name readable when the room runs out.
+
+    Without it the ladder drops from a whole name straight to two letters
+    for anybody whose short form IS their whole name -- everyone with a
+    single given name. On the owner's chart that put "PH" next to "Kathleen
+    Holloway". A surname is the one thing a family tree never has to repeat:
+    it is written on the branch the person is standing on.
+    """
+    from helix.layout.common import (PolarLabelPlacer, est_text_width,
+                                     place_radial_label)
+    from helix.layout.plan import Canvas, RenderPlan
+
+    person = next(p for p in graph.people.values()
+                  if p.given_first and p.surname
+                  and p.short_name == p.full_name)
+    style = Style.load()
+    size, r = 3.0, 100.0
+    whole = est_text_width(person.full_name, size)
+    given = est_text_width(person.given_first, size)
+    assert given < whole, "this person's names are the same length"
+
+    # A NEIGHBOUR STANDING JUST TOO CLOSE. Placed so the window left over is
+    # wider than the given name and narrower than the whole one -- which is
+    # exactly the squeeze the rung exists for, and is what happened to Peter
+    # Holloway for the sake of half a millimetre.
+    block_h = 20.0
+    half_block = (block_h / 2 + 0.5) / r
+    at = half_block + ((given + whole) / 4 + 0.5) / r
+    plan = RenderPlan(canvas=Canvas(400, 400))
+    placer = PolarLabelPlacer()
+    for side in (-1, 1):
+        placer.take(side * at, r, 4.0, block_h)
+
+    assert place_radial_label(plan, placer, person,
+                              [(person.full_name, size, "#000")],
+                              0.0, r, 200, 200, style, flip=False,
+                              orientation="tangential"), (
+        "the given name should have fitted where the whole name did not")
+    drawn = [e.text for e in plan.elements if e.kind == "text"]
+    assert drawn == [person.given_first], (
+        f"expected the given name alone, got {drawn}")

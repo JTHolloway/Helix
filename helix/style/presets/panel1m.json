@@ -33,7 +33,7 @@
   "labels": {
     "by_ring": {
       "0-1": [
-        "{given} {surname}",
+        "{full_name}",
         "{lifespan}",
         "{birth_place}"
       ]
@@ -41,7 +41,7 @@
     "orientation": "auto",
     "flip_bottom": true,
     "lines": [
-      "{given_first} {surname}",
+      "{full_name}",
       "{lifespan}"
     ],
     "line_scale": [

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="520mm" height="520mm" viewBox="0 0 520 520">
-<!-- helix | engine=fan_180 style=default people=9 hash=1a5b6eeabad3 -->
+<!-- helix | engine=fan_180 style=default people=9 hash=8b7e463dd3ce -->
 <rect x="0" y="0" width="520" height="520" fill="#FBF8F2"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
 <path d="M260.1885,392.0002L260.2425,366.2003A115.8,115.8 0 1,1 259.7575,366.2003L259.8115,392.0002A90,90 0 1,0 260.1885,392.0002Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -12,15 +12,24 @@
 <path d="M387.5455,354.9876L405.827,336.7825A205.8,205.8 0 0,1 465.7995,481.569L439.9996,481.623A180,180 0 0,0 387.5455,354.9876Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M260.4398,272.0005L260.4939,246.2005A235.8,235.8 0 0,1 349.7803,263.9607L339.957,287.8174A210,210 0 0,0 260.4398,272.0005Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
 <path d="M340.7697,288.154L350.6928,264.3387A235.8,235.8 0 0,1 426.3862,314.9154L408.1811,333.1969A210,210 0 0,0 340.7697,288.154Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="260" y="575.6" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(90,260,575.6)">Beatrice Pargeter</text>
-<text x="383.6" y="482" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Samuel Pargeter</text>
-<text x="136.4" y="482" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="end" dominant-baseline="central">Hannah Cadogan</text>
-<text x="368.6116" y="373.3884" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(315,368.6116,373.3884)">Frederick Pargeter</text>
-<text x="368.6116" y="590.6116" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(45,368.6116,590.6116)">Sarah Boyce</text>
-<text x="330.2607" y="312.3757" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(292.5,330.2607,312.3757)">Joseph Pargeter</text>
-<text x="429.6243" y="411.7393" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(337.5,429.6243,411.7393)">Florence Cadogan</text>
-<text x="301.6713" y="272.5043" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(281.25,301.6713,272.5043)">Arthur Pargeter</text>
-<text x="378.6698" y="304.3981" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(303.75,378.6698,304.3981)">Lydia Brayfield</text>
+<text x="261.3224" y="575.5907" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(89.1905,261.3224,575.5907)">Beatrice Pargeter</text>
+<text x="258.2601" y="575.5838" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="end" dominant-baseline="central" transform="rotate(271.0651,258.2601,575.5838)">1828–1896</text>
+<text x="383.5929" y="480.6776" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(359.387,383.5929,480.6776)">Samuel William Pargeter</text>
+<text x="383.5878" y="483.7399" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(0.8066,383.5878,483.7399)">1781–1874</text>
+<text x="136.4071" y="480.6776" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="end" dominant-baseline="central" transform="rotate(0.613,136.4071,480.6776)">Hannah Cadogan</text>
+<text x="136.4122" y="483.7399" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="end" dominant-baseline="central" transform="rotate(359.1934,136.4122,483.7399)">1834</text>
+<text x="367.6725" y="372.4574" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(314.5067,367.6725,372.4574)">Frederick Pargeter</text>
+<text x="369.835" y="374.6257" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(315.6491,369.835,374.6257)">1752–1806</text>
+<text x="369.5426" y="589.6725" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(44.5067,369.5426,589.6725)">Sarah Boyce</text>
+<text x="367.3743" y="591.835" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(45.6491,367.3743,591.835)">1757–1834</text>
+<text x="329.0371" y="311.8741" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(292.0873,329.0371,311.8741)">Joseph Pargeter</text>
+<text x="331.865" y="313.0492" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(293.043,331.865,313.0492)">1796</text>
+<text x="429.1138" y="410.5194" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(337.0873,429.1138,410.5194)">Florence Cadogan</text>
+<text x="430.2825" y="413.35" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(338.043,430.2825,413.35)">1724–1801</text>
+<text x="300.3735" y="272.2503" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(280.8953,300.3735,272.2503)">Arthur William Pargeter</text>
+<text x="303.3765" y="272.8507" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(281.7167,303.3765,272.8507)">1692–1747</text>
+<text x="377.568" y="303.6668" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(303.3953,377.568,303.6668)">Lydia Brayfield</text>
+<text x="380.1126" y="305.3707" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(304.2167,380.1126,305.3707)">1695–1796</text>
 <text x="260" y="20" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
 </g>
 </svg>
