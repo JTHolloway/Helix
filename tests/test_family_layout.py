@@ -1254,14 +1254,12 @@ def test_the_search_and_the_chart_agree_about_reach(cousins):
     been thoroughly broken. REACH -- how far the brackets travel to gather
     up children who are not beside each other -- is non-zero the moment two
     documented families intermarry, which is the case the whole search
-    exists for. The search measures it in cells and the chart in turns;
-    `cells_per_turn` is what makes them the same number.
+    exists for, and both ends of the check now count it in the same units.
     """
     from helix.layout.engines.family import _stem_runs
 
     graph = cousins
     g = cellgrid(graph, "all")
-    scale = g.search["cells_per_turn"]
     reach = 0.0
     for _uid, _gen, _a, _p, head_t, run in _stem_runs(graph, g, False):
         ts = [g.slots[c].tc for c in run]
@@ -1269,10 +1267,11 @@ def test_the_search_and_the_chart_agree_about_reach(cousins):
     assert reach > 1e-6, (
         "this family was built so the brackets have somewhere to reach; if "
         "they do not, the fixture no longer tests anything")
-    assert abs(reach * scale - g.search["reach_cells"]) < 0.05, (
-        f"the search believes its brackets reach {g.search['reach_cells']:.2f} "
-        f"cells and the chart draws {reach * scale:.2f}. The cost model in "
-        f"couple_grid.py has drifted from family._stem_runs.")
+    assert abs(reach - g.search["reach_turns"]) < 0.002, (
+        f"the search believes its brackets reach "
+        f"{g.search['reach_turns'] * 360:.1f} degrees and the chart draws "
+        f"{reach * 360:.1f}. The cost model in couple_grid.py has drifted "
+        f"from family._stem_runs.")
 
 
 def test_a_couple_sits_between_the_two_families_they_join(cousins):

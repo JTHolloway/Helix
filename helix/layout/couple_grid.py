@@ -770,7 +770,17 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
                     cross += 1
                 if abs(f2 - h2) > 1e-9 and a + 1e-6 < f2 < b - 1e-6:
                     cross += 1
-        return cross, round(reach, 4)
+        # IN DEGREES, which is what the reader sees -- not in cells, which is
+        # only how the search happens to hold them. The same reach in cells
+        # is fewer degrees on a wider chart, so scored in cells the search
+        # preferred a tighter arrangement whose brackets then swept twelve
+        # degrees FURTHER round the disc. The divisor is the one the cells
+        # will really be divided by; see where the 0..1 spread axis is built
+        # below, and keep the two in step.
+        if xs:
+            raw = (max(xs.values()) + 0.5) - (min(xs.values()) - 0.5)
+            reach /= max(raw + SEAM, float(s.min_cells or MIN_CELLS))
+        return cross, round(reach, 6)
 
     def every(c: _Cell, out: list) -> list:
         out.append(c)
@@ -1008,11 +1018,10 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
                 break
 
     xs = place()
-    # ON THE RECORD, so the engine's drawing can be checked against it. The
-    # scale goes with the numbers: the search measures in cells and the chart
-    # in fractions of a turn, and without the divisor the two cannot be
-    # compared at all.
-    g.search = {"crossings": best[0], "reach_cells": best[1]}
+    # ON THE RECORD, so the engine's drawing can be checked against it. Both
+    # numbers are in the chart's own units -- brackets, and turns of reach --
+    # so nothing has to be converted to compare them with the plan.
+    g.search = {"crossings": best[0], "reach_turns": best[1]}
     if not xs:
         g.warnings.append("Nobody could be placed on this chart.")
         return g
@@ -1024,7 +1033,6 @@ def build_couple_grid(graph, s: LayoutSettings) -> Grid:
     raw = (max(xs.values()) + 0.5) - lo
     width = max(raw + SEAM, float(s.min_cells or MIN_CELLS))
     pad = (width - raw) / 2
-    g.search["cells_per_turn"] = width
     # ---- which way round a SPLIT leaf goes -------------------------------
     #
     # A split couple takes two leaves side by side, and the one that is NOT a
