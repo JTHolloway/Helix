@@ -5,6 +5,7 @@ installed anything else. FastAPI is optional and only adds auto-docs.
 """
 from __future__ import annotations
 
+import contextlib
 import json
 import mimetypes
 import threading
@@ -151,6 +152,8 @@ class Handler(BaseHTTPRequestHandler):
                 from .store.archive import archive
                 return self._json({"ok": True,
                                    "path": str(archive(ST.dbpath))})
+            if u.path.startswith("/api/library"):
+                return self._json(_library(u.path[len("/api/library"):], body))
             if u.path == "/api/import":
                 out = _import(body)
                 if not body.get("dry_run"):
@@ -211,6 +214,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(_kin_detail(ST, q["id"]))
         if route == "groups":
             return self._json(all_groups())
+        if route == "library":
+            # WHERE YOUR WORK LIVES. The desktop application has no address
+            # bar to type a path into, so the program has to be able to
+            # show you the folder, list what is in it, and open another
+            # family without going anywhere near a terminal.
+            from .desktop import library as lib
+            return self._json({
+                "library": str(lib.library_dir()),
+                "current": str(Path(ST.dbpath).resolve()),
+                "families": lib.families(),
+                "status": lib.status(ST.dbpath),
+            })
         if route == "duplicates":
             # THE SAME PERSON, ENTERED TWICE. Rare while you type -- the add
             # dialogue catches those -- and the ordinary case the moment you
@@ -491,6 +506,78 @@ def _print_elided(q) -> dict:
                        subj)
     return narrow(ST.graph, subj, filt, within=within,
                   index=ST.kin).elided_union
+
+
+def _library(what: str, body: dict) -> dict:
+    """Managing the family files themselves, not the people in them.
+
+    SWITCHING FAMILIES REBINDS THE WHOLE SERVER, and it has to: `State`
+    holds one connection, one graph and one kinship index, and every screen
+    reads them. Opening a second family by pointing the same state at a new
+    path is the only way that does not leave half the window describing the
+    family you just left.
+    """
+    from .desktop import library as lib
+    what = what.strip("/")
+    if what == "new":
+        p = lib.create(body.get("title") or "My family",
+                       sample=bool(body.get("sample")))
+        _rebind(p)
+        return {"ok": True, "path": str(p), "opened": True,
+                "message": f"Started {body.get('title') or 'a new family'}. "
+                           f"It is saved in {lib.library_dir()}."}
+    if what == "open":
+        p = Path(body["path"])
+        if not p.exists():
+            raise ValueError(
+                f"There is no family file at {p}. It may have been moved or "
+                f"renamed — the ones Helix can see are in {lib.library_dir()}.")
+        _rebind(p)
+        return {"ok": True, "path": str(p), "opened": True}
+    if what == "rename":
+        target = Path(body.get("path") or ST.dbpath)
+        mine = target.resolve() == Path(ST.dbpath).resolve()
+        # LET GO OF THE FILE BEFORE MOVING IT. The server holds an open
+        # connection with a write-ahead log beside it; renaming underneath
+        # that leaves the log behind and the next open fails.
+        if mine:
+            with contextlib.suppress(Exception):
+                ST.con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                ST.con.close()
+        out = lib.rename(target, body["title"])
+        if mine:
+            _rebind(Path(out["path"]))
+        return {"ok": True, **out,
+                "message": f"Now called {body['title']}."
+                           + (f" The file is {Path(out['path']).name}."
+                              if out.get("renamed") else "")}
+    if what == "duplicate":
+        p = lib.duplicate(body.get("path") or ST.dbpath)
+        return {"ok": True, "path": str(p),
+                "message": f"Copied to {p.name}. The original is untouched."}
+    if what == "reveal":
+        ok = lib.reveal(body.get("path") or ST.dbpath)
+        return {"ok": ok, "path": body.get("path") or ST.dbpath,
+                "message": "Opened the folder." if ok else
+                           f"Your files are in {lib.library_dir()}."}
+    if what == "folder":
+        d = lib.set_library_dir(body["path"])
+        return {"ok": True, "library": str(d),
+                "families": lib.families(),
+                "message": f"Helix will keep family files in {d}."}
+    raise ValueError(f"Unknown library action {what!r}.")
+
+
+def _rebind(path) -> None:
+    """Point the running server at another family file."""
+    from .desktop import library as lib
+    old = ST.con
+    ST.dbpath = str(path)
+    ST.reload()
+    lib.remember(path)
+    if old is not ST.con:
+        with contextlib.suppress(Exception):
+            old.close()
 
 
 def _import(body: dict) -> dict:

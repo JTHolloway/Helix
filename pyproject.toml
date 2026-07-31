@@ -18,9 +18,20 @@ web  = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
 gen  = ["python-dateutil>=2.9", "jellyfish>=1.0"]
 all  = ["helix-tree[fab,pdf,web,gen]"]
 dev  = ["pytest>=8", "pytest-cov", "hypothesis>=6"]
+# THE DESKTOP APPLICATION. `pywebview` is a thin wrapper over the web engine
+# the operating system already ships -- WebView2 on Windows, WKWebView on
+# macOS, WebKitGTK on Linux. No Chromium download, no Node, no npm.
+# The core still installs nothing: without these, `helix-app` opens an
+# app-mode browser window instead of a native one and everything else works.
+desktop = ["pywebview>=4.4", "pyinstaller>=6.3"]
 
 [project.scripts]
 helix = "helix.cli:main"
+
+[project.gui-scripts]
+# A GUI script gets no console window on Windows, which is the difference
+# between an application and a program that flashes a black box first.
+helix-app = "helix.desktop.app:main"
 
 [tool.setuptools.packages.find]
 include = ["helix*"]

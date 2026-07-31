@@ -586,3 +586,37 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 .life span{flex:1;min-width:0}
 .life i{font-style:normal;color:var(--muted);font-size:11px;white-space:nowrap}
 .life .ev-self span{font-weight:600}
+
+/* --- which family is open, and where it lives --------------------------- */
+/* The path is shown in full and in a monospace face, because "where is my
+   data" is the first question anybody asks of a program they are about to
+   trust with ten years of work, and a vague answer is not an answer. */
+#libDlg{max-width:min(680px,92vw)}
+#libBody{max-height:66vh;overflow:auto;margin:14px 0}
+#libBody h4{margin:20px 0 6px;font-size:12px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted)}
+.libwhere{background:var(--paper);border:1px solid var(--rule);
+  border-radius:var(--r);padding:12px 14px}
+.libwhere b{display:block;font-size:12px;letter-spacing:.05em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.libwhere code,.libstat code{font-family:ui-monospace,SFMono-Regular,Menlo,
+  Consolas,monospace;font-size:12.5px;overflow-wrap:anywhere;color:var(--ink)}
+.libacts{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.libfams{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.libfams li{display:flex;align-items:center;gap:8px}
+.libopen{flex:1;text-align:left;padding:9px 12px;line-height:1.3;
+  display:block;min-width:0}
+.libopen b{display:block;font-size:15px;font-weight:600}
+.libopen span{display:block;font-size:12px;color:var(--muted)}
+.libopen small{display:block;font-size:11px;color:var(--muted);opacity:.75;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.libopen:disabled{opacity:.75;cursor:default;border-color:var(--accent);
+  background:var(--accent-soft)}
+.libnow{font-style:normal;font-size:11px;color:var(--accent);white-space:nowrap}
+.libform label{display:block;margin:6px 0;font-size:13px}
+.libform input{width:100%;margin-top:3px;padding:7px 9px;border:1px solid var(--rule);
+  border-radius:6px;background:var(--paper);color:var(--ink);font:inherit}
+.libstat{display:grid;grid-template-columns:110px 1fr;gap:2px 10px;margin:12px 0 0;
+  font-size:13px}
+.libstat dt{color:var(--muted);font-size:11.5px}
+.libstat dd{margin:0;overflow-wrap:anywhere}

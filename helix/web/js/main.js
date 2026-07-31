@@ -11,6 +11,7 @@ import * as profile from './profile.js';
 import * as relatives from './relatives.js';
 import { addPerson as addFirstPerson } from './edit.js';
 import * as insight from './insight.js';
+import * as librarypanel from './librarypanel.js';
 
 const $ = s => document.querySelector(s);
 const wrap = $('#canvasWrap'), host = $('#canvas');
@@ -62,6 +63,7 @@ async function init() {
   wireGaps();
   wireImport();
   wireInsight();
+  wireLibrary();
   undoLabels();
   await Promise.all([refresh(), loadRelatives(), loadGaps()]);
   view.fit();
@@ -578,6 +580,35 @@ async function reviewDuplicates() {
   }
 }
 
+// ────────────────────────────────────────── which family, and where ──────
+function wireLibrary() {
+  const dlg = $('#libDlg');
+  if (!dlg) return;
+  $('#libBtn').addEventListener('click', () => {
+    dlg.showModal();
+    librarypanel.show($('#libBody'), {
+      onToast: toast,
+      // OPENING ANOTHER FAMILY REBUILDS EVERYTHING. The chart, the sidebar,
+      // the research list and the selection all describe one file; left as
+      // they were, half the window would still be showing the family you
+      // just closed.
+      onOpened: async () => {
+        dlg.close();
+        SEL = null;
+        $('#right').hidden = true;
+        META = await get('meta');
+        $('#proj').textContent = META.title || '';
+        await Promise.all([refresh(), loadRelatives()]);
+        view.fit();
+        status();
+        undoLabels();
+      },
+    }).catch(e => {
+      $('#libBody').innerHTML = `<p class="warn">${escAttr(e.message)}</p>`;
+    });
+  });
+}
+
 function wireScope() {
   const push = () => { refresh().then(drawRelatives); };
   const num = (el, key) => $(el).addEventListener('change', () => {
@@ -812,6 +843,7 @@ function wireKeys() {
     if (k === '-') view.zoom(1 / 1.35);
     if (k === 'l') { e.preventDefault(); showPeople(); }
     if (k === 'n') { e.preventDefault(); $('#statsBtn').click(); }
+    if (k === 'o') { e.preventDefault(); $('#libBtn').click(); }
     if (k === 'i') { e.preventDefault(); $('#importBtn').click(); }
   });
 

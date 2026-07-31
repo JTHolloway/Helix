@@ -1,5 +1,26 @@
 # Helix
 
+## Run it as an application
+
+```bash
+pip install 'helix-tree[desktop]'
+helix-app
+```
+
+A window you double-click, on Windows or a Mac — no terminal, no browser
+tab. Your family files are kept as ordinary files in `Documents/Helix`,
+where you can see them, copy them and back them up. Built applications and
+how to make one: **`docs/DESKTOP.md`**.
+
+Everything still works from a terminal, on a machine with nothing
+installed:
+
+```bash
+helix serve my.helix              # the same program, in a browser
+helix export my.helix -o out.ged  # GEDCOM, for Ancestry or anybody else
+helix import cousins.ged -o new.helix
+```
+
 A family tree you can hang on a wall, hold in your hand, or hang a clock in.
 
 Helix keeps a genealogy in one small file, draws it in nineteen different

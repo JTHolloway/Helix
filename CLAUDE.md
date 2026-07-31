@@ -2,7 +2,7 @@
 
 A genealogy program that renders family trees as laser-cuttable charts, and
 keeps everything you know about the people on them. Python 3.11+, **zero
-required dependencies**, 442 tests.
+required dependencies**, 507 tests.
 
 ## Read this before anything else
 
@@ -22,12 +22,14 @@ python3 tools/diagnose_layout.py <file> --cells      # all four must be zero
 still used by the other radial designs. Its own three limits are recorded in
 the same document; they are the reason the couple grid exists.
 
-**Blockers 1 and 2 are done.** The record system (`helix/store/records.py`
+**All three blockers are done.** The record system (`helix/store/records.py`
 is the only thing that writes, and it is what makes Ctrl-Z work), and laser
 output: `--production` converts every name to single-stroke geometry with the
 built-in face in `helix/fab/strokefont.py`, reports islands, and runs a
-pre-flight that passes. **Next up is Blocker 3 in `BLOCKERS.md`** — GEDCOM,
-writer first.
+pre-flight that passes. Blocker 3 is built too: `helix/io/gedcom/` reads and writes GEDCOM (the
+round trip through 463 people is exact) and `helix/io/csv_import.py` takes a
+relative's spreadsheet. `BLOCKERS.md` lists what is left, none of it
+blocking.
 
 **It is also an ancestry program now, not only a chart generator.**
 `helix/graph/kinship.py` is the keystone: it turns "how are we related" into
@@ -74,13 +76,15 @@ Then read, in this order:
    rather than drawing one.
 6. **`docs/OPTIONS.md`** — every style token. Check here before adding an
    option; it is probably already specified.
+7. **`docs/DESKTOP.md`** — Helix as an application you double-click, and
+   where a person's family files live on their own computer.
 
 `PROMPTS.md` holds the prompts the user will give you, in order.
 
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 442 tests, must stay green
+python3 -m pytest tests -q      # 507 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 
@@ -184,6 +188,8 @@ helix/layout/    19 designs sharing one abstract grid
 helix/render/    svg, pdf, dxf, eps — all hand-written
 helix/fab/       materials, preflight, kerf, islands, clock
 helix/web/       the interface. No build step, no npm
+helix/desktop/   the application window and where family files live
+helix/io/        GEDCOM in and out; spreadsheet import
 tools/           sample generator, .ftz importer
 docs/            specifications. Read before writing
 ```
