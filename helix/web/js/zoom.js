@@ -45,14 +45,36 @@ export function attach(wrap, target, { min = 0.05, max = 40 } = {}) {
              cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
   };
 
+  // CAPTURING THE POINTER STOPS ANYBODY CLICKING A NAME.
+  //
+  // `setPointerCapture` retargets the pointer events that follow — and the
+  // `click` the browser synthesises at the end — to the element that took
+  // the capture. Taken on pointerdown, every click on the chart arrived at
+  // the wrapper instead of at the person's name, the per-name handlers
+  // never ran, and NOBODY ON THE CHART COULD BE CLICKED. The chart is the
+  // program; that is every interaction with it.
+  //
+  // So capture is deferred until the pointer has actually moved. Under the
+  // threshold it is a click and the name gets it; over it, it is a drag and
+  // the capture is taken then — which is also what makes a drag that
+  // leaves the window keep panning. Two fingers capture at once: a pinch
+  // has no click to preserve.
+  const SLOP = 4;                     // px of movement that means "a drag"
+  let held = null;                    // {id, x, y} waiting to become a drag
+
   wrap.addEventListener('pointerdown', ev => {
     if (ev.pointerType === 'mouse' && ev.button !== 0) return;
     live.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
-    wrap.setPointerCapture(ev.pointerId);
-    if (live.size === 2) { pinch = twoFinger(); dragging = false; wrap.classList.remove('drag'); }
-    else if (live.size === 1) {
-      dragging = true; sx = ev.clientX - x; sy = ev.clientY - y;
-      wrap.classList.add('drag');
+    if (live.size === 2) {
+      for (const id of live.keys()) {
+        try { wrap.setPointerCapture(id); } catch { /* already gone */ }
+      }
+      held = null;
+      pinch = twoFinger(); dragging = false; wrap.classList.remove('drag');
+    } else if (live.size === 1) {
+      held = { id: ev.pointerId, x: ev.clientX, y: ev.clientY };
+      dragging = false;
+      sx = ev.clientX - x; sy = ev.clientY - y;
     }
   });
 
@@ -68,12 +90,19 @@ export function attach(wrap, target, { min = 0.05, max = 40 } = {}) {
       pinch = now; touched = true; apply();
       return;
     }
+    // Far enough to be a drag rather than a click? Take the capture now.
+    if (held && held.id === ev.pointerId && !dragging) {
+      if (Math.hypot(ev.clientX - held.x, ev.clientY - held.y) < SLOP) return;
+      try { wrap.setPointerCapture(ev.pointerId); } catch { /* fine */ }
+      dragging = true; wrap.classList.add('drag');
+    }
     if (!dragging) return;
     x = ev.clientX - sx; y = ev.clientY - sy; touched = true; apply();
   });
 
   const stop = ev => {
     if (ev) live.delete(ev.pointerId);
+    if (ev && held && held.id === ev.pointerId) held = null;
     if (live.size < 2) pinch = null;
     // Lifting one of two fingers must not jump the chart: carry on the
     // drag from wherever the finger that is left actually is.

@@ -37,7 +37,13 @@ export async function show(host, pid, hooks) {
       <label>Died <input id="fDeath" value="${esc(d.death)}"
         placeholder="3 Feb 1900 — or just 1900"><small class="echo" id="eD"></small></label>
       <label>Born in <input id="fPlace" value="${esc(d.birth_place)}"></label>
-      <button class="primary wide" id="saveBtn">Save</button>
+      <!-- NO SAVE BUTTON. There was one, and it was the only place in the
+           program with unsaved state: type a birthplace, click somewhere
+           else, and it was gone. Each box writes itself the moment you
+           leave it, which is what the panel on the other side has always
+           done and what the rest of the program promises. -->
+      <p class="hint saved-note" id="fSaved">Every box saves itself as you
+        leave it. Ctrl-Z takes back the last change.</p>
     </form>
     <div id="warnBox" class="warnBox" hidden></div>
 
@@ -143,26 +149,45 @@ export async function show(host, pid, hooks) {
   }
 
   $('#details').addEventListener('submit', e => e.preventDefault());
-  $('#saveBtn').addEventListener('click', async ev => {
-    ev.preventDefault();
-    ev.target.textContent = 'Saving…';
-    const r = await post('person', {
-      id: pid,
-      given: $('#fGiven').value.trim(), surname: $('#fSur').value.trim(),
-      birth: $('#fBirth').value.trim(), death: $('#fDeath').value.trim(),
-      birth_place: $('#fPlace').value.trim(),
+
+  // EACH BOX WRITES ITSELF. `change` fires when somebody leaves a box they
+  // altered, which is the moment they have finished with it — and the
+  // moment the old Save button lost the edit if they clicked anywhere else.
+  //
+  // ONE FIELD PER REQUEST, and only if it changed. The server reads an
+  // absent key as "leave this alone" and an empty one as "clear it", so
+  // sending the whole form on every keystroke is how saving a birthplace
+  // used to wipe the birth date beside it.
+  const FIELDS = { fGiven: 'given', fSur: 'surname', fBirth: 'birth',
+                   fDeath: 'death', fPlace: 'birth_place' };
+  const was = { fGiven: d.given || '', fSur: d.surname || '',
+                fBirth: d.birth || '', fDeath: d.death || '',
+                fPlace: d.birth_place || '' };
+  for (const [id, key] of Object.entries(FIELDS)) {
+    const box = $('#' + id);
+    if (!box) continue;
+    box.addEventListener('change', async () => {
+      const now = box.value.trim();
+      if (now === was[id].trim()) return;
+      was[id] = now;
+      const note = $('#fSaved');
+      if (note) note.textContent = 'Saving…';
+      try {
+        const r = await post('person', { id: pid, [key]: now });
+        if (note) note.textContent = 'Saved. Ctrl-Z takes it back.';
+        // Soft validation: say it, do not refuse it. People enter what the
+        // record says and correct it later.
+        const w = $('#warnBox');
+        if (w) {
+          w.hidden = !(r.warnings && r.warnings.length);
+          w.innerHTML = (r.warnings || []).map(x => `<p>${esc(x)}</p>`).join('');
+        }
+        onChanged();
+      } catch (e) {
+        if (note) note.textContent = e.message;
+      }
     });
-    ev.target.textContent = 'Saved';
-    // Soft validation: say it, do not refuse it. People enter what the
-    // record says and correct it later.
-    if (r.warnings && r.warnings.length) {
-      const w = $('#warnBox');
-      w.hidden = false;
-      w.innerHTML = r.warnings.map(x => `<p>${esc(x)}</p>`).join('');
-    }
-    onChanged();
-    setTimeout(() => onSelect(pid), 400);
-  });
+  }
 
   if ($('#subjBtn')) $('#subjBtn').addEventListener('click', async () => {
     await post('subject', { id: pid });

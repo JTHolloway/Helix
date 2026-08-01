@@ -647,8 +647,24 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             p = math.atan2(over, max(r_out, 1e-6)) if sweep < full - 1e-9 else 0.0
             return _sector_bounds(inner, r_out, start - p, start + sweep + p)
 
-        def fill(bands):
-            """Grow to the sheet, and never overrun it.
+        # HOW FAR A RING MAY BE STRETCHED past what its contents need.
+        #
+        # Growing the rings to fill the sheet is right, and it is what makes
+        # a chart use the wood it is cut from. It is right up to the point
+        # where the result stops being a chart. On a family of ONE the
+        # search found a 12-degree sliver with a ring band 963 mm deep --
+        # fifty-four times the depth a 3.4 mm name needs -- and reported it
+        # as a perfect fit, because it did fill the sheet. What anybody
+        # actually saw on the first chart they ever drew was a metre of
+        # blank wood with their own name four millimetres tall at the top.
+        #
+        # Twelve is measured, not picked: the real charts in this repository
+        # run from 1.0x (139 people on a 600 mm disc) to 8.1x (7 people on a
+        # metre), so nothing that is a chart is touched.
+        STRETCH = 12.0
+
+        def fill(bands, floors=None):
+            """Grow to the sheet, and never overrun it -- or the contents.
 
             Measured on the SECTOR the chart actually occupies, not on a
             disc. A quarter-circle fan fits about twice the radius into the
@@ -657,6 +673,8 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
             """
             if not panel:
                 return bands
+            cap = ({gen: floors[gen] * STRETCH for gen in gens}
+                   if floors else None)
             for _ in range(8):
                 _, r_now = radii(bands)
                 if r_now <= inner:
@@ -672,6 +690,12 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                     break
                 grow = ((inner + (r_now - inner) * k) - inner) / (r_now - inner)
                 bands = {gen: bands[gen] * grow for gen in gens}
+                if cap:
+                    was = dict(bands)
+                    bands = {gen: min(bands[gen], cap[gen]) for gen in gens}
+                    if bands == was:
+                        continue
+                    break            # capped: growing again cannot help
             return bands
 
         # A first guess, then grow to fill the sheet, then let any ring that
@@ -680,8 +704,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
         band = {gen: rows_in[gen] * pitch[gen] + stem + lane_room[gen]
                 for gen in gens}
         tang = {gen: True for gen in gens}
+        # What each ring genuinely needs, kept as the cap grows are measured
+        # against. Recomputed below as the pitch settles.
+        floors = dict(band)
         for _ in range(4):
-            band = fill(band)
+            band = fill(band, floors)
             ring_try, _ = radii(band)
             changed = False
             for gen in gens:
@@ -714,10 +741,11 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                         or abs(pitch[gen] - pit) > 0.01):
                     changed = True
                 tang[gen], pitch[gen] = fits, pit
+                floors[gen] = floor
                 band[gen] = max(band[gen], floor)
             if not changed:
                 break
-        band = fill(band)
+        band = fill(band, floors)
         ring_r, R = radii(band)
 
         # The tightest cell anywhere, in millimetres of arc. This is the one
@@ -1779,10 +1807,41 @@ def _thread(graph, s) -> set:
     return set(thread(graph, s.subject_id).members)
 
 
+def _clear(plan, x, y, w, h) -> bool:
+    """Is that rectangle free of anything already drawn?
+
+    Only NAMES are tested, and that is the point: a key laid over a ring
+    line is a key with a hairline through it, which anybody can read. A key
+    laid over somebody's name makes both unreadable, and it was doing that
+    on every chart of fewer than about eight people -- the chart everybody
+    looks at first.
+    """
+    for e in plan.elements:
+        if e.kind != "text" or e.role == "key" or e.x is None or e.y is None:
+            continue
+        size = e.font.size_mm if e.font else 3.0
+        wide = est_text_width(e.text or "", size)
+        ex = e.x - (wide / 2 if (not e.font or e.font.anchor == "middle")
+                    else wide if (e.font and e.font.anchor == "end") else 0)
+        if (ex < x + w and ex + wide > x
+                and e.y - size < y + h and e.y + size * 0.4 > y):
+            return False
+    return True
+
+
 def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0,
          unmarried=False):
-    """Four lines. A chart that outlives its maker has to say what its own
-    marks mean.
+    """A chart that outlives its maker has to say what its own marks mean.
+
+    ONLY THE MARKS THAT ARE ON IT. Every row is checked against the plan
+    that has just been built, which is the same reasoning the unmarried row
+    already used: explaining a sibling arc on a chart with no siblings is
+    four hundred charts carrying a note about something not on them.
+
+    It also fixes the first chart anybody ever sees. With one person there
+    are no marks at all, so the key was four lines of explanation centred in
+    the hole of a disc that is entirely hole — printed straight over their
+    name. Everybody starts with one person; everybody saw it.
 
     Bottom left by default. `at` CENTRES it somewhere else instead, which is
     what a full disc does: the corner of the sheet is outside the round cut
@@ -1794,13 +1853,20 @@ def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0,
     if not style.get("lines.key", True):
         return
     size = style.get("type.size_mm", 2.9) * 0.72
-    rows = [("cell", "two names in one cell — married"),
-            ("arc", "an arc over brothers and sisters"),
-            ("stem", "a stem from a couple to their children"),
-            ("chord", "a marriage between two people already on the chart")]
+    drawn = {e.role for e in plan.elements}
+    rows = [(k, t) for k, t, needs in (
+        ("cell", "two names in one cell — married", "marriage"),
+        ("arc", "an arc over brothers and sisters", "siblings"),
+        ("stem", "a stem from a couple to their children", "stem"),
+        ("chord", "a marriage between two people already on the chart",
+         "married_across"),
+    ) if needs in drawn]
     if unmarried:
-        rows.insert(1, ("nomarr", "a break in that line — a couple who "
-                                  "never married"))
+        rows.insert(min(1, len(rows)),
+                    ("nomarr", "a break in that line — a couple who "
+                               "never married"))
+    if not rows:
+        return                       # nothing on this chart needs explaining
     need = max(est_text_width(t, size) for _, t in rows) + 12
     if maxw > 0 and need > maxw:
         size *= maxw / need
@@ -1808,10 +1874,37 @@ def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0,
             plan.meta.extra["key_dropped"] = True
             return
         need = maxw
-    if at:
-        x, y = at[0] - need / 2, at[1] - size * 1.7 * (len(rows) - 1) / 2
+    tall = size * 1.7 * (len(rows) - 1)
+
+    # DOES THE HOLE ACTUALLY HAVE ROOM. On a big family the middle of the
+    # disc is empty and the key belongs there -- inside the round cut, where
+    # a key in the corner would be in the offcut. On a SMALL family the hole
+    # is where the people are: the whole chart is hole. Centred there
+    # regardless, the key printed straight over the names of the first four
+    # people anybody adds, which is the chart every new user looks at.
+    #
+    # When it will not fit, the key goes in a strip UNDER the chart and the
+    # sheet grows by that much. The canvas is already sized to its content
+    # rather than to the panel -- "a fan that needs 760x440 gets a 760x440
+    # canvas" -- and the key is content.
+    room = maxw / 1.7 if maxw > 0 else 0.0        # the hole's radius
+    corner = (margin, H - margin - tall - size)
+    if at and room > 0 and (tall / 2) ** 2 + (need / 2) ** 2 < room ** 2:
+        x, y = at[0] - need / 2, at[1] - tall / 2
+    elif _clear(plan, corner[0], corner[1] - size, need, tall + size * 2):
+        # The bottom-left of the sheet, which on anything but a tiny chart
+        # is empty. TESTED, not assumed: on a fan it is empty and on a
+        # four-person tree it is where the fourth person is.
+        x, y = corner
     else:
-        x, y = margin, H - margin - 14
+        x = margin
+        y = plan.canvas.height_mm + size * 1.2
+        plan.canvas.height_mm += tall + size * 3.2
+        plan.canvas.width_mm = max(plan.canvas.width_mm, need + margin * 2)
+        # A round sheet with a caption under it is not round any more, and
+        # the cut line has to say so or the laser cuts the key off.
+        if plan.canvas.shape == "circle":
+            plan.canvas.shape = "rect"
     for i, (kind, text) in enumerate(rows):
         yy = y + i * size * 1.7
         if kind == "arc":

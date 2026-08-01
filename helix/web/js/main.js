@@ -132,7 +132,13 @@ function showEmptyState() {
   }, async (id) => {
     await post('subject', { id });          // the first person is you
     META = await get('meta');
-    await refresh();
+    // THE WHOLE WINDOW, not just the chart. This called `refresh()` alone,
+    // so the very first thing anybody does in this program left the
+    // sidebar saying "0 of 0 people on the chart" and "Everyone in this
+    // family" empty, beside a chart with them on it. The first screen
+    // after the first action, and it looked broken.
+    await redrawAll();
+    await loadGaps();
     select(id);
     undoLabels();
   }));
@@ -204,9 +210,14 @@ function readout() {
   const m = PLAN.meta, n = m.extra?.labels_hidden || 0;
   showFit(m.extra?.fit, n);
   const el = m.extra?.elided;
+  // "1 people · 1 generations" is what a template gets you, and the very
+  // first chart anybody sees has exactly one of each.
+  const yrs = m.year_min && m.year_max && m.year_min !== m.year_max
+    ? `${m.year_min}–${m.year_max} · ` : m.year_min ? `${m.year_min} · ` : '';
   $('#readout').innerHTML =
-    `<b>${m.people}</b> people · ${m.generations} generations · ` +
-    `${m.year_min}–${m.year_max} · ${S.w}×${S.h} mm` +
+    `<b>${m.people}</b> ${m.people === 1 ? 'person' : 'people'} · ` +
+    `${m.generations} ${m.generations === 1 ? 'generation' : 'generations'} · ` +
+    yrs + `${S.w}×${S.h} mm` +
     (el && el.marriages
       ? `<br><span class="warn">${el.people} more not shown on
          ${el.marriages} ${el.marriages === 1 ? 'family' : 'families'}</span>
@@ -1098,6 +1109,14 @@ function wireExport() {
       }
       const p = { ...params(), name: (META.title || 'family').replace(/\W+/g, '-') };
       if (kind === 'svgprod') p.production = 1;
+      // The other three drawings. Same geometry, same millimetres, same
+      // query — only the file format differs.
+      if (['pdf', 'dxf', 'eps'].includes(kind)) {
+        window.location = `/api/${kind}?${new URLSearchParams(
+          Object.fromEntries(Object.entries(p)
+            .filter(([, v]) => v !== '' && v != null)))}`;
+        return;
+      }
       if (kind === 'json') { downloadText(JSON.stringify(PLAN, null, 2), 'plan.json'); return; }
       if (kind === 'backup' || kind === 'archive') {
         post(kind, {}).then(r => {
@@ -1137,6 +1156,23 @@ const downloadText = (t, n) => download(new Blob([t], { type: 'application/json'
 
 // ───────────────────────────────────────────────────────────── keyboard ──
 function wireKeys() {
+  // ESCAPE CLOSES THE DIALOGUE, EVEN FROM A SEARCH BOX.
+  //
+  // A `<dialog>` opened with showModal() closes itself on Escape, and nine
+  // of the ten do. The tenth is "How are these two related?", whose first
+  // focusable element is an `<input type=search>` — and a browser's own
+  // handling of Escape in a search box is to clear it and stop there. The
+  // dialogue never saw the key, sat on top of the whole interface, and
+  // nothing else could be clicked until the window was reloaded.
+  //
+  // Wired ahead of everything else, in the capture phase, so the input
+  // never gets the chance to eat it.
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const open = [...document.querySelectorAll('dialog[open]')].pop();
+    if (open) { e.preventDefault(); open.close(); }
+  }, true);
+
   document.addEventListener('keydown', e => {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
     const k = e.key.toLowerCase();

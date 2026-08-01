@@ -710,3 +710,86 @@ right. A difference nobody would think to check.
 
 `print-color-adjust:exact` is what stops a browser dropping the background
 as decoration and taking the face off every sheet in the binder.
+
+## Three things a passing test suite could not see
+
+Six hundred and twenty tests were green, `bootstrap.py` printed Ready, and
+the program could not be used. Every one of these was found by opening it in
+a browser and doing what somebody would do.
+
+**Nobody could click anyone on the chart.** `zoom.js` took
+`setPointerCapture` on pointerdown so that a drag which leaves the window
+keeps panning. Pointer capture also retargets the `click` the browser
+synthesises at the end of the gesture — so every click on a name arrived at
+the wrapper, the per-name handlers never ran, and selecting a person, which
+is the whole interaction with a family tree, did nothing at all. Capture is
+now deferred until the pointer has moved four pixels: under that it is a
+click and the name gets it, over it it is a drag and the capture is taken
+then. Pan, wheel-zoom, pinch and click were all measured afterwards.
+
+**The header did not fit, and said nothing.** Twelve tool buttons, a search
+box, the mode switch and Export need about 1480px; on a 1440px laptop every
+flex child shrank to make room. The Explore/Build control — the switch
+between reading a family and building one — collapsed to two pixels with its
+labels spilling over the search box, so it was both invisible and
+unclickable, and Export hung off the right-hand edge. Nothing shrinks now;
+the tools wrap to a second row.
+
+**The panel's close × sat on top of the ✎ that opens the editor**, so
+clicking to edit somebody closed their panel instead. Room for the × is
+reserved rather than fought over.
+
+`tools/walkthrough-read.mjs` and `walkthrough-edit.mjs` are what found them:
+71 checks over every screen, every dialogue, every export and every editing
+path, driven in a real browser. They are not part of `pytest` — they need a
+browser and the program has no dependencies — and they are the answer to the
+oldest rule in this repository, that a structural check cannot tell you a
+chart looks right.
+
+## The first chart anybody sees
+
+Everybody starts with one person, so the one-person chart is the most-viewed
+chart this program will ever draw, and it was a mess.
+
+**The key was printed over the names.** On a full disc the key goes in the
+hole in the middle, where there is room and where the cut line reaches it.
+With four people the hole is where the people are — the whole chart is hole —
+and four lines of explanation landed on top of them. It now goes in the hole
+only if it FITS in the hole, otherwise the bottom-left corner if that is
+clear of names, otherwise a strip below the chart with the sheet grown to
+hold it. Which of the three is decided by measuring, not assumed.
+
+**And it explained marks that were not there.** A sibling arc on a chart
+with no siblings is a note about something not on it. Every row is now
+checked against the plan that was just built — which for one person leaves
+no rows, and no key.
+
+**One ring grew to 963mm to hold a 3.4mm name.** Growing the rings to fill
+the sheet is right and is what makes a chart use the wood it is cut from —
+until the result stops being a chart. The search found a twelve-degree
+sliver with a ring band fifty-four times deeper than its contents and
+reported a perfect fit, because it did fill the sheet. Capped at twelve
+times, which is measured: the real charts here run from 1.0x to 8.1x.
+
+**"1 people · 1 generations"** is what a template gets you, and the first
+chart has exactly one of each.
+
+**The first thing anybody does left the window half updated.** Adding
+yourself called `refresh()` alone, so the sidebar said "0 of 0 people on the
+chart" beside a chart with you on it.
+
+## The one place with unsaved state
+
+The Build panel had a **Save** button. Type a birthplace, click anywhere
+else, and it was gone — in a program whose first rule is that every write
+commits immediately and whose documentation says there is no unsaved state.
+Each box now writes itself when you leave it, one field per request so that
+saving a birthplace cannot wipe the birth date beside it.
+
+## PDF, DXF and EPS were reachable only from a terminal
+
+The three renderers are hand-written, have worked since the first release,
+and were not on the Export screen — which offered SVG and stopped. Somebody
+who installed the application and wanted a DXF for their laser had to go and
+find a command line, which is the one thing this program is not supposed to
+ask anybody to do.

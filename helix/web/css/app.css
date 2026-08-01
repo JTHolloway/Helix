@@ -15,11 +15,26 @@ body{background:var(--paper);color:var(--ink);font-size:15px;line-height:1.55;
      display:flex;flex-direction:column;overflow:hidden}
 
 /* ---------------------------------------------------------------- header */
+/* THE HEADER DID NOT FIT AND SAID NOTHING.
+   Twelve tool buttons, a search box, the mode switch and Export need about
+   1480px; on a 1440px laptop every flex child shrank to make room. The
+   Explore/Build control — the switch between reading a family and building
+   one, the most important control in the program — collapsed to two pixels
+   with its labels spilling over the search box, so it was invisible AND
+   unclickable, and Export hung off the right-hand edge.
+   Nothing shrinks now. The tools wrap onto a second row instead, which
+   costs 40px of a laptop screen and keeps every control reachable. */
 .bar{display:flex;align-items:center;gap:10px;padding:10px 16px;
+     flex-wrap:wrap; row-gap:8px;
      border-bottom:1px solid var(--rule);background:var(--panel);position:relative;z-index:20}
+.bar > *{flex:0 0 auto}
 .brand{font-weight:700;letter-spacing:.02em}
 .brand span{font-weight:400;color:var(--muted);margin-left:10px}
-.grow{flex:1}
+.grow{flex:1 1 auto}
+/* The twelve tools are the only thing allowed to move to the next line.
+   `display:contents` makes them direct children of the bar, so they wrap
+   as a group only if they are wrapped in something that can. */
+.tools{display:contents}
 #search{width:240px;padding:7px 11px;border:1px solid var(--rule);border-radius:var(--r);
         background:var(--paper);color:var(--ink);font:inherit;font-size:14px}
 #search:focus{outline:2px solid var(--accent);outline-offset:1px}
@@ -173,7 +188,12 @@ dialog h2{margin:0 0 4px;font-size:19px}
    Everything here is plain CSS on the existing custom properties; there is
    no build step and nothing to install. */
 
-#right .who h3 { display: flex; align-items: baseline; gap: .4rem; }
+/* THE CLOSE × SITS OVER THE TOP-RIGHT CORNER, absolutely positioned, and
+   the name's ✎ runs to the end of the same line — so on a long name the
+   pencil went underneath the ×, and clicking to edit somebody closed the
+   panel instead. Room for the × is reserved, not fought over. */
+#right .who h3 { display: flex; align-items: baseline; gap: .4rem;
+                 padding-right: 2.4rem; flex-wrap: wrap; }
 button.icon { background: none; border: 0; cursor: pointer; font-size: 1rem;
   opacity: .55; padding: .1rem .3rem; border-radius: 4px; }
 button.icon:hover { opacity: 1; background: rgba(128, 128, 128, .15); }

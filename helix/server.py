@@ -353,6 +353,40 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(body)
             return
+        if route in ("pdf", "dxf", "eps"):
+            # THE OTHER THREE FILES, which the program has always been able
+            # to write and only from a terminal. `render/pdf.py`, `dxf.py`
+            # and `eps.py` are hand-written and have worked since the first
+            # release; the Export screen offered SVG and stopped, so
+            # somebody who installed the application and wanted a DXF for
+            # their laser had to go and find a command line. That is the one
+            # thing this program is not supposed to ask anybody to do.
+            #
+            # They write to a file rather than return bytes, because a PDF
+            # has a cross-reference table that needs the finished length.
+            import tempfile
+            from .render import dxf as dxfrender
+            from .render import eps as epsrender
+            from .render import pdf as pdfrender
+            mod = {"pdf": pdfrender, "dxf": dxfrender, "eps": epsrender}[route]
+            mime = {"pdf": "application/pdf", "dxf": "image/vnd.dxf",
+                    "eps": "application/postscript"}[route]
+            plan = _plan(q)
+            with tempfile.TemporaryDirectory() as d:
+                out = Path(d) / f"tree.{route}"
+                if route == "dxf":
+                    mod.write(plan, out)
+                else:
+                    mod.write(plan, out, production=q.get("production") == "1")
+                body = out.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Disposition",
+                             f'attachment; filename="{q.get("name","tree")}.{route}"')
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if route == "person":
             return self._json(_person_detail(ST, q["id"]))
         if route == "relatives":
@@ -1704,13 +1738,18 @@ def lan_address() -> str:
 
 def serve(dbpath: str, host="127.0.0.1", port=8731, open_browser=True):
     srv = make_server(dbpath, host, port)
-    url = f"http://{host}:{srv.server_port}/"
+    wide = host in ("0.0.0.0", "::")
+    # "Open http://0.0.0.0:8731/" is not an address anybody can open; it is
+    # the wildcard the socket is BOUND to. Told to open it, a person gets a
+    # browser error from the one line the program prints about how to start.
+    url = f"http://{'127.0.0.1' if wide else host}:{srv.server_port}/"
     print(f"\n  Helix is running.  Open  {url}\n  (Ctrl-C to stop)\n")
-    if host in ("0.0.0.0", "::"):
+    if wide:
         ip = lan_address()
         print(f"  On this network, from a phone or a tablet:\n"
               f"      http://{ip or '<this machine>'}:{srv.server_port}/\n"
-              f"  Anyone on the same network can open it while it is running.\n")
+              f"  Anyone on the same network can open it while it is running.\n"
+              f"  The Family screen shows a QR code to point a phone at.\n")
     if open_browser:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:
