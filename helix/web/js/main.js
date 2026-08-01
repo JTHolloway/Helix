@@ -707,24 +707,43 @@ function wireScope() {
   }).catch(() => {});
 }
 
+// PRINTING, and the difference between the two kinds of paper.
+//
+// An OFFICIAL RECORD is filed and read in thirty years: it states what is
+// known and marks what is not, and nothing on it is arithmetic over today's
+// file. A PROFILE is everything on screen — the DNA percentages, where the
+// family came from, the little bloodline tree, what is still to find out —
+// which is working material and goes stale the week after it is printed.
+//
+// Both are wanted and they are not the same document, so both are offered
+// and the buttons say which is which.
 function wirePrint() {
   const dlg = $('#printDlg');
-  $('#printBtn').addEventListener('click', () => dlg.showModal());
+  $('#printBtn').addEventListener('click', () => {
+    // The person half only appears when there is a person.
+    const who = SEL && META.people.find(p => p.id === SEL);
+    $('#prPerson').hidden = !who;
+    if (who) $('#prWho').textContent = who.name;
+    dlg.showModal();
+  });
   dlg.querySelectorAll('[data-pr]').forEach(b =>
     b.addEventListener('click', () => {
       const q = new URLSearchParams({ focus: S.focus, kin: JSON.stringify(S.kin) });
       const what = b.dataset.pr;
       let url;
-      if (what === 'profile') {
+      if (what === 'record' || what === 'profile') {
         if (!SEL) { toast('Choose somebody first.'); return; }
-        url = `/print/profile?id=${encodeURIComponent(SEL)}`;
+        url = `/print/${what}?id=${encodeURIComponent(SEL)}`;
       } else if (what === 'profiles-all') {
         url = '/print/profiles?all=1';
-      } else if (['outline', 'research', 'chronicle', 'records']
-                   .includes(what)) {
-        url = `/print/${what}?${q}`;
+      } else if (what === 'records-all') {
+        url = '/print/records?all=1';
+      } else if (what === 'chart') {
+        // The chart exactly as it is on screen — same design, same
+        // narrowing, same size — so the sheet matches the preview.
+        url = `/print/chart?${new URLSearchParams(params())}`;
       } else {
-        url = `/print/profiles?${q}`;
+        url = `/print/${what}?${q}`;
       }
       dlg.close();
       window.open(url, '_blank');

@@ -412,21 +412,47 @@
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
 
+<!-- PRINTING, and the difference between the two kinds of paper.
+     An OFFICIAL RECORD is filed: it says what is known and what is not,
+     and nothing on it is arithmetic over today's file. A PROFILE is
+     everything on screen — the DNA, the origins, the small bloodline tree,
+     what is still to find out — which is working material and goes stale.
+     Both are wanted; they are not the same document. -->
 <dialog id="printDlg">
   <h2>Print</h2>
-  <p class="hint">Each opens in a new tab with a Print button, and covers the
-    same people the chart does. A profile carries what is known; the research
-    list prints on its own sheet.</p>
+
+  <div id="prPerson" hidden>
+    <h3 class="prhead">This person <span id="prWho"></span></h3>
+    <div class="exports">
+      <button data-pr="record" class="primary">Official record — one sheet
+        for the folder, with what is not known marked as unknown</button>
+      <button data-pr="profile">Full profile — everything on screen,
+        including where they came from and what is still to find</button>
+    </div>
+  </div>
+
+  <h3 class="prhead">Everyone</h3>
   <div class="exports">
-    <button data-pr="records" class="primary">The record book — everyone,
-      numbered and cross-referenced, for a folder</button>
-    <button data-pr="profile">This person's profile</button>
-    <button data-pr="profiles">Everyone on the chart — one profile per page</button>
-    <button data-pr="profiles-all">Everyone in the file — one profile per page</button>
+    <button data-pr="records" class="primary">The record book — every
+      person, one page each, with a contents and an index</button>
+    <button data-pr="profiles">Every profile, one per page</button>
+    <button data-pr="records-all">The record book for everyone in the
+      file, not only those on the chart</button>
+    <button data-pr="profiles-all">Every profile for everyone in the file</button>
+  </div>
+
+  <h3 class="prhead">The family tree</h3>
+  <div class="exports">
+    <button data-pr="chart" class="primary">The chart as it looks now,
+      on one sheet</button>
     <button data-pr="outline">The tree as an indented outline</button>
     <button data-pr="chronicle">Every birth, marriage and death, in order</button>
     <button data-pr="research">Where to look next — a list to take with you</button>
   </div>
+
+  <p class="hint">Each opens in a new tab with a Print button. Everything
+    except the two marked “in the file” covers the same people the chart
+    does.</p>
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
 

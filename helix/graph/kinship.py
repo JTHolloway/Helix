@@ -951,6 +951,22 @@ def _walk_up(graph, start: str, target: str, limit: int = 40) -> list[str]:
     return []
 
 
+def _joining_union(graph, a: str, b: str, A: dict, B: dict):
+    """The parentless family two people meet in, as (child of it above a,
+    child of it above b). None if there is not one."""
+    mine = {a, *A}
+    theirs = {b, *B}
+    for u in graph.unions.values():
+        if any(x in graph.people for x in u.partners):
+            continue                    # a named parent: the ordinary walk
+        kids = [c for c in u.children if c in graph.people]
+        ka = next((c for c in kids if c in mine), None)
+        kb = next((c for c in kids if c in theirs and c != ka), None)
+        if ka and kb:
+            return ka, kb
+    return None
+
+
 def relate(graph, a: str, b: str, index: Optional["Kinship"] = None) -> Relation:
     """How A and B are related, with the way through spelt out.
 
@@ -977,6 +993,24 @@ def relate(graph, a: str, b: str, index: Optional["Kinship"] = None) -> Relation
         shared = sorted(x for x in A if x in B
                         and A[x] == k.up and B[x] == k.down)
         top = shared[0] if shared else None
+        if top is None:
+            # BROTHERS AND SISTERS WHOSE PARENTS ARE NOT IN THE FILE. There
+            # is no person standing where the shared ancestor stands, so the
+            # walk from person to person has nothing to walk through -- the
+            # same case `Kinship` handles by treating the family itself as
+            # the ancestor. The path says so in as many words, because "no
+            # path" would read as "no relation".
+            u = _joining_union(graph, a, b, A, B)
+            if u is not None:
+                up = _walk_up(graph, a, u[0])
+                down = _walk_up(graph, b, u[1])
+                path = [step(x, "up") for x in up]
+                path.append(Step("", "Their parents", "top",
+                                 "not recorded — this is the family they "
+                                 "both belong to"))
+                path += [step(x, "down") for x in reversed(down)]
+                return Relation(a, b, True, k.label, back.label, k.label, k,
+                                (), tuple(path), dna)
         path: list[Step] = []
         if top:
             # Two shared ancestors at the same distance means a COUPLE, and

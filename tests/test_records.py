@@ -777,3 +777,90 @@ def test_a_date_helix_cannot_read_is_still_kept(app):
     c = app
     pid = add(c, "Harriet", "Whitcombe", birth="the spring after the flood")
     assert c.get("person", id=pid)["birth"] == "the spring after the flood"
+
+
+# ══════════════ two kinds of paper about the same person ══════════════════
+#
+# An OFFICIAL RECORD is filed and read in thirty years: it states what is
+# known and marks what is not, and nothing on it is arithmetic over today's
+# file. A PROFILE is everything on screen -- the DNA percentages, where the
+# family came from, what is still to find out -- which is working material
+# and goes stale the week after it is printed. Both are wanted, and they are
+# not the same document.
+def _page(app, path):
+    import urllib.request
+    with urllib.request.urlopen(f"{app.base}/print/{path}") as r:
+        return r.read().decode()
+
+
+def test_one_persons_official_record_has_no_apparatus_round_it(app):
+    """A cover page, a contents and an index for a single entry would be
+    four sheets of stationery around one fact."""
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    unc = add(c, "Robert", "Whitcombe", dad, "sibling", birth="1958", sex="M")
+    html = _page(c, f"record?id={unc}")
+    assert html.count("<article class=entry>") == 1
+    assert "Contents" not in html and "Index of names" not in html
+    assert "<dt>Born</dt>" in html and "Unknown" in html
+
+
+def test_the_record_and_the_profile_are_different_documents(app):
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    unc = add(c, "Robert", "Whitcombe", dad, "sibling", birth="1958", sex="M")
+
+    record = _page(c, f"record?id={unc}")
+    profile = _page(c, f"profile?id={unc}")
+
+    # the profile says how they stand to you; the record never does
+    assert "uncle" in profile
+    assert "uncle" not in record
+    # the record says what is NOT known; the profile is not a form
+    assert "Unknown" in record
+    # and both are about the same man
+    assert "Robert Whitcombe" in record and "Robert Whitcombe" in profile
+
+
+def test_the_profile_says_the_way_through_not_only_the_label(app):
+    """"Uncle" is the label and not the whole answer -- somebody looking at
+    a name they do not recognise wants to know WHICH uncle."""
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    unc = add(c, "Robert", "Whitcombe", dad, "sibling", birth="1958", sex="M")
+    d = c.get("person", id=unc)
+    assert d["kin"]["label"] == "uncle"
+    assert "Peter Whitcombe" in d["kin"]["how"], d["kin"]["how"]
+    # and it says nothing at all about the subject themselves
+    assert c.get("person", id=me)["kin"]["how"] == ""
+
+
+def test_the_chart_can_be_printed_on_a_sheet(app):
+    """Not the same thing as Export -> SVG, which gives the laser the
+    millimetre geometry. This is the picture with a caption under it."""
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    html = _page(c, "chart?design=radial_family")
+    assert "<svg" in html
+    assert "chartcap" in html, "it needs a caption saying what it is"
+    assert "@page{size:A4" in html
+
+
+def test_the_record_book_for_everyone_in_the_file_is_its_own_option(app):
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    add(c, "Nobody", "Connected", birth="1900")
+    # the buttons in the panel always send the chart's own scoping
+    scoped = _page(c, "records?focus=bloodline")
+    everyone = _page(c, "records?all=1")
+    assert "Nobody Connected" not in scoped
+    assert "Nobody Connected" in everyone

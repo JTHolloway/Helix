@@ -50,6 +50,8 @@ export async function show(host, pid, hooks) {
           ${d.is_subject ? '<span class="rel me">this is you</span>' : ''}
           ${d.on_thread && !d.is_subject
             ? '<span class="rel">on your bloodline</span>' : ''}
+          ${d.kin && d.kin.how
+            ? `<p class="relhow">${esc(d.kin.how)}</p>` : ''}
         </div>
       </div>
 

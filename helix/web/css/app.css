@@ -942,3 +942,18 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 .planned ul{margin:6px 0 0;padding-left:16px}
 .planned li{margin:0 0 5px;line-height:1.4}
 .planned b{color:var(--ink);font-weight:600;display:block}
+
+/* --- the print dialogue, in three groups --------------------------------- */
+/* An official record and a profile are two different documents about the
+   same person, so they are two buttons that say which is which. */
+.prhead{font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);font-weight:700;margin:16px 0 0}
+.prhead span{text-transform:none;letter-spacing:0;font-weight:400;
+  color:var(--ink);margin-left:8px;font-size:14px}
+#printDlg .exports{margin:8px 0 0}
+#printDlg .exports button{line-height:1.35;font-size:14px}
+/* "Uncle" is the label and not the whole answer. Somebody looking at a name
+   they do not recognise wants to know WHICH uncle, and the way through is
+   what tells them. */
+#inspector .relhow{margin:2px 0 0;font-size:12px;color:var(--muted);
+  line-height:1.35}

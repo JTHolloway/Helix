@@ -507,7 +507,7 @@ def _or_unknown(v, blank: str = UNKNOWN) -> str:
 
 
 def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
-                subtitle="") -> str:
+                subtitle="", covers=True) -> str:
     """Every person, everything known about them, as a folder.
 
     WHAT AN OFFICIAL RECORD IS. The thing that goes in a ring binder and is
@@ -526,6 +526,10 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
     """
     people = _rb_order(graph, list(ids))
     order = {pid: i + 1 for i, pid in enumerate(people)}
+    # ONE PERSON'S OFFICIAL RECORD is the same sheet without the apparatus.
+    # A cover page, a contents and an index for a single entry would be
+    # four sheets of stationery around one fact.
+    covers = covers and len(people) > 1
     declared = {q: dict(x.heritage) for q, x in graph.people.items() if x.heritage}
 
     def nm(pid) -> str:
@@ -547,7 +551,8 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
     body = [f"<div class=rb>"]
 
     # ---- the cover
-    body.append(
+    if covers:
+        body.append(
         "<div class=rbcover>"
         "<div class=crest>&#10022;</div>"
         f"<h1>{esc(title or 'Family Records')}</h1>"
@@ -559,16 +564,17 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
         f"<p>Compiled {__import__('datetime').date.today().strftime('%d %B %Y')}"
         "</p></div>")
 
-    # ---- the contents, on its own page, with nothing else on it
-    body.append("<div class=newpage><h2>Contents</h2>"
-                "<p class=rbnote-lead>One page each, oldest first, family by "
-                "family.</p><ol class=rbtoc>")
-    for pid in people:
-        p = graph.people[pid]
-        body.append(f"<li><span class=n>{order[pid]}</span> {esc(p.full_name)}"
-                    + (f" <span class=sub>{esc(p.lifespan)}</span>"
-                       if p.lifespan else "") + "</li>")
-    body.append("</ol></div>")
+        # ---- the contents, on its own page, with nothing else on it
+        body.append("<div class=newpage><h2>Contents</h2>"
+                    "<p class=rbnote-lead>One page each, oldest first, family "
+                    "by family.</p><ol class=rbtoc>")
+        for pid in people:
+            p = graph.people[pid]
+            body.append(f"<li><span class=n>{order[pid]}</span> "
+                        f"{esc(p.full_name)}"
+                        + (f" <span class=sub>{esc(p.lifespan)}</span>"
+                           if p.lifespan else "") + "</li>")
+        body.append("</ol></div>")
 
     # ---- the entries, one page each
     for pid in people:
@@ -655,17 +661,18 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
                 f"<dt>{esc(k)}</dt><dd>{v}</dd>" for k, v in rows) + "</dl>")
 
         body.append(
-            f"<article class=entry>"
-            f"<h2><span class=no>{order[pid]}</span> {esc(p.full_name)}</h2>"
+            "<article class=entry>"
             # NO "YOUR UNCLE" ON A FILED RECORD. Every relation in the
             # program is measured from one person, and in thirty years
             # nobody reading this folder is that person. The relations that
             # belong here are the ones stated outright -- father, mother,
             # married to -- and they are all below.
-            f"<p class=sub>{esc(p.lifespan) if p.lifespan else 'Dates unknown'}"
-            f"</p>"
-            f"<div class=hr></div>"
-            f"<div class=body>{img}<div class=txt>"
+            + (f"<h2><span class=no>{order[pid]}</span> {esc(p.full_name)}</h2>"
+               if covers else f"<h2>{esc(p.full_name)}</h2>")
+            + f"<p class=sub>"
+            + (esc(p.lifespan) if p.lifespan else "Dates unknown")
+            + "</p><div class=hr></div>"
+            + f"<div class=body>{img}<div class=txt>"
             + "<p class=rbsec>Life</p>" + dl(life_rows)
             + "<p class=rbsec>Parents and family</p>" + dl(fam)
             + "".join("<p class=rbsec>" + ("Marriage" if len(marriages) == 1
@@ -682,11 +689,18 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
                + ", ".join(esc(x.get("caption") or x["name"]) for x in papers)
                + "</p>" if papers else "")
             + "</div></div><div class=grow></div>"
-            f"<div class=rbfoot><span>{esc(title or 'Family Records')}</span>"
-            f"<span>{esc(p.full_name)} &middot; page {order[pid]} of "
-            f"{len(people)}</span></div></article>")
+            + "<div class=rbfoot><span>"
+            + esc(title or "Family Records") + "</span><span>"
+            + (f"{esc(p.full_name)} &middot; page {order[pid]} of "
+               f"{len(people)}" if covers else
+               esc(__import__("datetime").date.today().strftime("%d %B %Y")))
+            + "</span></div></article>")
 
     # ---- the index, by surname
+    if not covers:
+        body.append("</div>")
+        return page(title or "Family Records", "".join(body),
+                    note=title, extra_css=RECORD_CSS)
     body.append("<div class=newpage><h2>Index of names</h2>"
                 "<p class=rbnote-lead>The number is the page.</p>"
                 "<div class=rbindex>")
@@ -704,6 +718,49 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
 
     return page(title or "Family Records", "".join(body),
                 note=title, extra_css=RECORD_CSS)
+
+
+CHART_CSS = """
+.chartsheet{text-align:center}
+.chartsheet svg{width:100%;height:auto;max-height:245mm;display:block;
+                margin:0 auto}
+.chartcap{margin-top:6mm;color:var(--muted);font-size:9.5pt;
+          border-top:1px solid var(--rule);padding-top:2mm;
+          display:flex;justify-content:space-between;gap:6mm}
+.chartcap b{color:var(--ink);font-weight:600}
+@media print{
+  /* THE SHEET IS THE CHART'S OWN SHAPE. A metre-square disc on a portrait
+     page is a disc with a third of the paper wasted under it, and a wide
+     fan on a portrait page comes out unreadable. */
+  @page{size:__PAGE__;margin:12mm}
+  .chartsheet svg{max-height:none}
+}
+"""
+
+
+def chart(svg: str, *, title: str = "", people: int = 0, span: str = "",
+          landscape: bool = False, note: str = "") -> str:
+    """The chart itself, on paper.
+
+    NOT AN EXPORT. `Export → SVG` gives the file to send to a laser cutter,
+    at the millimetre sizes the panel needs. This is the picture on A4 or A3
+    with a caption under it, which is what somebody wants when they mean
+    "print the tree" — to put on a wall, take to an aunt, or check against a
+    parish register with a pencil.
+    """
+    import datetime
+    cap = " · ".join(x for x in (
+        f"<b>{esc(title)}</b>" if title else "",
+        f"{people} people" if people else "",
+        esc(span)) if x)
+    return page(title or "Family tree",
+                f"<div class=chartsheet>{svg}"
+                f"<div class=chartcap><span>{cap}</span>"
+                f"<span>{datetime.date.today().strftime('%d %B %Y')}</span>"
+                f"</div></div>",
+                note=note or title,
+                extra_css=CHART_CSS.replace(
+                    "__PAGE__", "A4 landscape" if landscape else "A4"))
 
 
 def one(graph, con, pid: str, *, kin=None, photos=None, title="") -> str:

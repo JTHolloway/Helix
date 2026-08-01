@@ -519,3 +519,43 @@ full stop alone was enough to make it unparseable.
 Double dating keeps its day: "24 Feb 1723/24" is February 1723 by the old
 English year, which began on 25 March, and 1724 by ours. It used to display
 as "1723/24", throwing away the most precise thing anybody had written down.
+
+## Two kinds of paper about the same person
+
+An OFFICIAL RECORD is filed and read in thirty years by somebody who never
+met anybody in it. It states what is known, marks what is not, and carries
+nothing that is arithmetic over today's file.
+
+A PROFILE is everything on screen: how they stand to you, the DNA
+percentages, where the family came from, the small bloodline tree, what is
+still to find out. That is working material — it changes the moment a
+grandparent is added, and it is exactly what somebody wants when they are
+researching rather than filing.
+
+Both are wanted and they are not the same document, so the Print screen
+offers both and the buttons say which is which. The same split runs through
+the rest of it: *This person* — the record, or the profile. *Everyone* — the
+record book, or every profile, each for the chart's cast or the whole file.
+*The family tree* — the chart itself, the outline, the chronicle, the
+research list.
+
+**Printing the chart is not Export → SVG.** The export writes the millimetre
+geometry a laser cutter needs. Printing writes the picture on A4 with a
+caption under it — the family's name, how many people, the years it covers,
+the date it was printed — which is what somebody means by "print the tree":
+to put on a wall, take to an aunt, or check against a parish register with
+a pencil. The page turns landscape by itself when the chart is wider than
+it is tall.
+
+**"Uncle" is the label and not the whole answer.** Somebody looking at a
+name they do not recognise wants to know WHICH uncle, so the profile says
+the way through — "through Peter Whitcombe" — read off the same path the
+Relate screen draws, so the two can never disagree. It never appears on a
+record, where "your" means nothing.
+
+Drawing that path turned up a gap left over from the parentless-family fix:
+`Kinship` could MEASURE two people whose shared parents are not in the file,
+and `relate` could not draw the way between them, because there is no person
+standing where the shared ancestor stands. The path now names the family
+itself — "Their parents, not recorded" — since no path at all would read as
+no relation.

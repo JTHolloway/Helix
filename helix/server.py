@@ -442,6 +442,26 @@ class Handler(BaseHTTPRequestHandler):
             return self._html(dossier.everybody(
                 g, ST.con, ids, kin=k, photos_for=photos,
                 title=f"{ST.title} — profiles"))
+        if what == "record":
+            # ONE PERSON'S OFFICIAL RECORD -- the same sheet the binder
+            # holds, on its own, for handing to somebody or filing under
+            # their name. No cover, no contents, no index around one entry.
+            pid = q["id"]
+            return self._html(dossier.record_book(
+                g, ST.con, [pid], kin=k, photos_for=photos,
+                title=ST.title or "Family Records", covers=False))
+        if what == "chart":
+            # THE PICTURE, on A4. Not the same thing as Export -> SVG, which
+            # gives the laser the millimetre geometry; this is the chart with
+            # a caption under it, to put on a wall or take to an aunt.
+            plan = _plan(q)
+            c, m = plan.canvas, plan.meta
+            span = (f"{m.year_min}\u2013{m.year_max}"
+                    if m.year_min and m.year_max else "")
+            return self._html(dossier.chart(
+                svgrender.render(plan), title=ST.title,
+                people=m.people, span=span,
+                landscape=c.width_mm > c.height_mm * 1.08))
         if what == "records":
             # THE BINDER. One page per person, oldest first and family by
             # family, every field present whether or not it is filled in,
@@ -1184,7 +1204,7 @@ def _person_detail(st: State, pid: str) -> dict:
         # the counts, the photographs, and everything anybody has written
         # down. `relationship` is kept as it was so nothing that reads it
         # breaks; `kin` is the same fact with structure on it.
-        "kin": kin.to_dict(),
+        "kin": dict(kin.to_dict(), how=_how_related(st, pid)),
         "counts": household(g, pid),
         "photos": _photos(st, p),
         "missing": _missing(g, st.con, p),
@@ -1210,6 +1230,32 @@ def _person_detail(st: State, pid: str) -> dict:
         "families": _families(g, pid),
         "on_thread": pid in thread(g, st.subject).members,
     }
+
+
+def _how_related(st: State, pid: str) -> str:
+    """The relation said the long way: "your father's brother".
+    
+    "Uncle" is the label and it is not the whole answer -- somebody looking
+    at a name they do not recognise wants to know WHICH uncle, and the way
+    through is what tells them. Read off the same path the Relate screen
+    draws, so the two can never disagree.
+    """
+    from .graph.kinship import relate
+    g, sub = st.graph, st.subject
+    if not sub or sub == pid or pid not in g.people:
+        return ""
+    r = relate(g, sub, pid, st.kin)
+    if not r.related or len(r.path) < 3:
+        return ""                      # a parent or a child needs no gloss
+    # Only the people. A parentless family appears on the path as a step
+    # with no id -- honest on the Relate screen, where the note explains it,
+    # and noise in a one-line hint.
+    mid = [s.name for s in r.path[1:-1] if s.pid]
+    if not mid:
+        return ""
+    if len(mid) > 4:
+        mid = mid[:2] + ["\u2026"] + mid[-1:]
+    return "through " + " \u2192 ".join(mid)
 
 
 def _photos(st: State, p) -> list[dict]:
