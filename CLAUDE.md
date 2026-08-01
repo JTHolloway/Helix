@@ -2,7 +2,7 @@
 
 A genealogy program that renders family trees as laser-cuttable charts, and
 keeps everything you know about the people on them. Python 3.11+, **zero
-required dependencies**, 620 tests.
+required dependencies**, 621 tests.
 
 ## Read this before anything else
 
@@ -95,7 +95,7 @@ Then read, in this order:
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 620 tests, must stay green
+python3 -m pytest tests -q      # 621 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 
@@ -139,6 +139,14 @@ hard way and each names the failure it prevents.
 - **Arcs must take the short way round.** Use `geometry.short_arc` for any tie
   between two people. `arc_path` follows `t1 - t0`, so a couple either side of
   the start angle got their marriage drawn right across the disc.
+- **Never iterate a set of person ids in a layout.** Every design keeps a
+  `within = set(g.slots)` to ask who is on the chart; walking it puts them in
+  hash-seed order, which is different in every process, so the same file
+  exported twice gave two different charts. On the map it moved the geometry,
+  not just the element order. Walk `g.slots` — a dict, in grid order — and
+  leave `within` for membership. `tests/test_layout.py` renders all twenty
+  designs under two hash seeds in two subprocesses; it has to fork, because
+  one process reuses one seed and passes.
 - **Emit absolute SVG path commands.** `pathflatten` handles relative now, but
   a relative circle once flattened into garbage geometry hundreds of
   millimetres off the sheet — in the CAD exports only, because browsers read

@@ -23,6 +23,18 @@ tries to be a better version of it. Each answers a question the couple-cell
 chart deliberately cannot: which branches thrived, which families married
 into each other and how often, where a family moved, and what a heavily
 intermarried tree looks like when you stop pretending it is a tree.
+
+`within` IS FOR ASKING, NOT FOR WALKING. Every design here keeps a
+`within = set(g.slots)` to test membership in one step, and iterating it is
+the natural next thing to write. Do not: a set of strings comes out in an
+order that depends on the hash seed, which is different in every process.
+Two of these designs did exactly that, and the same file exported twice
+gave two different charts — the star chart's lines in a different order,
+and the map worse than that, because the order decided which place kept
+its label and where the coordinate-less ones sat round the edge. Walk
+`g.slots`, which is a dict and keeps the order the grid built it in, and
+ask `within` whether somebody is on the chart. `tests/test_layout.py`
+renders every design under two hash seeds and will fail if this comes back.
 """
 from __future__ import annotations
 
@@ -187,7 +199,7 @@ def treemap(graph, s, style) -> RenderPlan:
                      x + pad, y + pad + fs, w - pad * 2, h - pad * 2 - fs,
                      depth + 1)
 
-    roots = [r for r in g.roots if r in within] or list(within)[:1]
+    roots = [r for r in g.roots if r in within] or list(g.slots)[:1]
     squarify(sorted(((r, _descend(graph, r, within)) for r in roots),
                     key=lambda t: -t[1]),
              m, m + 10, W - m * 2, H - m * 2 - 10, 0)
@@ -552,7 +564,7 @@ def geo_map(graph, s, style) -> RenderPlan:
     # coordinates go round the edge, labelled -- rather than being silently
     # dropped, which would be a map that lies by omission.
     named: dict = {}
-    for pid in within:
+    for pid in g.slots:
         p = graph.people[pid]
         nm = (p.birth_place or "").strip()
         if nm:
@@ -646,7 +658,7 @@ def geo_map(graph, s, style) -> RenderPlan:
     # their child was, which is the only migration a family tree can honestly
     # claim to know.
     moves: dict = {}
-    for pid in within:
+    for pid in g.slots:
         a = (graph.people[pid].birth_place or "").strip()
         for kid in graph.children(pid):
             if kid not in within:
@@ -693,7 +705,7 @@ def constellation(graph, s, style) -> RenderPlan:
         th = -math.pi / 2 + 2 * math.pi * sl.tc
         at[pid] = G.polar(cx, cy, r, th)
 
-    for pid in within:
+    for pid in g.slots:
         for kid in graph.children(pid):
             if kid in at:
                 (x0, y0), (x1, y1) = at[pid], at[kid]

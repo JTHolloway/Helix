@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="369.0885mm" height="183.8728mm" viewBox="0 0 369.0885 183.8728">
-<!-- helix | engine=radial_family style=default people=23 hash=15a2a994f212 -->
+<!-- helix | engine=radial_family style=default people=23 hash=4590bfbf3952 -->
 <rect x="0" y="0" width="369.0885" height="183.8728" fill="#FBF8F2"/>
 <g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
 <path d="M267.7857,37.8333A97.5029,97.5029 0 0,1 262.2699,45.9312" fill="none" stroke="#22201D" stroke-width="0.24" stroke-linecap="round" stroke-linejoin="round"/>
@@ -74,14 +74,12 @@
 <text x="46.7986" y="80.8854" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central" transform="rotate(55.74,46.7986,80.8854)">Beatrice Ashworth</text>
 <text x="44.2675" y="82.6093" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="middle" dominant-baseline="central" transform="rotate(55.74,44.2675,82.6093)">1790–1850</text>
 <text x="184.5443" y="32" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
-<path d="M 20.000,149.873 L 27.000,149.873" fill="none" stroke="#22201D" stroke-width="0.22" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="30" y="150.6288" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">two names in one cell — married</text>
-<path d="M 20.000,153.545 L 27.000,153.545" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="30" y="154.3008" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">an arc over brothers and sisters</text>
-<path d="M 23.500,155.217 L 23.500,159.217" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
-<text x="30" y="157.9728" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">a stem from a couple to their children</text>
-<path d="M 20.000,160.889 L 27.000,160.889" fill="none" stroke="#8A6F4E" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.6,1.2"/>
-<text x="30" y="161.6448" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">a marriage between two people already on the chart</text>
+<path d="M 20.000,154.369 L 27.000,154.369" fill="none" stroke="#22201D" stroke-width="0.22" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="30" y="155.1248" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">two names in one cell — married</text>
+<path d="M 20.000,158.041 L 27.000,158.041" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="30" y="158.7968" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">an arc over brothers and sisters</text>
+<path d="M 23.500,159.713 L 23.500,163.713" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="30" y="162.4688" font-family="sans-serif" font-size="2.16" fill="#22201D" text-anchor="start" dominant-baseline="central">a stem from a couple to their children</text>
 </g>
 <g id="CUT" inkscape:groupmode="layer" inkscape:label="CUT">
 <path d="M12.5162,7H356.5724A5.5162,5.5162 0 0,1 362.0885,12.5162V171.3567A5.5162,5.5162 0 0,1 356.5724,176.8728H12.5162A5.5162,5.5162 0 0,1 7,171.3567V12.5162A5.5162,5.5162 0 0,1 12.5162,7Z" fill="none" stroke="#B03A2E" stroke-width="0.05" stroke-linecap="round" stroke-linejoin="round"/>

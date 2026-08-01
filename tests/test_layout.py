@@ -84,6 +84,67 @@ def test_unknown_design_names_the_alternatives():
     assert "radial_sunburst" in str(e.value)
 
 
+# --- the same file must draw the same chart twice -------------------------
+#
+# It did not. Two designs walked a `set` of person ids, and a set of strings
+# comes out in an order that depends on the hash seed -- which Python picks
+# afresh for every process. So the star chart's descent lines were emitted
+# in a different order each run, and the map was worse: the order decided
+# which of two overlapping places kept its name, and where the places with
+# no coordinates were spaced round the edge. Two exports of one unchanged
+# family differed, which makes the `hash=` in the SVG header -- there to
+# answer "has this chart changed?" -- answer it wrongly.
+#
+# This has to fork. PYTHONHASHSEED is fixed for the life of an interpreter,
+# so rendering twice in one process gives the same order both times and
+# passes while the bug is sitting there.
+_RENDER = r"""
+import hashlib, json, sys
+from helix.graph import build
+from helix.layout import registry
+from helix.layout.base import LayoutSettings
+from helix.layout.engines import family, linear, network, radial  # noqa: F401
+from helix.render.svg import render
+from helix.store.db import connect
+from helix.style.tokens import Style
+
+graph = build.load(connect(sys.argv[1]))
+out = {}
+for d in registry.all_designs():
+    style = Style.load()
+    style.set("layout.engine", d.key)
+    s = LayoutSettings(engine=d.key, subject_id=graph.subject_id,
+                       max_generations=4)
+    body = render(registry.run(d.key, graph, s, style))
+    out[d.key] = hashlib.sha256(body.encode()).hexdigest()
+print(json.dumps(out))
+"""
+
+
+def test_every_design_draws_the_same_chart_under_a_different_hash_seed(sample_db):
+    import json
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+
+    def once(seed):
+        r = subprocess.run([sys.executable, "-c", _RENDER, str(sample_db)],
+                           cwd=root, capture_output=True, text=True,
+                           env={**os.environ, "PYTHONHASHSEED": seed})
+        assert r.returncode == 0, r.stderr[-2000:]
+        return json.loads(r.stdout)
+
+    a, b = once("1"), once("2")
+    differ = sorted(k for k in a if a[k] != b[k])
+    assert not differ, (
+        "these designs draw a different chart from the same file when the "
+        "hash seed changes, which means something iterates a set: "
+        + ", ".join(differ))
+
+
 # ---------------------------------------------------------------------------
 # The tidy-tree allocation in subject_grid.py. These four encode
 # docs/KNOWN_ISSUE_LAYOUT.md: the chart it describes had 77 sibling arcs

@@ -303,7 +303,7 @@ it.
 ```bash
 python3 bootstrap.py           # builds a sample family, renders every design,
                                # runs the tests. Installs nothing, no network
-python3 -m pytest tests -q     # 620 tests
+python3 -m pytest tests -q     # 621 tests
 python3 build_app.py           # a double-clickable application for this OS
 ```
 
