@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1189mm" height="700mm" viewBox="0 0 1189 700">
+<!-- helix | engine=sankey style=default people=23 hash=6a54e5904bc7 -->
+<rect x="0" y="0" width="1189" height="700" fill="#FBF8F2"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<path d="M 83.195,34.000 C 195.222,34.000 195.222,330.462 307.250,330.462 L 307.250,624.923 C 195.222,624.923 195.222,330.308 83.195,330.308 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 83.195,330.308 C 195.222,330.308 195.222,653.462 307.250,653.462 L 307.250,678.000 C 195.222,678.000 195.222,355.000 83.195,355.000 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 83.195,357.000 C 195.222,357.000 195.222,330.462 307.250,330.462 L 307.250,624.923 C 195.222,624.923 195.222,653.308 83.195,653.308 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 83.195,653.308 C 195.222,653.308 195.222,653.462 307.250,653.462 L 307.250,678.000 C 195.222,678.000 195.222,678.000 83.195,678.000 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,34.000 C 482.472,34.000 482.472,65.141 594.500,65.141 L 594.500,95.287 C 482.472,95.287 482.472,60.769 370.445,60.769 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,60.769 C 482.472,60.769 482.472,127.422 594.500,127.422 L 594.500,157.568 C 482.472,157.568 482.472,87.538 370.445,87.538 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,87.538 C 482.472,87.538 482.472,189.703 594.500,189.703 L 594.500,219.849 C 482.472,219.849 482.472,114.308 370.445,114.308 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,114.308 C 482.472,114.308 482.472,220.843 594.500,220.843 L 594.500,250.990 C 482.472,250.990 482.472,141.077 370.445,141.077 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,141.077 C 482.472,141.077 482.472,283.124 594.500,283.124 L 594.500,313.271 C 482.472,313.271 482.472,167.846 370.445,167.846 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,167.846 C 482.472,167.846 482.472,345.405 594.500,345.405 L 594.500,375.552 C 482.472,375.552 482.472,194.615 370.445,194.615 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,194.615 C 482.472,194.615 482.472,376.546 594.500,376.546 L 594.500,527.279 C 482.472,527.279 482.472,328.462 370.445,328.462 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,330.462 C 482.472,330.462 482.472,65.141 594.500,65.141 L 594.500,95.287 C 482.472,95.287 482.472,357.231 370.445,357.231 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,357.231 C 482.472,357.231 482.472,127.422 594.500,127.422 L 594.500,157.568 C 482.472,157.568 482.472,384.000 370.445,384.000 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,384.000 C 482.472,384.000 482.472,189.703 594.500,189.703 L 594.500,219.849 C 482.472,219.849 482.472,410.769 370.445,410.769 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,410.769 C 482.472,410.769 482.472,220.843 594.500,220.843 L 594.500,250.990 C 482.472,250.990 482.472,437.538 370.445,437.538 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,437.538 C 482.472,437.538 482.472,283.124 594.500,283.124 L 594.500,313.271 C 482.472,313.271 482.472,464.308 370.445,464.308 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,464.308 C 482.472,464.308 482.472,345.405 594.500,345.405 L 594.500,375.552 C 482.472,375.552 482.472,491.077 370.445,491.077 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 370.445,491.077 C 482.472,491.077 482.472,376.546 594.500,376.546 L 594.500,527.279 C 482.472,527.279 482.472,624.923 370.445,624.923 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,376.546 C 769.723,376.546 769.723,34.000 881.750,34.000 L 881.750,193.500 C 769.723,193.500 769.723,414.229 657.695,414.229 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,414.229 C 769.723,414.229 769.723,195.500 881.750,195.500 L 881.750,355.000 C 769.723,355.000 769.723,451.912 657.695,451.912 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,451.912 C 769.723,451.912 769.723,357.000 881.750,357.000 L 881.750,516.500 C 769.723,516.500 769.723,489.596 657.695,489.596 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,489.596 C 769.723,489.596 769.723,518.500 881.750,518.500 L 881.750,678.000 C 769.723,678.000 769.723,527.279 657.695,527.279 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,528.273 C 769.723,528.273 769.723,34.000 881.750,34.000 L 881.750,193.500 C 769.723,193.500 769.723,565.956 657.695,565.956 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,565.956 C 769.723,565.956 769.723,195.500 881.750,195.500 L 881.750,355.000 C 769.723,355.000 769.723,603.639 657.695,603.639 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,603.639 C 769.723,603.639 769.723,357.000 881.750,357.000 L 881.750,516.500 C 769.723,516.500 769.723,641.323 657.695,641.323 Z" fill="#22201D" opacity="0.3"/>
+<path d="M 657.695,641.323 C 769.723,641.323 769.723,518.500 881.750,518.500 L 881.750,678.000 C 769.723,678.000 769.723,679.006 657.695,679.006 Z" fill="#22201D" opacity="0.3"/>
+<rect x="20" y="34" width="63.195" height="321" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="20" y="357" width="63.195" height="321" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="307.25" y="34" width="63.195" height="294.4615" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="307.25" y="330.4615" width="63.195" height="294.4615" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="307.25" y="626.9231" width="63.195" height="24.5385" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="307.25" y="653.4615" width="63.195" height="24.5385" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="34" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="65.1405" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="96.281" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="127.4215" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="158.5621" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="189.7026" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="220.8431" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="251.9836" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="283.1241" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="314.2646" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="345.4051" width="63.195" height="30.1467" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="376.5456" width="63.195" height="150.7333" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="594.5" y="528.2728" width="63.195" height="150.7333" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="881.75" y="34" width="63.195" height="159.5" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="881.75" y="195.5" width="63.195" height="159.5" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="881.75" y="357" width="63.195" height="159.5" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<rect x="881.75" y="518.5" width="63.195" height="159.5" fill="#22201D" stroke="#26241F" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<text x="88.94" y="195.55" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Ernest Whitcombe</text>
+<text x="88.94" y="518.55" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Esther Threlfall</text>
+<text x="376.19" y="182.2808" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Joseph Ashworth</text>
+<text x="376.19" y="478.7423" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Hannah Whitcombe</text>
+<text x="376.19" y="640.2423" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Alice Boyce</text>
+<text x="376.19" y="666.7808" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Walter Whitcombe</text>
+<text x="663.44" y="50.1233" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Nathaniel Pargeter</text>
+<text x="663.44" y="81.2638" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Sarah Ashworth</text>
+<text x="663.44" y="112.4044" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Florence Whitcombe</text>
+<text x="663.44" y="143.5449" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Samuel Ashworth</text>
+<text x="663.44" y="174.6854" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Winifred Oakley</text>
+<text x="663.44" y="205.8259" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Frederick Ashworth</text>
+<text x="663.44" y="236.9664" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Charlotte Ashworth</text>
+<text x="663.44" y="268.1069" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Ernest Vasey</text>
+<text x="663.44" y="299.2474" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Charlotte Ashworth</text>
+<text x="663.44" y="330.3879" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Thomas Vasey</text>
+<text x="663.44" y="361.5285" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Mary Ashworth</text>
+<text x="663.44" y="452.9623" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Reuben Ashworth</text>
+<text x="663.44" y="604.6895" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Winifred Threlfall</text>
+<text x="950.69" y="114.8" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Edward Ashworth</text>
+<text x="950.69" y="276.3" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Hannah Ashworth</text>
+<text x="950.69" y="437.8" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">William Ashworth</text>
+<text x="950.69" y="599.3" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central">Beatrice Ashworth</text>
+<text x="594.5" y="14" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+</svg>

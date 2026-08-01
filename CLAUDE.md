@@ -202,7 +202,7 @@ comes free. `tests/test_layout.py` will pick the design up automatically.
 helix/model/     dates that can be vague. Everything depends on this
 helix/store/     schema, connection, backup, archive, restore
 helix/graph/     the family as a graph; the Thread; validation
-helix/layout/    19 designs sharing one abstract grid
+helix/layout/    20 designs sharing one abstract grid
 helix/render/    svg, pdf, dxf, eps — all hand-written
 helix/fab/       materials, preflight, kerf, islands, clock
 helix/web/       the interface. No build step, no npm

@@ -5,7 +5,7 @@ registered, appearing in the gallery with a note.
 
 The important idea: a design is not a hardcoded picture. It is a combination
 of four independent choices, which is why there can be this many without
-nineteen separate codebases.
+twenty separate codebases.
 
 ```
 design  =  layout engine   ×   router   ×   node glyph   ×   label policy
@@ -248,9 +248,16 @@ a sliver.
 
 **Good for** seeing at a glance which branches thrived. **Laser** excellent.
 
-### 11. Treemap — `treemap` ⏳ *Phase 10*
+### 11. Treemap — `treemap` ✅
 Nested rectangles sized by descendant count, squarified. Uses every square
-millimetre of a rectangular sheet.
+millimetre of a rectangular sheet. A branch that thrived is a big rectangle
+and a branch that died out is a thin one, which is the one thing a tidy
+tree hides — it gives everybody the same width.
+
+Says how many people fell into rectangles too small to draw, rather than
+losing them silently.
+
+**Good for** seeing which parts of a family grew. **Laser** good.
 
 ### 12. Hourglass — `hourglass` ✅
 Ancestors fanning upward, descendants fanning downward, you at the waist.
@@ -277,40 +284,86 @@ descent. No dates at all — pure shape.
 **Good for** grasping the shape of a family instantly. **Laser** good.
 **Style** `nested`.
 
-### 15. Layered Network — `sugiyama` ⏳ *Phase 9*
-Proper layered graph drawing: generations as layers, then barycentric
-crossing minimisation. The only design that handles a heavily intermarried
-tree without turning into spaghetti. Worth building for families from small
+### 15. Layered Network — `sugiyama` ✅
+Proper layered graph drawing: generations as layers, then eight barycentre
+sweeps to minimise crossings. The only design that handles a heavily
+intermarried tree without turning into spaghetti — for families from small
 villages, where everyone is everyone's cousin.
 
-### 16. Hive Plot — `hive` ⏳ *Phase 9*
-One straight axis per family line; links arc between axes. Turns "are we
-inbred?" from an anxiety into a measurement.
+Two things the plain algorithm does not do, and this does. Partners are
+pulled adjacent after each sweep: they sit on the SAME layer, so a marriage
+exerts no pull on a barycentre and couples ended up at opposite ends of a
+row joined by a rail through forty other people. And when the widest rank
+gives each person less width than the longest name, every label turns
+ninety degrees rather than interleaving into a grey smear.
 
-### 17. River of Descent — `sankey` ⏳ *Phase 9*
+**Good for** tangled trees where the simple layouts give up. **Laser** good.
+
+### 16. Hive Plot — `hive` ✅
+One straight axis per surname — the seven biggest, with everybody else on a
+shared axis, because forty axes is not a hive plot but a hedgehog. Every
+marriage arcs between two axes, and a marriage WITHIN one axis loops back on
+itself, drawn heavier. Turns "are we inbred?" from an anxiety into a count,
+reported as `same_surname_marriages`.
+
+Arcs bow perpendicular to the chord, not radially outward: for two axes
+opposite each other the midpoint is the centre, so the obvious version drew
+every long marriage as a straight line through the middle of the hive.
+
+**Good for** analysing intermarriage between a few families. **Laser** good.
+
+### 17. River of Descent — `sankey` ✅
 Ribbons whose width is the number of descendants flowing forward through
 time. Branches that died out visibly narrow to nothing. The most emotionally
 direct design in the catalogue — and the worst for laser cutting, because the
 ribbons are filled areas.
 
+A name is drawn only where the ribbon is thick enough to hold it, so the
+lines that carried on keep their names and the threads go bare.
+
+**Good for** showing which branches carried on. **Laser** poor.
+
 ---
 
 ## Spatial family
 
-### 18. Map View — `geo_map` ⏳ *Phase 9*
-People plotted at their birthplace on a real coastline, with descent lines
-between generations. A family that moved from Somerset to Bristol to London
-becomes a story about place rather than a diagram about people.
+### 18. Map View — `geo_map` ✅
+People plotted at their birthplace, equirectangular and corrected for
+latitude so a county is not stretched, with a line from where a parent was
+born to where their child was — the only migration a family tree can
+honestly claim to know. A family that moved from Somerset to Bristol to
+London becomes a story about place rather than a diagram about people.
 
-Needs geocoded places. Ship an offline UK parish gazetteer rather than
-calling an API — no network, no data leaving the machine.
+Coordinates come from the `place` table's `lat`/`lon`, which the program
+already had and nothing read. **Places without them are laid out round the
+edge and said so**, naming them and how to fix it, rather than being dropped
+— a map that loses half a family in silence is a map that lies.
 
-**Laser** excellent: a coastline cuts beautifully.
+Scaled to the places on THIS chart rather than every place in the file: one
+ancestor from Nova Scotia otherwise shrinks four generations of Somerset
+into a single dot. Each person gets their own mark in a ring round the
+place, so hover, search and highlighting reach them; a disc whose area is a
+headcount is a picture of a number and has nothing to click.
 
-### 19. Star Chart — `constellation` ⏳ *Phase 10*
-Force-directed positions rendered as a night sky. People are stars,
-brightness is descendant count, lineages are constellations with drawn
-figures. Deliberately does not look like a family tree.
+No coastline is drawn. Shipping an offline gazetteer would let one be, and
+that is still the right way to do it — no network, no data leaving the
+machine.
+
+**Laser** excellent.
+
+### 19. Star Chart — `constellation` ✅
+The family as a night sky. Generation is the radius and the spread axis is
+the angle — the same reading as the flagship, so somebody who knows one
+chart can read this one — with descent drawn as the lines between stars.
+
+Brightness is a magnitude, not a count: `0.9 + 2.8·√(n/max)`, so doubling
+the descendants does not double the disc and one founder does not swallow
+the sky. Names are asked for brightest-first, because the label placer is
+greedy and in file order a childless in-law takes the space belonging to
+the founder beside them.
+
+**Good for** a piece for a wall; beautiful rather than analytical, and it
+engraves superbly on dark stock. **Laser** good.
 
 ---
 

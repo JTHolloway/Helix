@@ -16,3 +16,6 @@ gallery/
 out/
 .DS_Store
 sample-family.helix
+
+# PyInstaller writes this each time build_app.py runs.
+*.spec

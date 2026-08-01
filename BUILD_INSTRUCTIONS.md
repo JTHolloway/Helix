@@ -40,8 +40,9 @@ remaining work is legible and self-contained.
 4. **Phase 6 — The clock.** `fab/clock.py`. Dimensions are already correct.
 5. **Phase 7 — Analysis.** `analysis/gaps.py`, `stats.by_decade`, `geo.py`.
 6. **Phase 8 — DNA.** `analysis/dna.py`.
-7. **Phase 9-10 — More designs.** `layout/engines/experimental.py` holds
-   eight registered-but-unbuilt designs. Each is one file, ~120 lines.
+7. **Phase 9-10 — More designs.** Done: `layout/engines/network.py` holds
+   the six that were registered and never implemented (treemap, hive,
+   sugiyama, sankey, geo_map, constellation). All twenty draw.
 
 ## Density is the main quality risk
 

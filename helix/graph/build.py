@@ -168,6 +168,9 @@ class FamilyGraph:
         self.people = people
         self.unions = unions
         self.subject_id = subject_id
+        # place name -> (lat, lon), for the places that have them. Only the
+        # Map View reads it, and it works from an empty one.
+        self.coords: dict[str, tuple[float, float]] = {}
         self._dom: Optional[dict[str, str]] = None
 
     # ------------------------------------------------------------- structure
@@ -357,7 +360,13 @@ def _direct(n: int, kind: str) -> str:
 def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
     from ..model.gendate import GenDate as GD
 
-    places = {r["id"]: r["name"] for r in con.execute("SELECT id,name FROM place")}
+    # Coordinates keyed by NAME, because that is what a person carries: the
+    # graph holds `birth_place` as a string, and the map has to get from that
+    # back to a latitude. Places with no coordinates are simply absent, which
+    # is the difference the Map View reports rather than quietly dropping.
+    coords = {r["name"]: (r["lat"], r["lon"])
+              for r in con.execute("SELECT name,lat,lon FROM place")
+              if r["lat"] is not None and r["lon"] is not None}
     people: dict[str, Person] = {}
     # Retired people are still in the file -- "Remove from tree" never
     # deletes -- but they are off the chart until somebody undoes it. The
@@ -440,4 +449,6 @@ def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
     if subject_id is None:
         from ..store.db import get_setting
         subject_id = get_setting(con, "subject_person_id")
-    return FamilyGraph(people, unions, subject_id)
+    g = FamilyGraph(people, unions, subject_id)
+    g.coords = coords
+    return g

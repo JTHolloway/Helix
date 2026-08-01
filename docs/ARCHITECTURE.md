@@ -13,7 +13,7 @@
       │  layout/base.py — scoping, ordering, weighting, partner placement.
       ▼
  RenderPlan  ◄── Style (JSON tokens)
-      │  layout/engines/ — 19 designs. THE ONLY PLACE TRIGONOMETRY HAPPENS.
+      │  layout/engines/ — 20 designs. THE ONLY PLACE TRIGONOMETRY HAPPENS.
       ▼
  ┌────────┬────────┬────────┬────────┐
  │ screen │  SVG   │  DXF   │  PDF   │   render/ — serialisation only.

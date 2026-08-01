@@ -53,9 +53,14 @@ export function addPerson(ctx, onDone) {
       read the same way. Where only part is known, say only that much:
       <b>Mar 1841</b>, <b>abt 1834</b>, <b>bef 1900</b>,
       <b>bet 1820 and 1825</b>, <b>Q3 1871</b>.</p>
+    <p class="hint keys">Without the mouse: <kbd>Enter</kbd> adds,
+      <kbd>Shift</kbd>+<kbd>Enter</kbd> adds and starts the next one,
+      <kbd>Alt</kbd>+<kbd>M</kbd> / <kbd>F</kbd> / <kbd>U</kbd> sets who they
+      were, <kbd>Esc</kbd> closes.</p>
     <div class="row">
-      <button class="primary" id="aAdd">Add</button>
-      <button class="ghost" id="aAgain">Add and add another</button>
+      <button class="primary" id="aAdd">Add <kbd>↵</kbd></button>
+      <button class="ghost" id="aAgain">Add and add another
+        <kbd>⇧↵</kbd></button>
       <button class="ghost" id="aCancel">Cancel</button>
     </div>`;
   document.body.appendChild(dlg);
@@ -132,8 +137,38 @@ export function addPerson(ctx, onDone) {
   $('#aAdd').addEventListener('click', e => { e.preventDefault(); save(false); });
   $('#aAgain').addEventListener('click', e => { e.preventDefault(); save(true); });
   $('#aCancel').addEventListener('click', e => { e.preventDefault(); close(); });
+
+  // ---- entering a family without touching the mouse ----------------------
+  //
+  // WHY THIS MATTERS MORE THAN IT LOOKS. Somebody typing in a census page
+  // adds nine children in a row, and reaching for the mouse between each one
+  // is where data entry stops. Enter alone saved and closed, so a run of
+  // siblings meant nine trips to a button eleven inches away.
+  //
+  //   Enter          add and close
+  //   Shift+Enter    add and start the next one, same relationship
+  //   Alt+M/F/U      who they were, without leaving the name field
+  //   Escape         close (the dialog element's own behaviour)
   dlg.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); save(false); }
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT'
+        && e.target.type !== 'radio') {
+      e.preventDefault();
+      save(e.shiftKey || e.ctrlKey || e.metaKey);
+      return;
+    }
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      const sex = { m: 'M', f: 'F', u: 'U' }[e.key.toLowerCase()];
+      if (sex) {
+        e.preventDefault();
+        const r = dlg.querySelector(`input[name=sex][value=${sex}]`);
+        if (r) {
+          r.checked = true;
+          // Say so where the eye already is. A radio changing three inches
+          // below the caret is a change nobody sees.
+          flash(dlg, { M: 'man', F: 'woman', U: 'not recorded' }[sex]);
+        }
+      }
+    }
   });
   dlg.addEventListener('cancel', () => dlg.remove());
 }
@@ -152,4 +187,18 @@ export async function retire(pid, name, onDone) {
 function debounce(fn, ms) {
   let t = null;
   return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+/** A word that appears by the caret for a moment and goes. */
+function flash(dlg, text) {
+  let el = dlg.querySelector('.kbdflash');
+  if (!el) {
+    el = document.createElement('b');
+    el.className = 'kbdflash';
+    dlg.querySelector('.sexes').appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.remove('go');
+  void el.offsetWidth;            // restart the animation
+  el.classList.add('go');
 }

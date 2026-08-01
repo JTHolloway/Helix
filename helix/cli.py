@@ -10,7 +10,7 @@ from pathlib import Path
 from .graph import build as gbuild
 from .layout import registry
 from .layout.base import LayoutSettings
-from .layout.engines import experimental, family, linear, radial  # noqa: F401
+from .layout.engines import family, linear, network, radial  # noqa: F401
 from .render import svg as svgrender
 from .store.db import connect, get_setting, set_setting
 
@@ -245,8 +245,11 @@ def _samples_html(made, skipped, title) -> str:
         f'<p><a href="pdf/{pd.name}">PDF</a> &middot; '
         f'<a href="svg/{s.name}">SVG</a> &middot; <code>{d.key}</code></p>'
         f'</figcaption></figure>' for d, p, s, pd in made)
+    # Empty now that all twenty draw. Kept rather than deleted so that a
+    # half-finished design added later lands here instead of in the grid.
     todo = "".join(f"<li><b>{d.name}</b> <code>{d.key}</code> — {d.blurb}</li>"
                    for d in skipped)
+    todo_section = f"<h2>Specified, not yet built</h2><ul>{todo}</ul>" if todo else ""
     return f"""<!doctype html><meta charset=utf-8>
 <title>Helix — design samples</title>
 <style>
@@ -268,7 +271,7 @@ def _samples_html(made, skipped, title) -> str:
 <p class=sub>Every design, rendered from the same family. Click a picture for
 the SVG, or take the PDF straight to a printer — both are at true physical size.</p>
 <div class=grid>{cards}</div>
-<h2>Specified, not yet built</h2><ul>{todo}</ul>"""
+{todo_section}"""
 
 
 def cmd_contact_sheet(a):

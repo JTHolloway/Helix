@@ -82,7 +82,12 @@ def command() -> list[str]:
         # "the program" land in a folder that is deleted when it quits.
         "--windowed",
         "--osx-bundle-identifier", BUNDLE_ID,
-        str(ROOT / "helix" / "desktop" / "app.py"),
+        # NOT `helix/desktop/app.py`. PyInstaller runs whatever it freezes as
+        # `__main__` with no package around it, and app.py's `from . import
+        # library` then raises ImportError before the window opens -- the
+        # built application died on launch and the build had never been run
+        # to find out. `packaging/launch.py` imports it by name instead.
+        str(ROOT / "packaging" / "launch.py"),
     ]
     for src, dest in DATA:
         if (ROOT / src).exists():
@@ -92,7 +97,7 @@ def command() -> list[str]:
     # nothing names directly.
     for mod in ("helix.layout.engines.family", "helix.layout.engines.radial",
                 "helix.layout.engines.linear",
-                "helix.layout.engines.experimental",
+                "helix.layout.engines.network",
                 "helix.io.gedcom.writer", "helix.io.gedcom.parser",
                 "helix.io.gedcom.lexer", "helix.io.csv_import",
                 "helix.analysis.gaps", "helix.analysis.stats",

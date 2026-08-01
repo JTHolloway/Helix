@@ -222,11 +222,12 @@ function buildGallery() {
   const g = $('#gallery');
   GALLERY_V = (META.stats.people || 0) + ':' + (META.subject || '');
   g.innerHTML = '';
-  // FOURTEEN DESIGNS THAT DRAW, and six that are specified and not built.
-  // The six were in the gallery all along, indistinguishable from the rest
-  // and throwing an error when clicked. They are still listed — somebody
-  // choosing a design should know what is coming — but as a plan, at the
-  // end, and they cannot be picked.
+  // TWENTY DESIGNS, ALL OF WHICH DRAW. Six of them were registered and
+  // never implemented: they sat in the gallery indistinguishable from the
+  // rest and threw an error when clicked, and `built` is what stopped that.
+  // It is kept — a design that is added and not finished should fall into
+  // the plan list rather than into the user's hands — but the list below is
+  // empty now, so the panel hides itself.
   const ready = META.designs.filter(d => d.built !== false);
   const planned = META.designs.filter(d => d.built === false);
   for (const d of ready) {

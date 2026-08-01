@@ -3,12 +3,15 @@ import pytest
 
 from helix.layout import registry
 from helix.layout.base import LayoutSettings, build_grid
-from helix.layout.engines import experimental, family, linear, radial  # noqa: F401
+from helix.layout.engines import family, linear, network, radial  # noqa: F401
 from helix.style.tokens import Style
 
-BUILT = [d.key for d in registry.all_designs()
-         if d.key not in {"sugiyama", "hive", "sankey", "geo_map",
-                          "constellation", "hourglass", "fan_180", "treemap"}]
+# EVERY design, with nothing skipped. This list used to exclude eight, six of
+# them because they were registered and never implemented -- so the suite was
+# green while a third of the gallery threw NotImplementedError when clicked.
+# The exclusions are what let that sit there. If a design cannot go in this
+# list it does not belong in the registry.
+BUILT = [d.key for d in registry.all_designs()]
 
 
 @pytest.mark.parametrize("key", BUILT)
@@ -59,12 +62,20 @@ def test_missing_years_are_inferred_not_left_none(graph):
     assert all(sl.year is not None for sl in g)
 
 
-def test_unbuilt_designs_fail_helpfully():
-    style = Style.load()
-    s = LayoutSettings(engine="sugiyama")
-    with pytest.raises(NotImplementedError) as e:
-        registry.run("sugiyama", None, s, style)
-    assert "DESIGN_CATALOGUE" in str(e.value)
+def test_nothing_in_the_gallery_is_a_plan():
+    """The gallery must not offer a design that cannot draw.
+
+    This test used to assert the opposite -- that six named designs raised
+    NotImplementedError with a helpful message -- because six of the twenty
+    were specified, registered and never built. A greyed-out promise is
+    still a third of the gallery you cannot use, and `DesignInfo.built` was
+    load-bearing for hiding them. They are built now, so the promise is
+    gone and the invariant is the strong one: everything registered draws.
+    """
+    plans = [d for d in registry.all_designs() if not d.built]
+    assert not plans, ("registered but not implemented: "
+                       + ", ".join(d.key for d in plans))
+    assert len(registry.all_designs()) >= 20
 
 
 def test_unknown_design_names_the_alternatives():

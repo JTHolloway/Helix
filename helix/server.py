@@ -21,7 +21,7 @@ from .graph.kinship import (KinFilter, Kinship, all_groups, household,
 from .graph.thread import Contingency, thread
 from .layout import registry
 from .layout.base import LayoutSettings
-from .layout.engines import experimental, family, linear, radial  # noqa: F401
+from .layout.engines import family, linear, network, radial  # noqa: F401
 from .render import svg as svgrender
 from .store import records
 from .store.db import connect, get_setting, set_setting

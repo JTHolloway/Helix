@@ -23,7 +23,7 @@ helix import cousins.ged -o new.helix
 
 A family tree you can hang on a wall, hold in your hand, or hang a clock in.
 
-Helix keeps a genealogy in one small file, draws it in nineteen different
+Helix keeps a genealogy in one small file, draws it in twenty different
 visual languages — a circular maze, an underground map, a timeline of
 lifespans — and exports files a laser cutter will accept without argument.
 
@@ -116,7 +116,7 @@ helix stats my.helix              # who your family structurally depends on
   usable on a real family.
 - **`PROMPTS.md`** — prompts to hand a build chat, one stage at a time.
 - **`BUILD_INSTRUCTIONS.md`** — exactly what is finished and what is not.
-- **`docs/DESIGN_CATALOGUE.md`** — all nineteen designs and what each is for.
+- **`docs/DESIGN_CATALOGUE.md`** — all twenty designs and what each is for.
 - **`docs/OPTIONS.md`** — every customisation option, with worked examples.
 - **`docs/KEEPING_YOUR_WORK.md`** — how your research is saved, backed up and
   kept readable for decades. Read this once.

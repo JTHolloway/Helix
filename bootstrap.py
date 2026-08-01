@@ -57,7 +57,7 @@ def main() -> int:
 
     try:
         from helix.layout import registry
-        from helix.layout.engines import experimental, family, linear, radial  # noqa: F401
+        from helix.layout.engines import family, linear, network, radial  # noqa: F401
     except Exception as e:
         say(f"  Could not load Helix: {e}")
         say("  Make sure you are running this from inside the helix folder.")

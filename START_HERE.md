@@ -27,7 +27,7 @@ setup commands.** There are none.
 ## Step 2 — Look at what you have
 
 ```bash
-python3 -m helix.cli designs        # 19 designs, what each is for
+python3 -m helix.cli designs        # 20 designs, what each is for
 python3 -m helix.cli styles         # 12 looks
 python3 -m helix.cli stats sample-family.helix
 open samples/index.html             # every design, side by side
@@ -42,7 +42,7 @@ open samples/index.html             # every design, side by side
 | `PROMPTS.md` | Ready-made prompts for each build stage. |
 | `BUILD_INSTRUCTIONS.md` | **Read before writing any code.** States exactly what is finished, what is stubbed, the build order, and eight rules that must not be broken. |
 | `docs/ARCHITECTURE.md` | How the pieces fit and which direction dependencies flow. |
-| `docs/DESIGN_CATALOGUE.md` | All 19 designs. The 8 unbuilt ones are specified here. |
+| `docs/DESIGN_CATALOGUE.md` | All 20 designs, what each is for and when to choose it. |
 | `docs/OPTIONS.md` | Every style token, what it does, and worked examples. Read before adding an option — it is probably already specified. |
 | `docs/KEEPING_YOUR_WORK.md` | The save, backup and archive model. Already built — do not add a Save button. |
 | `docs/UX_GUIDE.md` | The standard any new interface work must meet. |

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="1000mm" height="800mm" viewBox="0 0 1000 800">
+<!-- helix | engine=geo_map style=default people=23 hash=7e59e2203ecb -->
+<rect x="0" y="0" width="1000" height="800" fill="#FBF8F2"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<text x="89.566" y="95.6893" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Bristol, Gloucestershire · 4</text>
+<text x="561.1285" y="710.8317" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Frome, Somerset · 4</text>
+<text x="246.7535" y="207.5334" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Keynsham, Somerset · 4</text>
+<text x="910.434" y="68.3714" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Chippenham, Wiltshire · 3</text>
+<text x="508.7326" y="292.8223" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Bathwick, Bath, Somerset · 2</text>
+<text x="683.3854" y="376.7054" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Bradford-on-Avon, Wiltshire · 2</text>
+<text x="753.2465" y="460.5884" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Trowbridge, Wiltshire · 2</text>
+<text x="491.2674" y="265.8554" font-family="sans-serif" font-size="4.8" fill="#26241F" text-anchor="middle" dominant-baseline="central">Walcot, Bath, Somerset · 1</text>
+<path d="M 508.733,302.136 Q 682.741,142.088 910.434,78.448" fill="none" stroke="#26241F" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 561.128,721.552 Q 579.883,489.480 491.267,274.175" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 561.128,721.552 Q 343.545,507.628 246.753,218.253" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 561.128,721.552 Q 662.521,568.456 683.385,386.019" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 910.434,78.448 Q 561.817,68.709 246.753,218.253" fill="none" stroke="#26241F" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 910.434,78.448 Q 496.645,-6.075 89.566,106.409" fill="none" stroke="#26241F" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 910.434,78.448 Q 833.818,259.480 683.385,386.019" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 910.434,78.448 Q 812.954,441.917 561.128,721.552" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 246.753,218.253 Q 375.721,216.873 491.267,274.175" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 246.753,218.253 Q 485.201,249.741 683.385,386.019" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 246.753,218.253 Q 343.545,507.628 561.128,721.552" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 753.247,469.903 Q 530.198,283.299 246.753,218.253" fill="none" stroke="#26241F" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 753.247,469.903 Q 465.025,208.514 89.566,106.409" fill="none" stroke="#26241F" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 753.247,469.903 Q 728.382,419.578 683.385,386.019" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 753.247,469.903 Q 687.385,618.781 561.128,721.552" fill="none" stroke="#26241F" stroke-width="0.46" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<path d="M 753.247,469.903 Q 878.815,293.038 910.434,78.448" fill="none" stroke="#26241F" stroke-width="0.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+<circle cx="89.566" cy="106.4093" r="4.8" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="561.1285" cy="721.5517" r="4.8" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="246.7535" cy="218.2534" r="4.8" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="910.434" cy="78.4483" r="4.1569" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="508.7326" cy="302.1364" r="3.3941" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="683.3854" cy="386.0195" r="3.3941" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="753.2465" cy="469.9025" r="3.3941" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="491.2674" cy="274.1754" r="2.4" fill="#26241F" stroke="#26241F" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.22"/>
+<circle cx="89.566" cy="100.0093" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="95.966" cy="106.4093" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="89.566" cy="112.8093" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="83.166" cy="106.4093" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="561.1285" cy="715.1517" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="567.5285" cy="721.5517" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="561.1285" cy="727.9517" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="554.7285" cy="721.5517" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="246.7535" cy="211.8534" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="253.1535" cy="218.2534" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="246.7535" cy="224.6534" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="240.3535" cy="218.2534" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="910.434" cy="72.6914" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="915.4197" cy="81.3267" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="905.4484" cy="81.3267" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="508.7326" cy="297.1423" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="508.7326" cy="307.1305" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="683.3854" cy="381.0254" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="683.3854" cy="391.0136" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="753.2465" cy="464.9084" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="753.2465" cy="474.8967" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="491.2674" cy="270.1754" r="0.72" fill="#22201D" stroke="#26241F" stroke-width="0.2" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="500" y="14" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+</svg>

@@ -177,10 +177,11 @@ python3 -m pytest tests/test_gedcom.py -q      # 34 tests
 **Research-gap ranking and DNA are built** — `helix/analysis/gaps.py` and
 `graph/kinship.shared_dna`; see `docs/ANCESTRY.md`.
 
-What is left, none of it blocking: clock fitting (`fab/clock.py`), kerf
-compensation (`fab/kerf.py`, which needs callipers on a test strip more
-than it needs code), and the six designs specified in
-`docs/DESIGN_CATALOGUE.md` but not yet built.
+What is left, none of it blocking: clock fitting (`fab/clock.py`) and kerf
+compensation (`fab/kerf.py`, which needs callipers on a test strip more than
+it needs code). The six designs that were specified and never built are
+built — `layout/engines/network.py` — so all twenty in
+`docs/DESIGN_CATALOGUE.md` draw.
 
 ## What must not regress
 
