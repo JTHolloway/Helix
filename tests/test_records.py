@@ -864,3 +864,162 @@ def test_the_record_book_for_everyone_in_the_file_is_its_own_option(app):
     everyone = _page(c, "records?all=1")
     assert "Nobody Connected" not in scoped
     assert "Nobody Connected" in everyone
+
+
+# ═══════════ what a historian needs and a chart cannot hold ═══════════════
+#
+# The sections below are the difference between a pretty page about somebody
+# and a record another researcher can work from.
+@pytest.fixture
+def documented(app, tmp_path):
+    """One well-researched man: aliases, a movement trail, and sources."""
+    from helix.model.gendate import parse as gd
+    from helix.store.db import connect, new_id
+    c = app
+    eli = add(c, "Elias", "Whitcombe", birth="4 March 1812", death="19 Nov 1889",
+              sex="M", occupation="Cloth weaver", birth_place="Frome, Somerset",
+              death_place="Bath, Somerset")
+    c.post("subject", {"id": eli})
+    son = add(c, "Reuben", "Whitcombe", eli, "child", birth="1841", sex="M")
+    kid = add(c, "Elias John", "Whitcombe", son, "child", birth="1870", sex="M")
+    gkid = add(c, "Harriet", "Whitcombe", kid, "child", birth="1901", sex="F")
+
+    con = connect(tmp_path / "mine.helix", create=False)
+
+    def place(name):
+        pid = new_id()
+        con.execute("INSERT INTO place(id,name,type) VALUES(?,?,?)",
+                    (pid, name, "parish"))
+        return pid
+
+    def source(title, **kw):
+        sid = new_id()
+        con.execute("INSERT INTO source(id,title,repository,ref) "
+                    "VALUES(?,?,?,?)",
+                    (sid, title, kw.get("repository"), kw.get("ref")))
+        return sid
+
+    def event(pid, typ, when, place_id=None, desc=None, src=None, page=None):
+        eid, d = new_id(), (gd(when) if when else None)
+        con.execute("INSERT INTO event(id,type,date_json,date_sort,place_id,"
+                    "description) VALUES(?,?,?,?,?,?)",
+                    (eid, typ, d.to_json() if d else None,
+                     d.sort_value if d else None, place_id, desc))
+        con.execute("INSERT INTO event_role(event_id,person_id,role) "
+                    "VALUES(?,?,?)", (eid, pid, "principal"))
+        if src:
+            con.execute("INSERT INTO citation(id,source_id,event_id,page) "
+                        "VALUES(?,?,?,?)", (new_id(), src, eid, page))
+
+    frome, bath, trow = place("Frome, Somerset"), place("Bath"), place("Trowbridge")
+    census = source("1861 Census of England and Wales",
+                    repository="The National Archives", ref="RG 9/1652")
+    par = source("Parish register, St John the Baptist, Frome",
+                 repository="Somerset Heritage Centre")
+    con.execute("INSERT INTO person_name(id,person_id,type,is_primary,given,"
+                "surname,as_recorded) VALUES(?,?,?,0,?,?,?)",
+                (new_id(), eli, "as_recorded", "Elias", "Whitcomb",
+                 "Elias Whitcomb"))
+    event(eli, "baptism", "22 March 1812", frome, src=par, page="no. 96")
+    event(eli, "census", "1861", bath, desc="Head, cloth weaver, 49",
+          src=census, page="f.71 p.12")
+    event(eli, "residence", None, trow, desc="brief, per family memory")
+    event(eli, "probate", "1890", None, desc="Effects £214 8s 6d")
+    con.commit()
+    con.close()
+    return c, {"elias": eli, "son": son, "kid": kid, "grandchild": gkid}
+
+
+def test_the_record_lists_the_names_an_index_is_filed_under(documented):
+    """A Whitcombe is a Whitcomb and a Witcombe in three registers, and a
+    researcher who does not know that searches once and concludes the
+    family was not there."""
+    c, ids = documented
+    html = _page(c, f"record?id={ids['elias']}")
+    assert "Also recorded as" in html
+    assert "Elias Whitcomb" in html
+
+
+def test_the_record_shows_where_they_were_and_when(documented):
+    c, ids = documented
+    html = _page(c, f"record?id={ids['elias']}")
+    assert "Places and dates" in html
+    for want in ("22 Mar 1812", "Frome, Somerset", "baptised",
+                 "1861", "Bath", "census", "Head, cloth weaver, 49"):
+        assert want in html, f"the trail left out {want!r}"
+
+
+def test_a_place_with_no_date_is_not_given_an_unknown_year(documented):
+    """A chronological table with a blank where the year goes cannot be read
+    down. It is listed after, said plainly."""
+    c, ids = documented
+    html = _page(c, f"record?id={ids['elias']}")
+    assert "date not recorded" in html and "Trowbridge" in html
+    at_trow = html.index("Trowbridge")
+    assert html.rindex("date not recorded", 0, at_trow) > html.index("1861")
+
+
+def test_an_event_with_no_place_still_reaches_the_record(documented):
+    c, ids = documented
+    html = _page(c, f"record?id={ids['elias']}")
+    assert "Other records" in html and "Effects" in html
+
+
+def test_the_record_says_where_every_fact_came_from(documented):
+    """The line between research and hearsay. A date with no source is a
+    rumour somebody typed carefully."""
+    c, ids = documented
+    html = _page(c, f"record?id={ids['elias']}")
+    assert "Where this came from" in html
+    assert "1861 Census of England and Wales" in html
+    assert "The National Archives" in html and "RG 9/1652" in html
+    assert "Parish register" in html
+    # one entry per SOURCE, not one per citation
+    assert html.count("Parish register, St John the Baptist, Frome") == 1
+
+
+def test_a_record_with_no_source_says_so(app):
+    c = app
+    pid = add(c, "Harriet", "Whitcombe", birth="1901")
+    c.post("subject", {"id": pid})
+    assert "No source recorded" in _page(c, f"record?id={pid}")
+
+
+def test_the_record_states_the_line_of_descent(documented):
+    """Reckoned from the earliest person the file knows rather than from
+    whoever the program is centred on -- which is why it belongs on a record
+    and "your uncle" does not."""
+    c, ids = documented
+    html = _page(c, f"record?id={ids['grandchild']}")
+    assert "Line of descent" in html
+    line = html[html.index("Line of descent"):]
+    for n in ("Elias Whitcombe", "Reuben Whitcombe", "Elias John Whitcombe",
+              "Harriet Whitcombe"):
+        assert n in line, f"{n} is not on the line"
+    assert (line.index("Elias Whitcombe") < line.index("Reuben Whitcombe")
+            < line.index("Harriet Whitcombe")), "oldest first"
+
+
+def test_a_marriage_with_no_date_does_not_print_an_unknown_date(app):
+    """Elsewhere an empty field is filled with "Unknown", because a blank
+    where a birthplace goes is ambiguous forever. A marriage is different:
+    the marriage itself is the fact and it is stated."""
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1812", sex="M")
+    c.post("subject", {"id": me})
+    add(c, "Martha", "Ashcombe", me, "partner", birth="1815", sex="F")
+    html = _page(c, f"record?id={me}")
+    block = html[html.index("Marriage"):html.index("What is known")]
+    assert "Martha Ashcombe" in block
+    assert "<dt>Date</dt>" not in block, "no empty date row"
+    assert "<dt>Place</dt>" not in block
+
+
+def test_the_same_record_twice_is_only_listed_once(documented):
+    """The same christening imported from two GEDCOMs puts the same line on
+    the page twice, and a record that says a thing twice reads as two
+    findings."""
+    c, ids = documented
+    html = _page(c, f"record?id={ids['elias']}")
+    trail = html[html.index("Places and dates"):]
+    assert trail.count("22 Mar 1812") == 1

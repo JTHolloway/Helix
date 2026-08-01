@@ -559,3 +559,52 @@ and `relate` could not draw the way between them, because there is no person
 standing where the shared ancestor stands. The path now names the family
 itself — "Their parents, not recorded" — since no path at all would read as
 no relation.
+
+## What a historian needs and a chart cannot hold
+
+Four sections separate a pretty page about somebody from a record another
+researcher can WORK from. Each answers a question that gets asked of every
+ancestor, and all four were already in the schema and unused.
+
+**Also recorded as.** An index is filed under the spelling the clerk wrote,
+and a Whitcombe is a Whitcomb, a Whitcome and a Witcombe in four different
+registers. A researcher who does not know that searches once and concludes
+the family was not there. `person_name` has carried married names, aliases
+and as-recorded spellings from the beginning.
+
+**Places and dates.** The movement of a family is half of its history, and
+it is what places the next record: the parish you search in 1861 is not the
+one you search in 1841. One chronological table of every event that has a
+place — birth, baptism, census, residence, marriage, death, burial — with
+what the record said. An entry with no date is NOT given "Unknown" in the
+date column; a chronological table with a blank where the year goes cannot
+be read down, so those come after it, said plainly. Anything with no place
+at all is still listed, under "other records".
+
+**Line of descent.** From the earliest person the file knows down to them,
+following the surname where there is one. Root-free — reckoned from the
+oldest ancestor rather than from whoever the program is centred on — which
+is exactly why it belongs on a record and "your uncle" does not. It is also
+the one thing a bloodline historian is holding the folder to find out.
+
+**Where this came from.** The line between research and hearsay. A date with
+no source is a rumour somebody typed carefully, and a record that does not
+say where it got something cannot be checked, corrected or built on. One
+entry per SOURCE rather than per citation — the parish register cited for a
+baptism, a marriage and a burial is one book, and listing it three times
+turns a bibliography into a log. Where there is nothing, the record says so
+and says why.
+
+Two things had to be deduplicated to make this readable. The same christening
+imported from two GEDCOMs puts the same line on the page twice, and a record
+that says a thing twice reads as two findings. And a page reference already
+inside its source's own reference — "RG 9/1652 f.71 p.12 · f.71 p.12" — is
+the same reference said twice.
+
+**A marriage with no date does not print "Date: Unknown".** Everywhere else
+on the record an empty field is filled in, because a blank where a
+birthplace goes is ambiguous forever. A marriage is different: the marriage
+itself is the fact, it is stated, and three rows of "Unknown" beneath it say
+nothing except that the page is padded. Where the date IS known it carries
+how old they were, which is the first thing anybody checks a marriage record
+against.

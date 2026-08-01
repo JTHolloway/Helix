@@ -405,6 +405,27 @@ RECORD_CSS = """
 .unk{color:#9a9284}
 .yrs{color:var(--muted);font-size:9pt;white-space:nowrap}
 .rbnote-lead{color:var(--muted);font-size:9.5pt;margin:0 0 3mm}
+/* Where they were, and when. A trail down the page, so a researcher can
+   read the movement of a family off it without reassembling anything. */
+.rbplaces{width:100%;border-collapse:collapse;font-size:10.5pt;margin:0 0 2mm}
+.rbplaces td{padding:1mm 3mm 1mm 0;vertical-align:top;
+             border-bottom:1px solid #efe9dd}
+.rbplaces tr:last-child td{border-bottom:0}
+.rbplaces .yr{width:30mm;color:var(--muted);font-size:9.5pt;
+              font-variant-numeric:tabular-nums;white-space:nowrap}
+.rbplaces .wh{width:32mm;color:var(--muted);font-size:9pt;text-align:right}
+.rbplaces .det{color:var(--muted);font-size:9pt}
+/* The line itself, from the earliest person the file knows. */
+.rbline{font-size:10.5pt;line-height:1.7;margin:0 0 2mm}
+.rbline .arr{color:var(--muted)}
+/* Where every fact came from. A date with no source is a rumour somebody
+   typed carefully. */
+.rbsrc{list-style:none;margin:0;padding:0;font-size:10pt}
+.rbsrc li{margin:0 0 1.5mm;padding-left:4mm;text-indent:-4mm}
+.rbsrc b{font-weight:600}
+.srcbit{color:var(--muted);font-size:9.5pt}
+.srcbit::before{content:"· "}
+.srcurl{color:var(--muted);font-size:8.5pt;word-break:break-all}
 .rbsec{font-size:9pt;letter-spacing:.09em;text-transform:uppercase;
        color:var(--muted);margin:5mm 0 1.5mm;border-bottom:1px solid var(--rule);
        padding-bottom:.8mm}
@@ -504,6 +525,188 @@ NONE_REC = '<span class=unk>None recorded</span>'
 def _or_unknown(v, blank: str = UNKNOWN) -> str:
     v = (v or "").strip() if isinstance(v, str) else v
     return esc(v) if v else blank
+
+
+# ═══════════════ what a historian needs and a chart cannot hold ══════════
+#
+# The sections below are the difference between a pretty page about somebody
+# and a record another researcher can WORK from. Each one answers a question
+# that gets asked of every ancestor, in order:
+#
+#   what else were they called   -- because the index is filed under the
+#                                   spelling the clerk used, not yours
+#   where were they, and when    -- the movement of a family is half of its
+#                                   history, and it is what places the next
+#                                   record: the parish you search in 1861
+#                                   is not the one you search in 1841
+#   who do they descend from     -- the line itself, from the earliest
+#                                   person the file knows, said outright
+#   where did this come from     -- the one that separates research from
+#                                   hearsay. A fact with no source is a
+#                                   rumour somebody typed carefully.
+_NAME_KINDS = {
+    "married": "married name", "also_known_as": "also known as",
+    "nickname": "known as", "anglicised": "anglicised",
+    "as_recorded": "as recorded", "religious": "religious name",
+    "legal": "legal name",
+}
+
+# Events that put somebody in a PLACE at a TIME. A census is the strongest
+# of them -- it is a whole household on one line -- and a residence, a
+# baptism or a burial each pin a family to a parish for a year.
+_PLACE_EVENTS = {
+    "birth": "born", "baptism": "baptised", "census": "census",
+    "residence": "living there", "occupation": "working",
+    "marriage": "married", "emigration": "emigrated",
+    "immigration": "arrived", "military": "military service",
+    "probate": "probate", "will": "will", "death": "died",
+    "burial": "buried", "cremation": "cremated",
+}
+
+
+def _place_row(when: str, place: str, what: str, detail: str) -> str:
+    return (f"<tr><td class=yr>{when}</td><td>{esc(place)}"
+            + (f"<br><span class=det>{esc(detail)}</span>" if detail else "")
+            + f"</td><td class=wh>{esc(what)}</td></tr>")
+
+
+def _age_at(birth, when) -> str:
+    """How old somebody was at a dated event. Blank unless both are known —
+    a guess printed on a record is read in thirty years as a fact."""
+    if not (birth.known and when.known and birth.earliest and when.earliest):
+        return ""
+    n = when.earliest.year - birth.earliest.year
+    return str(n) if 0 <= n <= 120 else ""
+
+
+def _also_known(con, pid: str) -> list[tuple[str, str]]:
+    """Every other name this person is recorded under.
+
+    THE MOST PRACTICAL LINE ON THE PAGE. An index is filed under the
+    spelling the clerk wrote, and a Whitcombe is a Whitcomb, a Whitcome and
+    a Witcombe in four different registers. A researcher who does not know
+    that searches once and concludes the family was not there.
+    """
+    out = []
+    for r in con.execute(
+        "SELECT type,given,surname_prefix,surname,suffix,as_recorded "
+        "FROM person_name WHERE person_id=? AND COALESCE(is_primary,0)=0 "
+        "ORDER BY type", (pid,)
+    ):
+        name = " ".join(x for x in (r["given"], r["surname_prefix"],
+                                    r["surname"], r["suffix"]) if x)
+        name = (r["as_recorded"] or name or "").strip()
+        if name:
+            out.append((_NAME_KINDS.get(r["type"], r["type"] or "also"), name))
+    return out
+
+
+def _places(con, pid: str) -> tuple[list, list, list]:
+    """Where they were and when, and whatever is left over.
+
+    Returns (dated, undated, placeless). The first two are the movement of
+    a life down one column; the third is everything nobody could pin to a
+    place -- a probate, a will -- which still belongs on the record.
+
+    UNDATED ENTRIES ARE NOT GIVEN AN "UNKNOWN" IN THE DATE COLUMN. A
+    chronological table with a blank where the year goes is a table that
+    cannot be read down; they come after it, said plainly.
+
+    DEDUPLICATED. The same christening imported twice from two GEDCOMs, or
+    a birth date typed in the box and a birth event beside it, both put the
+    same line on the page -- and a record that says a thing twice reads as
+    two findings.
+    """
+    from ..model.gendate import GenDate as _GD
+    dated, undated, placeless, seen = [], [], [], set()
+    for r in con.execute(
+        "SELECT e.type,e.date_json,e.date_sort,pl.name place,e.description "
+        "FROM event e JOIN event_role er ON er.event_id=e.id "
+        "LEFT JOIN place pl ON pl.id=e.place_id "
+        "WHERE er.person_id=? ORDER BY e.date_sort", (pid,)
+    ):
+        d = _GD.from_json(r["date_json"])
+        what = _PLACE_EVENTS.get(r["type"], (r["type"] or "").replace("_", " "))
+        detail = (r["description"] or "").strip()
+        key = (d.display, r["place"] or "", what, detail)
+        if key in seen:
+            continue
+        seen.add(key)
+        row = (d.display, r["place"] or "", what, detail)
+        if not r["place"]:
+            # A birth or a death with no place is already stated in full at
+            # the top of the sheet; repeating it under "other records" makes
+            # one fact look like two.
+            if r["type"] not in ("birth", "death"):
+                placeless.append(row)
+        elif d.known:
+            dated.append(row)
+        else:
+            undated.append(row)
+    return dated, undated, placeless
+
+
+def _descent(graph, pid: str) -> list[str]:
+    """The senior line, from the earliest person the file knows down to them.
+
+    ROOT-FREE, which is why it belongs on a record and "your uncle" does
+    not: it is reckoned from the oldest ancestor in the file, not from
+    whoever the program happens to be centred on. It is also the one thing a
+    bloodline historian is actually holding the folder to find out.
+    """
+    line, seen, cur, guard = [pid], {pid}, pid, 0
+    while guard < 60:
+        guard += 1
+        pars = [x for x in graph.parents(cur, primary_only=True)
+                if x in graph.people and x not in seen]
+        if not pars:
+            break
+        # The line the surname follows where there is one, so the chain
+        # reads as a lineage rather than zig-zagging between families.
+        want = graph.people[cur].surname
+        cur = next((x for x in pars if graph.people[x].surname == want),
+                   pars[0])
+        seen.add(cur)
+        line.append(cur)
+    return list(reversed(line))
+
+
+def _sources(con, pid: str, union_ids: list[str]) -> list[dict]:
+    """Where every fact about this person came from.
+
+    THE LINE BETWEEN RESEARCH AND HEARSAY. A date with no source is a rumour
+    somebody typed carefully, and a record that does not say where it got
+    something cannot be checked, corrected or built on. Everything cited
+    against the person, against any event they are a party to, or against
+    the marriage itself.
+    """
+    ins = ",".join("?" * len(union_ids)) or "''"
+    rows = con.execute(
+        "SELECT DISTINCT s.title,s.author,s.repository,s.ref,s.url,s.type,"
+        "       c.page "
+        "FROM citation c JOIN source s ON s.id=c.source_id "
+        "WHERE c.person_id=? "
+        "   OR c.event_id IN (SELECT event_id FROM event_role WHERE person_id=?)"
+        f"   OR c.union_id IN ({ins}) "
+        "   OR c.name_id IN (SELECT id FROM person_name WHERE person_id=?) "
+        "ORDER BY s.title", (pid, pid, *union_ids, pid)).fetchall()
+    # ONE ENTRY PER SOURCE, not one per citation. The parish register cited
+    # for a baptism, a marriage and a burial is one book, and listing it
+    # three times turns a bibliography into a log.
+    by_title: dict = {}
+    for r in rows:
+        key = r["title"]
+        got = by_title.setdefault(key, {
+            "title": r["title"], "author": r["author"],
+            "repository": r["repository"], "ref": r["ref"],
+            "url": r["url"], "pages": []})
+        for bit in (r["page"],):
+            # A page reference already inside the source's own reference is
+            # the same reference said twice: "RG 9/1652 f.71 p.12 · f.71 p.12".
+            if (bit and bit not in got["pages"]
+                    and bit not in (got["ref"] or "")):
+                got["pages"].append(bit)
+    return list(by_title.values())
 
 
 def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
@@ -622,6 +825,13 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
         fam.append(("Brothers and sisters",
                     ", ".join(nm(x) for x in sibs) if sibs else NONE_REC))
 
+        # ---- the marriages.
+        #
+        # A DATE NOBODY KNOWS IS NOT LISTED. Elsewhere on this record an
+        # empty field is filled with "Unknown", because a blank where a
+        # birthplace goes is ambiguous forever. A marriage is different: the
+        # marriage itself is the fact, it is stated, and three rows of
+        # "Unknown" under it say nothing except that the page is padded.
         marriages = []
         for uid in p.unions:
             u = graph.unions.get(uid)
@@ -629,32 +839,28 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
                 continue
             others = [x for x in u.partners if x != pid and x in graph.people]
             kids = [x for x in u.children if x in graph.people]
-            head = union_word(u).capitalize()
-            rows = [(head, nm(others[0]) if others else UNKNOWN),
-                    ("Date", _or_unknown(u.date.display)),
-                    ("Place", _or_unknown(u.place)),
-                    ("Children", ", ".join(nm(x) for x in kids)
-                     if kids else NONE_REC)]
+            rows = [(union_word(u).capitalize(),
+                     nm(others[0]) if others else UNKNOWN)]
+            if u.date.known:
+                # How old they were, which is the first thing anybody checks
+                # a marriage record against.
+                at = _age_at(p.birth, u.date)
+                rows.append(("Date", esc(u.date.display)
+                             + (f" <span class=yrs>aged {at}</span>" if at
+                                else "")))
+            if u.place:
+                rows.append(("Place", esc(u.place)))
+            rows.append(("Children",
+                         ", ".join(nm(x) for x in kids) if kids else NONE_REC))
             marriages.append(rows)
         if not marriages:
             marriages = [[("Married", NONE_REC)]]
 
-        # ---- anything else anybody recorded as an event
-        extra = []
-        for r in con.execute(
-            "SELECT e.type,e.date_json,e.description,pl.name place "
-            "FROM event e JOIN event_role er ON er.event_id=e.id "
-            "LEFT JOIN place pl ON pl.id=e.place_id WHERE er.person_id=? "
-            "ORDER BY e.date_sort", (pid,)
-        ):
-            if r["type"] in ("birth", "death", "occupation", "education"):
-                continue                       # already above, in their own rows
-            from ..model.gendate import GenDate as _GD
-            d = _GD.from_json(r["date_json"])
-            extra.append((r["type"].replace("_", " ").capitalize(),
-                          " · ".join(x for x in (d.display, r["place"] or "",
-                                                 r["description"] or "") if x)
-                          or UNKNOWN))
+        # ---- everything else a researcher is holding this page to find
+        variants = _also_known(con, pid)
+        dated, undated, placeless = _places(con, pid)
+        line = _descent(graph, pid)
+        srcs = _sources(con, pid, list(p.unions))
 
         def dl(rows, cls="rbfacts"):
             return (f"<dl class={cls}>" + "".join(
@@ -674,17 +880,59 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
             + "</p><div class=hr></div>"
             + f"<div class=body>{img}<div class=txt>"
             + "<p class=rbsec>Life</p>" + dl(life_rows)
+            # An index is filed under the spelling the clerk wrote, and a
+            # Whitcombe is a Whitcomb and a Witcombe in three registers.
+            + (("<p class=rbsec>Also recorded as</p>"
+                + dl([(k, esc(v)) for k, v in variants])) if variants else "")
             + "<p class=rbsec>Parents and family</p>" + dl(fam)
             + "".join("<p class=rbsec>" + ("Marriage" if len(marriages) == 1
                                            else f"Marriage {i + 1}")
                       + "</p>" + dl(m)
                       for i, m in enumerate(marriages))
-            + (("<p class=rbsec>Other records</p>" + dl(extra)) if extra else "")
+            # WHERE THEY WERE, AND WHEN. Half the history of a family is its
+            # movement, and it is what places the next record: the parish
+            # you search in 1861 is not the one you search in 1841.
+            + (("<p class=rbsec>Places and dates</p>"
+                + "<table class=rbplaces>"
+                + "".join(_place_row(esc(d), pl, w, det)
+                          for d, pl, w, det in dated)
+                + "".join(_place_row("<span class=unk>date not recorded"
+                                     "</span>", pl, w, det)
+                          for _d, pl, w, det in undated)
+                + "</table>") if (dated or undated) else "")
+            # THE LINE ITSELF, reckoned from the earliest person the file
+            # knows rather than from whoever the program is centred on --
+            # which is why it belongs on a record and "your uncle" does not.
+            + (("<p class=rbsec>Line of descent</p><p class=rbline>"
+                + " <span class=arr>&rarr;</span> ".join(
+                    nm(x) for x in line) + "</p>") if len(line) > 2 else "")
+            # Everything that could not be put on the map: a probate, a
+            # will, an event whose place nobody wrote down.
+            + (("<p class=rbsec>Other records</p>"
+                + dl([(w.capitalize(), " · ".join(
+                    x for x in (esc(d) or "date not recorded", esc(det)) if x))
+                    for d, _pl, w, det in placeless])) if placeless else "")
             + "<p class=rbsec>What is known about them</p>"
             + (f"<div class=rbnote>{esc(p.notes)}</div>"
                if (p.notes or "").strip()
                else '<p class=rbnote><span class=unk>Nothing written down '
                     'yet</span></p>')
+            # THE LINE BETWEEN RESEARCH AND HEARSAY. A date with no source
+            # is a rumour somebody typed carefully; a record that does not
+            # say where it got something cannot be checked or built on.
+            + "<p class=rbsec>Where this came from</p>"
+            + (("<ul class=rbsrc>" + "".join(
+                "<li><b>" + esc(x["title"]) + "</b>"
+                + "".join(f" <span class=srcbit>{esc(v)}</span>"
+                          for v in (x["author"], x["repository"], x["ref"],
+                                    "; ".join(x["pages"])) if v)
+                + (f"<br><span class=srcurl>{esc(x['url'])}</span>"
+                   if x["url"] else "")
+                + "</li>" for x in srcs) + "</ul>")
+               if srcs else
+               "<p class=rbnote><span class=unk>No source recorded. Every "
+               "fact above is worth a reference: without one it cannot be "
+               "checked.</span></p>")
             + ("<p class=rbsec>Papers on file</p><p class=rbpapers>"
                + ", ".join(esc(x.get("caption") or x["name"]) for x in papers)
                + "</p>" if papers else "")
