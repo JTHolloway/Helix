@@ -9,6 +9,8 @@
 // the one that writes immediately. There is no unsaved state to protect.
 import { get, post } from './api.js';
 import { addPerson, retire } from './edit.js';
+import * as facts from './facts.js';
+export { setVocab } from './facts.js';
 
 export async function show(host, pid, hooks) {
   const d = await get('person', { id: pid });
@@ -67,6 +69,9 @@ export async function show(host, pid, hooks) {
               ${kindOptions(f.kind)}
             </select>
           </label>
+          ${facts.factList(f.events || [], { unionId: f.union_id })}
+          <button class="addlink" data-addfam="${esc(f.union_id)}"
+            >+ When and where they married</button>
         </div>`
       ).join('') || '<p class="none">Nobody recorded yet.</p>'}
       ${btn('partner', '+ Add a partner')}
@@ -94,14 +99,12 @@ export async function show(host, pid, hooks) {
     </div>
 
     <h4>Facts</h4>
-    <table class="facts">${d.events.map(e => `<tr>
-      <td>${esc(e.type.replace(/_/g, ' '))}</td>
-      <td><span class="conf c${e.confidence}" title="confidence ${e.confidence}"></span>
-        ${esc(e.date || '—')}${e.place ? '<br><small>' + esc(e.place) + '</small>' : ''}
-        ${e.desc ? '<br>' + esc(e.desc) : ''}
-        ${e.citations ? '' : '<br><small class="none">no source recorded</small>'}
-      </td></tr>`).join('') || '<tr><td colspan=2 class="none">Nothing recorded yet.</td></tr>'}
-    </table>
+    <div id="factBox">
+      ${facts.factList(d.events)}
+      <button class="addlink" id="addFact">+ Record another fact</button>
+      <p class="hint">A census, a will, an emigration, an apprenticeship —
+        anything with a date, a place and a source under it.</p>
+    </div>
 
     <div class="group actions">
       ${d.is_subject ? '' : '<button class="ghost wide" id="subjBtn">Make this person “me”</button>'}
@@ -167,6 +170,44 @@ export async function show(host, pid, hooks) {
   });
   $('#retireBtn').addEventListener('click', () =>
     retire(pid, d.name, msg => { onToast(msg); onChanged(); onSelect(pid); }));
+
+  // ---- facts, and where they came from -----------------------------------
+  //
+  // The boxes above hold the five things somebody types on their first
+  // evening. This is everything else, and the source under it — which is
+  // the whole difference between research and a rumour with dates on it.
+  const factBox = $('#factBox');
+  const backToList = (changed) => {
+    if (changed) { onChanged(); onSelect(pid); }
+    else show(host, pid, hooks);
+  };
+  const openFact = (ev, unionId) => {
+    factBox.innerHTML = facts.factForm(ev, { personId: unionId ? '' : pid,
+                                             unionId });
+    facts.wireForm(factBox, { onDone: backToList, onToast });
+  };
+  if ($('#addFact')) $('#addFact').addEventListener('click', () => openFact(null, ''));
+  host.querySelectorAll('[data-addfam]').forEach(b =>
+    b.addEventListener('click', () => {
+      // A marriage and a divorce are facts about TWO people, so they hang
+      // on the family. Put on one of them, a divorce ends up recorded twice
+      // and disagreeing with itself.
+      factBox.innerHTML = facts.factForm({ type: 'marriage', date: '',
+                                           place: '', desc: '', confidence: 2 },
+                                         { unionId: b.dataset.addfam });
+      facts.wireForm(factBox, { onDone: backToList, onToast });
+      factBox.scrollIntoView({ block: 'nearest' });
+    }));
+  host.querySelectorAll('[data-edit]').forEach(b =>
+    b.addEventListener('click', () => {
+      const all = [...d.events, ...d.families.flatMap(f => f.events || [])];
+      openFact(all.find(x => x.id === b.dataset.edit), b.dataset.union || '');
+    }));
+  host.querySelectorAll('[data-cite]').forEach(b =>
+    b.addEventListener('click', () => {
+      const box = b.closest('#factBox') || b.closest('.famrow') || factBox;
+      facts.citeScreen(box, b.dataset.cite, { onDone: backToList, onToast });
+    }));
 
   // ---- married, or not ----------------------------------------------------
   //

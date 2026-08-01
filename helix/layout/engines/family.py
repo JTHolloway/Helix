@@ -1601,6 +1601,13 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # couples who never married appears only on a chart that has one.
     # Explained on every chart it would be four hundred charts carrying a
     # note about something not on them.
+    # A FAMILY TREE THAT IS ALSO A CLOCK is the commonest thing anybody asks
+    # this program for. One 8 mm bore at the exact centre, and two warnings
+    # if the middle is too tight or the hands would be too heavy.
+    if style.get("fab.clock", False) and disc:
+        from ...fab.clock import add_clock
+        add_clock(plan, style, cx, cy)
+
     _key(plan, style, W, H, margin, lw, col,
          at=(cx, cy) if disc else None, maxw=inner * 1.7 if disc else 0.0,
          unmarried=any(e.role == "not_married" for e in plan.elements))

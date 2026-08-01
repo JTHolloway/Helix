@@ -161,6 +161,66 @@ def _rows(con, sql: str, args=()) -> list[sqlite3.Row]:
     return con.execute(sql, args).fetchall()
 
 
+# Somebody is treated as living if the file says so, or if nobody has
+# recorded a death and they were born inside a normal lifetime. The second
+# half matters: most files never set the flag, and "no death date" is how a
+# living person actually looks in one.
+_LIFETIME = 105
+
+
+def _is_living(p, events) -> bool:
+    if p.get("living") is not None:
+        return bool(p["living"])
+    import datetime
+    born = None
+    for e in events:
+        if e["type"] == "death":
+            return False
+        if e["type"] == "birth" and e.get("date_earliest"):
+            born = e["date_earliest"][:4]
+    if not born:
+        return False                     # nothing to go on: leave it alone
+    return int(born) > datetime.date.today().year - _LIFETIME
+
+
+def _redact(g: dict) -> dict:
+    """Take the private half off everybody who may still be alive.
+
+    WHAT SURVIVES is the shape: they are still in the tree, still in their
+    family, still a son or a daughter, and still carry the surname — because
+    a redacted GEDCOM that drops them entirely is a lie about the family, and
+    whoever receives it will re-add them from memory and get it wrong.
+
+    WHAT GOES is everything a stranger could use: given names, every dated
+    event, places, occupations and the notes.
+    """
+    by_person: dict = {}
+    for e in g["events"]:
+        if e.get("person_id"):
+            by_person.setdefault(e["person_id"], []).append(e)
+
+    living = {p["id"] for p in g["people"]
+              if _is_living(p, by_person.get(p["id"], []))}
+    if not living:
+        g["redacted"] = 0
+        return g
+
+    for p in g["people"]:
+        if p["id"] in living:
+            p["notes"] = None
+    for n in g["names"]:
+        if n["person_id"] in living:
+            n["given"] = ""
+            n["given_used"] = None
+            n["as_recorded"] = None
+            n["nickname"] = n.get("nickname") and None
+    g["events"] = [e for e in g["events"]
+                   if not (e.get("person_id") in living
+                           and e.get("role") == "principal")]
+    g["redacted"] = len(living)
+    return g
+
+
 def _gather(con) -> dict:
     """Everything the writer needs, in five queries rather than five per
     person. On a four-hundred-person file the per-person form spends longer
@@ -214,9 +274,25 @@ def _index(g: dict) -> dict:
 
 
 def export(con, path: str | Path, *, version: str = "5.5.1",
-           title: str = "", submitter: str = "") -> dict:
-    """Write the whole file as GEDCOM. Returns a summary of what went out."""
+           title: str = "", submitter: str = "", redact_living: bool = False) -> dict:
+    """Write the whole file as GEDCOM. Returns a summary of what went out.
+
+    REDACTING THE LIVING is the one mistake a genealogy program should not
+    help somebody make silently. A GEDCOM goes to a cousin, onto a forum,
+    into a commercial tree — and it carries every living child's full name,
+    date of birth and address. Turned on, living people keep their place in
+    the tree, their surname and their sex, because the shape of the family is
+    what the file is for, and lose everything a stranger could use: given
+    names, dates, places, occupations, notes and photographs.
+    """
     g = _gather(con)
+    if redact_living:
+        # `sqlite3.Row` is read-only, so redaction works on plain dicts.
+        # Copied rather than re-queried: the shape has to stay identical or
+        # every writer below it changes too.
+        for k in ("people", "names", "events"):
+            g[k] = [dict(r) for r in g[k]]
+        g = _redact(g)
     by = _index(g)
 
     # Stable xrefs. Sorted by the order people were entered rather than by
@@ -242,7 +318,8 @@ def export(con, path: str | Path, *, version: str = "5.5.1",
     return {"path": str(path), "version": version,
             "people": len(g["people"]), "families": len(g["unions"]),
             "sources": len(g["sources"]), "lines": len(o.lines),
-            "bytes": len(text.encode())}
+            "bytes": len(text.encode()),
+            "redacted": g.get("redacted", 0)}
 
 
 def _head(o: _Out, version: str, title: str, submitter: str, path) -> None:

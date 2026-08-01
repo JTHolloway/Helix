@@ -87,6 +87,9 @@ export async function show(host, { onOpened, onToast }) {
       </dl>
       <p class="hint">Every change is saved the moment you make it.</p>
 
+      <h4>On a phone</h4>
+      <div id="libNet" class="libnet">Looking…</div>
+
       <h4>Start another</h4>
       <form class="libform" id="libNew">
         <label>A name for it
@@ -125,6 +128,22 @@ export async function show(host, { onOpened, onToast }) {
     act('library/new', { title: t });
   });
   // ---- whose tree it is -----------------------------------------------
+  // HOW A PHONE ACTUALLY REACHES IT. The interface folds down to 380
+  // pixels and none of that was any use while the server only listened on
+  // 127.0.0.1. A square to point a camera at saves typing an IP address on
+  // a keyboard that covers half the screen.
+  get('network').then(n => {
+    const box = host.querySelector('#libNet');
+    if (!box) return;
+    box.innerHTML = n.open
+      ? `${n.qr ? `<div class="qr">${n.qr}</div>` : ''}
+         <div><b>Open this on your phone</b>
+           <code>${esc(n.url)}</code>
+           <p class="hint">${esc(n.how)}</p></div>`
+      : `<div><b>Only this computer can see it</b>
+           <p class="hint">${esc(n.how)}</p></div>`;
+  }).catch(() => {});
+
   const find = host.querySelector('#libSubjFind');
   const hits = host.querySelector('#libSubjHits');
   let timer = null;

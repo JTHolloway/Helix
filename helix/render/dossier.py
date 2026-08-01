@@ -237,8 +237,13 @@ def profile(graph, con, pid: str, *, kin: Optional[Kinship] = None,
     k = kin.of(pid) if kin else None
     counts = household(graph, pid)
     photos = photos or []
-    port = next((x for x in photos if x.get("portrait")), None)
-    rest = [x for x in photos if x is not port]
+    # A SCANNED WILL IS NOT A PHOTOGRAPH. Everything attached to somebody
+    # used to go into the gallery as an <img>, so a PDF certificate and an
+    # audio recording came out as broken image icons on the printed sheet.
+    pics = [x for x in photos if x.get("kind", "photo") == "photo"]
+    papers = [x for x in photos if x.get("kind", "photo") != "photo"]
+    port = next((x for x in pics if x.get("portrait")), pics[0] if pics else None)
+    rest = [x for x in pics if x is not port]
 
     rel = ""
     if k and k.group != "self":
@@ -265,8 +270,14 @@ def profile(graph, con, pid: str, *, kin: Optional[Kinship] = None,
     if rest:
         gallery = ("<h2>Photographs</h2><div class=gallery>" + "".join(
             f"<figure><img src='/api/media?name={esc(x['name'])}'>"
-            f"<figcaption>{esc(x.get('caption') or '')}</figcaption></figure>"
+            f"<figcaption>{esc(x.get('caption') or '')}"
+            + (f" <b>{esc(x['when'])}</b>" if x.get("when") else "")
+            + "</figcaption></figure>"
             for x in rest) + "</div>")
+    if papers:
+        gallery += ("<h2>Papers on file</h2><ul class=plain>" + "".join(
+            f"<li>{esc(x.get('caption') or x['name'])}</li>"
+            for x in papers) + "</ul>")
 
     return f"""<article class=person>
   <div class=who>

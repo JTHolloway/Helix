@@ -37,6 +37,7 @@
     <button id="statsBtn" class="ghost" title="What the file says about the family as a whole (N)">Numbers</button>
     <button id="timelineBtn" class="ghost" title="Every birth, marriage and death in order (T)">Timeline</button>
     <button id="relateBtn" class="ghost" title="How are these two related? (R)">Relate</button>
+    <button id="srcBtn" class="ghost" title="Every source your research rests on (S)">Sources</button>
     <button id="libBtn" class="ghost" title="Which family is open, and where your files are kept (O)">Family</button>
     <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
     <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
@@ -299,6 +300,9 @@
     <button data-x="archive">Archive — everything, zipped, to keep elsewhere</button>
     <button data-x="backup">Back up now</button>
     <button data-x="gedcom">GEDCOM — opens in Ancestry, MyHeritage, FamilySearch</button>
+    <button data-x="gedcom-safe">GEDCOM without the living — to send to
+      somebody else. Living people keep their place and their surname and
+      lose their names, dates and details.</button>
     <button data-x="svg">SVG — for printing or the laser</button>
     <button data-x="svgprod">SVG — cut layers only (red = cut, black = engrave)</button>
     <button data-x="png">PNG — for sharing</button>
@@ -418,6 +422,16 @@
      everything on screen — the DNA, the origins, the small bloodline tree,
      what is still to find out — which is working material and goes stale.
      Both are wanted; they are not the same document. -->
+<!-- WHERE EVERY FACT CAME FROM. `source` and `citation` have been in the
+     schema from the first commit and only the GEDCOM importer ever wrote to
+     them — so the record book could ask "where did this come from?" and the
+     program had no way of being told. -->
+<dialog id="srcDlg">
+  <h2>Sources</h2>
+  <div id="srcBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
 <dialog id="printDlg">
   <h2>Print</h2>
 

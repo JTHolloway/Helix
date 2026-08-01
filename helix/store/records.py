@@ -311,6 +311,165 @@ def create_person(e: Edit, *, given="", surname="", sex="U", birth="",
     return pid
 
 
+# ════════════════════════ facts, one at a time ═══════════════════════════
+#
+# `update_person` writes the five facts the panel has boxes for. This is the
+# other half: ANY fact, with a date, a place, a note and a confidence, added,
+# corrected or taken off. It is what makes the schema's own vocabulary
+# reachable -- a will, an apprenticeship, an emigration, a census, a divorce
+# -- without a new field per idea.
+#
+# WHY THE LIST IS A SUGGESTION AND NOT A RULE. `event.type` is a free string
+# in the schema and stays one: somebody researching a family of watermen
+# needs "apprenticed to the Company of Watermen" and will not wait for a
+# release. The list below is what the panel offers first, in the order a life
+# happens; anything else typed in is kept.
+FACT_KINDS = [
+    ("birth", "Born"), ("baptism", "Baptised"), ("census", "Census"),
+    ("residence", "Lived at"), ("occupation", "Occupation"),
+    ("education", "Education"), ("apprenticeship", "Apprenticeship"),
+    ("military", "Military service"), ("emigration", "Emigrated"),
+    ("immigration", "Arrived"), ("naturalisation", "Naturalised"),
+    ("religion", "Religion"), ("marriage", "Married"),
+    ("divorce", "Divorced"), ("death", "Died"), ("burial", "Buried"),
+    ("cremation", "Cremated"), ("probate", "Probate"), ("will", "Will"),
+    ("other", "Something else"),
+]
+
+# What each confidence means, in words. A number on its own invites somebody
+# to average them, which is exactly what a confidence is not for.
+CONFIDENCE = [
+    (0, "Unproved — a guess, or somebody's say-so"),
+    (1, "Likely — indirect evidence, not seen"),
+    (2, "Recorded — seen in an index or a transcript"),
+    (3, "Proved — the original record, or a certificate"),
+]
+
+
+def event_op(con, body: dict) -> dict:
+    """POST /api/event. Add, change or take off one fact.
+
+    Attaches to a PERSON or to a FAMILY -- a marriage and a divorce are facts
+    about two people, and putting them on one of them is how a divorce ends
+    up recorded twice and disagreeing with itself.
+    """
+    action = body.get("action", "save")
+    typ = (body.get("type") or "other").strip().lower().replace(" ", "_")
+    pid, uid = body.get("id"), body.get("union_id")
+    who = display_name(con, pid) if pid else "this family"
+    label = {"save": f"Record a fact for {who}",
+             "remove": f"Take a fact off {who}"}.get(action, "Edit a fact")
+
+    with Edit(con, label) as e:
+        if action == "remove":
+            eid = body["event_id"]
+            for r in con.execute("SELECT * FROM event_role WHERE event_id=?",
+                                 (eid,)).fetchall():
+                e.delete("event_role", {"event_id": eid,
+                                        "person_id": r["person_id"],
+                                        "union_id": r["union_id"],
+                                        "role": r["role"]})
+            for r in con.execute("SELECT id FROM citation WHERE event_id=?",
+                                 (eid,)).fetchall():
+                e.delete("citation", {"id": r["id"]})
+            e.delete("event", {"id": eid})
+            return {"ok": True, "removed": eid}
+
+        d = parse_date(body.get("date") or "")
+        fields = {
+            "type": typ,
+            "date_json": d.to_json(),
+            "date_earliest": d.earliest.isoformat() if d.earliest else None,
+            "date_latest": d.latest.isoformat() if d.latest else None,
+            "date_sort": d.sort_value,
+            "place_id": _place_id(e, body.get("place", "")),
+            "description": (body.get("note") or "").strip() or None,
+            "confidence": max(0, min(3, int(body.get("confidence", 2)))),
+        }
+        eid = body.get("event_id")
+        if eid:
+            e.update("event", {"id": eid}, fields)
+        else:
+            eid = new_id()
+            e.insert("event", {"id": eid, **fields})
+            e.insert("event_role", {"event_id": eid, "person_id": pid,
+                                    "union_id": uid, "role": "principal"})
+    return {"ok": True, "event_id": eid}
+
+
+# ═══════════════════════ where a fact came from ══════════════════════════
+#
+# THE LINE BETWEEN RESEARCH AND HEARSAY. `source` and `citation` have been in
+# the schema from the first commit and only the GEDCOM importer ever wrote to
+# them -- so the record book could ask "where did this come from?" and the
+# program had no way to be told.
+#
+# A SOURCE IS THE THING ITSELF and is written down once: the 1861 census, a
+# parish register, a headstone, an aunt. A CITATION is one use of it, with
+# the page. Kept apart because the alternative is typing "1861 Census of
+# England and Wales" forty times and spelling it four ways.
+def source_op(con, body: dict) -> dict:
+    """POST /api/source. Add, correct or remove a source."""
+    action = body.get("action", "save")
+    with Edit(con, {"save": "Record a source",
+                    "remove": "Remove a source"}.get(action, "Edit a source")) as e:
+        if action == "remove":
+            sid = body["source_id"]
+            for r in con.execute("SELECT id FROM citation WHERE source_id=?",
+                                 (sid,)).fetchall():
+                e.delete("citation", {"id": r["id"]})
+            e.delete("source", {"id": sid})
+            return {"ok": True, "removed": sid}
+
+        title = (body.get("title") or "").strip()
+        if not title:
+            raise ValueError(
+                "A source needs a title — what the record IS. "
+                "\"1861 Census of England and Wales\" or "
+                "\"Parish register, St Mary, Frome\" will do.")
+        fields = {k: (body.get(k) or "").strip() or None
+                  for k in ("author", "repository", "ref", "url", "notes")}
+        fields["title"] = title
+        fields["type"] = (body.get("type") or "record").strip()
+        fields["quality"] = max(0, min(3, int(body.get("quality", 2))))
+        sid = body.get("source_id")
+        if sid:
+            e.update("source", {"id": sid}, fields)
+        else:
+            sid = new_id()
+            e.insert("source", {"id": sid, **fields})
+    return {"ok": True, "source_id": sid}
+
+
+def cite_op(con, body: dict) -> dict:
+    """POST /api/cite. Say that a source backs up a particular fact."""
+    action = body.get("action", "add")
+    with Edit(con, "Cite a source" if action == "add"
+              else "Take a source off a fact") as e:
+        if action == "remove":
+            e.delete("citation", {"id": body["citation_id"]})
+            return {"ok": True}
+        keys = {k: body.get(k) for k in
+                ("person_id", "event_id", "union_id", "name_id")}
+        if not any(keys.values()):
+            raise ValueError("Choose the fact this source is evidence for.")
+        got = con.execute(
+            "SELECT id FROM citation WHERE source_id=? AND person_id IS ? "
+            "AND event_id IS ? AND union_id IS ? AND name_id IS ?",
+            (body["source_id"], keys["person_id"], keys["event_id"],
+             keys["union_id"], keys["name_id"])).fetchone()
+        cid = got["id"] if got else new_id()
+        fields = {"source_id": body["source_id"], **keys,
+                  "page": (body.get("page") or "").strip() or None,
+                  "transcript": (body.get("transcript") or "").strip() or None,
+                  "confidence": max(0, min(3, int(body.get("confidence", 2))))}
+        if got:
+            e.update("citation", {"id": cid}, fields)
+        else:
+            e.insert("citation", {"id": cid, **fields})
+    return {"ok": True, "citation_id": cid}
+
+
 def update_person(con, body: dict) -> dict:
     """POST /api/person. Edit somebody already in the file.
 

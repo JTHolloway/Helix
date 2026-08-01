@@ -50,6 +50,14 @@ _RECORD_ROUTES = {
     "/api/person/photo/taken": lambda con, b: _taken(con, b),
     "/api/person/heritage": lambda con, b: records.set_heritage(con, b),
     "/api/person/merge":  lambda con, b: records.merge(con, b),
+    # ANY fact, with a date, a place, a note and a confidence -- and where
+    # it came from. The schema has carried `source` and `citation` from the
+    # first commit and only the GEDCOM importer ever wrote to them, so the
+    # record book could ask "where did this come from?" and the program had
+    # no way of being told.
+    "/api/event":         lambda con, b: records.event_op(con, b),
+    "/api/source":        lambda con, b: records.source_op(con, b),
+    "/api/cite":          lambda con, b: records.cite_op(con, b),
 }
 
 
@@ -230,6 +238,12 @@ class Handler(BaseHTTPRequestHandler):
                 # What kinds of couple there are, so the panel offers them
                 # rather than hard-coding a list that drifts from the schema.
                 "union_kinds": UNION_CHOICES,
+                # The vocabularies the panels are built from, so a kind
+                # added in `records` appears without any further wiring.
+                "fact_kinds": [{"key": k, "label": t}
+                               for k, t in records.FACT_KINDS],
+                "confidence": [{"level": n, "label": t}
+                               for n, t in records.CONFIDENCE],
                 "people": [{"id": p.id, "name": p.full_name,
                             "life": p.lifespan, "sex": p.sex}
                            for p in sorted(g.people.values(),
@@ -321,6 +335,79 @@ class Handler(BaseHTTPRequestHandler):
             from .analysis import consang
             return self._json({"couples": consang.couples(ST.graph),
                                **consang.summary(ST.graph)})
+        if route == "preflight":
+            # THE REAL CHECK. The button used to reimplement four rules in
+            # JavaScript from the on-screen settings, so `fab/preflight.py`
+            # -- which runs the island check and is the standard this
+            # program holds its error messages to -- was reachable only from
+            # the command line.
+            from .fab.materials import get as material
+            from .fab.preflight import preflight
+            style = Style.load(q.get("style") or None)
+            for k, v in q.items():
+                if k.startswith("s."):
+                    style.set(k[2:], _coerce(v))
+            # THE MATERIAL IS THE POINT of half these checks: the smallest
+            # legible engraved letter on 3 mm ply is not the same as on cast
+            # acrylic, and the thinnest bridge that survives differs again.
+            # The select in the panel was wired to nothing at all.
+            mat_key = q.get("material") or "birch_ply_3mm"
+            style.set("production.material", mat_key)
+            findings = preflight(_plan(q), style)
+            mat = material(mat_key)
+            return self._json({
+                "ok": not any(f.level == "fail" for f in findings),
+                "material": mat.name,
+                "material_note": mat.engrave_note,
+                "findings": [{"level": f.level, "title": f.title,
+                              "detail": f.detail, "fix": f.fix}
+                             for f in findings],
+            })
+        if route == "network":
+            # THE ADDRESS TO TYPE INTO A PHONE, and a square to point a
+            # camera at. A QR code is 25 lines of arithmetic and saves
+            # somebody typing an IP address with a keyboard they cannot see
+            # while holding the phone.
+            from .desktop.qr import svg as qr_svg
+            ip = lan_address()
+            open_ = ST.host not in ("127.0.0.1", "localhost", "::1")
+            url = f"http://{ip or '127.0.0.1'}:{ST.port}/"
+            return self._json({
+                "open": open_, "address": ip, "port": ST.port, "url": url,
+                "qr": qr_svg(url) if open_ and ip else "",
+                "how": ("Anyone on this network can open it while Helix is "
+                        "running. Close Helix and it is gone." if open_ else
+                        "Helix is only listening to this computer. Start it "
+                        "with --lan to let a phone on the same network in."),
+            })
+        if route == "sources":
+            # Every source in the file, with how much rests on each. A
+            # source cited once is a note; one cited forty times is the
+            # spine of the research and worth getting right.
+            rows = []
+            for r in ST.con.execute(
+                "SELECT s.*, (SELECT COUNT(*) FROM citation c "
+                "             WHERE c.source_id=s.id) uses "
+                "FROM source s ORDER BY s.title"
+            ):
+                rows.append({k: r[k] for k in r.keys()})
+            return self._json({"sources": rows})
+        if route == "citations":
+            # What backs up one fact, or one person.
+            where, args = [], []
+            for k in ("event_id", "person_id", "union_id"):
+                if q.get(k):
+                    where.append(f"c.{k}=?")
+                    args.append(q[k])
+            if not where:
+                return self._json({"citations": []})
+            rows = ST.con.execute(
+                "SELECT c.id,c.page,c.transcript,c.confidence,s.title,"
+                "       s.repository,s.ref,s.url,s.id source_id "
+                "FROM citation c JOIN source s ON s.id=c.source_id "
+                f"WHERE {' OR '.join(where)} ORDER BY s.title", args).fetchall()
+            return self._json({"citations": [
+                {k: r[k] for k in r.keys()} for r in rows]})
         if route == "relate":
             # HOW ARE THESE TWO RELATED? Any two people in the file, not
             # only whoever the chart is centred on.
@@ -359,10 +446,18 @@ class Handler(BaseHTTPRequestHandler):
             from .io import gedcom
             with tempfile.TemporaryDirectory() as d:
                 stem = (ST.title or "family").replace(" ", "-")
+                # SHARING A TREE THAT NAMES LIVING CHILDREN AND THEIR
+                # BIRTHDAYS is the one mistake a genealogy program should not
+                # help somebody make silently. Off by default -- the export
+                # is also how somebody moves their own file -- and one click
+                # away in the Export panel.
+                safe = q.get("redact") == "1"
+                if safe:
+                    stem += "-without-the-living"
                 f = Path(d) / f"{stem}.ged"
                 gedcom.export_file(ST.con, f,
                                    version=q.get("version", "5.5.1"),
-                                   title=ST.title)
+                                   title=ST.title, redact_living=safe)
                 raw = f.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -583,7 +678,11 @@ def _thumb(design: str) -> str:
     Cut down to the people around the subject and stripped of type, because
     at 120 pixels a name is a smudge and the SHAPE is the whole message.
     """
-    stamp = (ST.dbpath, len(ST.graph.people), ST.subject)
+    # The people count alone left a stale picture after a rename or a date
+    # change. `change_log` grows on every write, so its length is a cheap
+    # stamp for "the file is not what it was".
+    n = ST.con.execute("SELECT COUNT(*) c FROM change_log").fetchone()["c"]
+    stamp = (ST.dbpath, len(ST.graph.people), ST.subject, n)
     hit = _THUMBS.get(design)
     if hit and hit[0] == stamp:
         return hit[1]
@@ -1179,7 +1278,8 @@ def _person_detail(st: State, pid: str) -> dict:
     p = g.people[pid]
     evs = []
     for r in st.con.execute(
-        "SELECT e.type,e.date_json,e.description,pl.name place,e.confidence,"
+        "SELECT e.id,e.type,e.date_json,e.description,pl.name place,"
+        "e.confidence,"
         "(SELECT COUNT(*) FROM citation c WHERE c.event_id=e.id) cites "
         "FROM event e JOIN event_role er ON er.event_id=e.id "
         "LEFT JOIN place pl ON pl.id=e.place_id WHERE er.person_id=? "
@@ -1187,7 +1287,12 @@ def _person_detail(st: State, pid: str) -> dict:
     ):
         from .model.gendate import GenDate
         d = GenDate.from_json(r["date_json"])
-        evs.append({"type": r["type"], "date": d.display, "place": r["place"] or "",
+        # `id` is what makes a fact editable and citable: without it the
+        # panel could show a date and not correct it, and the record book
+        # could ask where a fact came from with no way to be told.
+        evs.append({"id": r["id"], "type": r["type"], "date": d.display,
+                    "raw": d.original or d.display,
+                    "place": r["place"] or "",
                     "desc": r["description"] or "", "confidence": r["confidence"],
                     "citations": r["cites"]})
     from .store import album
@@ -1227,7 +1332,7 @@ def _person_detail(st: State, pid: str) -> dict:
         "children": [_brief(g, x) for x in g.children(pid)],
         "siblings": [dict(_brief(g, x), kind=g.sibling_kind(pid, x))
                      for x in _siblings(g, pid)],
-        "families": _families(g, pid),
+        "families": _families(g, st.con, pid),
         "on_thread": pid in thread(g, st.subject).members,
     }
 
@@ -1303,6 +1408,21 @@ def _photos(st: State, p) -> list[dict]:
     return out
 
 
+def _union_events(con, uid: str) -> list[dict]:
+    from .model.gendate import GenDate
+    return [{"id": r["id"], "type": r["type"],
+             "date": GenDate.from_json(r["date_json"]).display,
+             "place": r["place"] or "", "desc": r["description"] or "",
+             "confidence": r["confidence"], "citations": r["cites"]}
+            for r in con.execute(
+                "SELECT e.id,e.type,e.date_json,e.description,pl.name place,"
+                "e.confidence,"
+                "(SELECT COUNT(*) FROM citation c WHERE c.event_id=e.id) cites "
+                "FROM event e JOIN event_role er ON er.event_id=e.id "
+                "LEFT JOIN place pl ON pl.id=e.place_id "
+                "WHERE er.union_id=? ORDER BY e.date_sort", (uid,))]
+
+
 def _parent_union(g, child: str, parent: str) -> str:
     """The family that makes this person that person's parent."""
     for uid in g.people[child].child_of_all:
@@ -1325,7 +1445,7 @@ def _brief(g, pid: str) -> dict:
 _siblings = siblings_of
 
 
-def _families(g, pid: str) -> list[dict]:
+def _families(g, con, pid: str) -> list[dict]:
     """Children grouped under the partner they belong to.
 
     This is the one piece of the panel that teaches somebody something they
@@ -1349,6 +1469,10 @@ def _families(g, pid: str) -> list[dict]:
             # that says "married" of a couple who did not is telling a small
             # lie about two real people.
             "kind": u.type or "unknown",
+            # A MARRIAGE AND A DIVORCE ARE FACTS ABOUT TWO PEOPLE, so they
+            # hang on the family and not on either of them. Put on one, a
+            # divorce ends up recorded twice and disagreeing with itself.
+            "events": _union_events(con, uid),
             "word": u.word,
             "married": u.married,
             "date": u.date.display,
@@ -1421,13 +1545,42 @@ def make_server(dbpath: str, host="127.0.0.1", port=8731) -> ThreadingHTTPServer
     """
     global ST
     ST = State(dbpath)
-    return ThreadingHTTPServer((host, port), Handler)
+    srv = ThreadingHTTPServer((host, port), Handler)
+    # Remembered so the interface can say what address a phone should use.
+    ST.host, ST.port = host, srv.server_port
+    return srv
+
+
+def lan_address() -> str:
+    """This machine's address on the home network, or "".
+
+    HOW A PHONE ACTUALLY REACHES IT. The interface folds down to 380 pixels
+    and none of that was any use, because the server only ever listened on
+    127.0.0.1 -- the one address a phone cannot reach. Opening it up is a
+    deliberate act (`--lan`, or the switch in the Family screen) and it says
+    what it is doing, because putting a family's whole history on a shared
+    network is not something to do by accident.
+    """
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("192.0.2.1", 9))       # TEST-NET-1: routed nowhere
+        return s.getsockname()[0]
+    except OSError:
+        return ""
+    finally:
+        s.close()
 
 
 def serve(dbpath: str, host="127.0.0.1", port=8731, open_browser=True):
     srv = make_server(dbpath, host, port)
     url = f"http://{host}:{srv.server_port}/"
     print(f"\n  Helix is running.  Open  {url}\n  (Ctrl-C to stop)\n")
+    if host in ("0.0.0.0", "::"):
+        ip = lan_address()
+        print(f"  On this network, from a phone or a tablet:\n"
+              f"      http://{ip or '<this machine>'}:{srv.server_port}/\n"
+              f"  Anyone on the same network can open it while it is running.\n")
     if open_browser:
         threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:

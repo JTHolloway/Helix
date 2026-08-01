@@ -957,3 +957,58 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
    what tells them. */
 #inspector .relhow{margin:2px 0 0;font-size:12px;color:var(--muted);
   line-height:1.35}
+
+/* ═══════════════════ facts, and where they came from ════════════════════ */
+/* The boxes above hold the five things somebody types on their first
+   evening. This is everything else — a census, a will, an emigration — and
+   the source under it, which is the whole difference between research and a
+   rumour with dates on it. */
+.factlist{list-style:none;margin:0;padding:0}
+.factlist li{border-bottom:1px solid var(--rule);padding:7px 0}
+.factlist li:last-child{border-bottom:0}
+.frow{display:flex;gap:8px;align-items:baseline}
+.frow b{font-size:13.5px;font-weight:600;min-width:78px;flex:0 0 auto}
+.frow span{flex:1;font-size:13.5px;color:var(--ink);min-width:0}
+.fmeta{display:flex;gap:8px;align-items:center;margin-top:2px;
+  padding-left:86px;font-size:11.5px;color:var(--muted)}
+.link{border:0;background:none;padding:0;font:inherit;font-size:11.5px;
+  color:var(--muted);text-decoration:underline;cursor:pointer}
+.link:hover{color:var(--accent)}
+.facted{flex:0 0 auto}
+.cites{margin-left:auto}
+.factform,.citeform,.srcform{display:grid;gap:6px;margin:8px 0}
+.factform label,.citeform label,.srcform label{display:block;font-size:12.5px;
+  color:var(--muted)}
+.factform input,.factform select,.citeform input,.citeform select,
+.srcform input{width:100%;margin-top:2px;padding:7px 9px;border:1px solid var(--rule);
+  border-radius:6px;background:var(--paper);color:var(--ink);font:inherit;
+  font-size:14px}
+.factform .row,.citeform .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.citelist,.srclist{list-style:none;margin:0 0 10px;padding:0}
+.citelist li,.srclist li{background:var(--paper);border:1px solid var(--rule);
+  border-radius:6px;padding:8px 11px;margin:0 0 6px;position:relative;
+  padding-right:32px}
+.citelist b,.srclist b{display:block;font-size:13.5px}
+.citelist span,.srclist span{font-size:12px;color:var(--muted);margin-right:8px}
+.srclist a{display:block;font-size:11.5px;color:var(--muted);word-break:break-all}
+.srclist em{display:block;font-size:11.5px;color:var(--accent);font-style:normal;
+  margin-top:2px}
+.citelist .x,.srclist .x{position:absolute;right:6px;top:6px;width:22px;height:22px;
+  border:0;background:none;border-radius:50%;padding:0;line-height:1;
+  color:var(--muted);cursor:pointer}
+.citelist .x:hover,.srclist .x:hover{background:var(--accent-soft);color:var(--accent)}
+.newsrc{margin:10px 0;font-size:13px}
+.newsrc summary{cursor:pointer;color:var(--muted)}
+
+/* --- reaching it from a phone -------------------------------------------- */
+.libnet{display:flex;gap:14px;align-items:center;background:var(--paper);
+  border:1px solid var(--rule);border-radius:var(--r);padding:12px 14px}
+.libnet .qr{flex:0 0 auto;line-height:0}
+.libnet .qr svg{width:112px;height:112px;border-radius:4px}
+.libnet b{display:block;font-size:14px}
+.libnet code{display:block;font-size:12.5px;margin:3px 0;word-break:break-all;
+  color:var(--accent)}
+/* --- what the real pre-flight says --------------------------------------- */
+.report .matnote{border:0;color:var(--muted);font-size:12px;margin-top:8px;
+  padding-top:6px;border-top:1px solid var(--rule)}
+.report i{font-style:normal;color:var(--accent)}

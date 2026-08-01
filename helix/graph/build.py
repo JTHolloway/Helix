@@ -404,7 +404,8 @@ def load(con, subject_id: Optional[str] = None) -> FamilyGraph:
 
     unions: dict[str, Union] = {}
     for r in con.execute("SELECT * FROM union_ WHERE active=1"):
-        unions[r["id"]] = Union(id=r["id"], type=r["type"])
+        unions[r["id"]] = Union(id=r["id"], type=r["type"],
+                                notes=r["notes"] or "")
     for r in con.execute("SELECT * FROM union_partner ORDER BY seq"):
         if r["union_id"] in unions and r["person_id"] in people:
             unions[r["union_id"]].partners.append(r["person_id"])

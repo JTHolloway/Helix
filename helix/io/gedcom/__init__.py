@@ -31,7 +31,14 @@ from .writer import export as _export, gedcom_date  # noqa: F401
 
 
 def export_file(con, path: str, *, version: str = "5.5.1",
-                title: str = "", submitter: str = "") -> dict:
-    """Write the whole family out. Returns a summary of what went."""
+                title: str = "", submitter: str = "",
+                redact_living: bool = False) -> dict:
+    """Write the whole family out. Returns a summary of what went.
+
+    `redact_living` takes the private half off anybody who may still be
+    alive: they keep their place in the tree, their surname and their sex,
+    and lose their given names, their dates and everything written about
+    them. See `writer._redact` for why the shape has to survive.
+    """
     return _export(con, path, version=version, title=title,
-                   submitter=submitter)
+                   submitter=submitter, redact_living=redact_living)

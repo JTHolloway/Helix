@@ -39,7 +39,7 @@ const S = {                       // everything the preview depends on
   rings: true, fsize: 34, lw: 45, conn: 'orthogonal', start: -90, sweep: 360,
   pitch: 25, entrygap: 0, cluster: 0, orient: 'tangential', marr: true,
   sibgap: 10, famgap: 60, cellcap: 12,
-  leaf: 'auto', wedges: true, wedgeop: 13,
+  leaf: 'auto', wedges: true, wedgeop: 13, clock: false,
   // HOW FAR THE TREE SPREADS, by relation. Sent with every plan request, so
   // narrowing re-runs the whole layout rather than hiding branches -- see
   // `LayoutSettings.kin`.
@@ -53,6 +53,7 @@ async function init() {
   META = await get('meta');
   $('#proj').textContent = META.title || '';
   inspector.setKinds(META.union_kinds);
+  inspector.setVocab(META.fact_kinds, META.confidence);
   buildGallery();
   wireControls();
   wireSearch();
@@ -67,6 +68,7 @@ async function init() {
   wireInsight();
   wireLibrary();
   wireRelate();
+  wireSources();
   narrow.wire({ onClose: () => view.refit() });
   undoLabels();
   await Promise.all([refresh(), loadRelatives(), loadGaps()]);
@@ -151,7 +153,8 @@ function params() {
     's.connectors.width_mm': (S.lw / 100).toFixed(2),
     's.connectors.style': S.conn,
     's.colour.mode': S.cmode,
-    's.thread.enabled': S.threadOn
+    's.thread.enabled': S.threadOn,
+    's.fab.clock': S.clock
   };
 }
 
@@ -297,6 +300,10 @@ function wireControls() {
   bind('famgap', 'famgap', v => (v / 100).toFixed(2) + ' of a cell');
   bind('cellcap', 'cellcap', v => v + '\u00b0 — a sparse family draws as a fan');
   bind('leaf', 'leaf'); bind('wedges', 'wedges');
+  bind('clock', 'clock');
+  $('#material').addEventListener('change', () => {
+    if ($('#preflight').innerHTML.trim()) preflight();
+  });
   bind('wedgeop', 'wedgeop',
     v => v == 0 ? 'off' : (v / 100).toFixed(2)
       + (v > 20 ? ' — muddy where families overlap' : ''));
@@ -750,6 +757,19 @@ function wirePrint() {
     }));
 }
 
+// EVERY SOURCE IN THE FILE, in one place. A source is the record itself,
+// written down once and cited wherever it is used; one cited forty times is
+// the spine of the research and worth getting right.
+function wireSources() {
+  $('#srcBtn').addEventListener('click', async () => {
+    $('#srcDlg').showModal();
+    try {
+      const { sourcesScreen } = await import('./facts.js');
+      await sourcesScreen($('#srcBody'), { onToast: toast });
+    } catch (e) { $('#srcBody').innerHTML = `<p class="warn">${escAttr(e.message)}</p>`; }
+  });
+}
+
 function escAttr(s) {
   return String(s ?? '').replace(/[&<>"]/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -801,25 +821,23 @@ async function showCritical() {
 }
 
 // ─────────────────────────────────────────────────────────── preflight ───
+// THE REAL CHECK, run on the server by `fab/preflight.py` — the module this
+// program holds its error messages to, and the one that runs the island
+// check. This used to reimplement four rules in JavaScript from the
+// on-screen settings, so a chart could pass here and fall apart on the bed.
 async function preflight() {
   const rep = $('#preflight');
-  const m = PLAN.meta, hidden = m.extra?.labels_hidden || 0;
-  const minText = (S.fsize / 10);
-  const rows = [
-    [hidden === 0 ? 'pass' : 'warn',
-      hidden === 0 ? 'Every name fits' : `${hidden} names could not be shown`],
-    [minText >= 2.2 ? 'pass' : 'fail',
-      `Smallest text ${minText.toFixed(1)} mm ` +
-      (minText >= 2.2 ? '(fine for wood)' : '— below 2.2 mm it will not read on wood')],
-    [(S.lw / 100) >= 0.2 ? 'pass' : 'warn',
-      `Line weight ${(S.lw / 100).toFixed(2)} mm`],
-    [S.w <= 600 && S.h <= 400 ? 'pass' : 'warn',
-      `${S.w}×${S.h} mm ` + (S.w <= 600 && S.h <= 400 ? 'fits a common 600×400 bed'
-        : '— larger than a 600×400 bed, so it will need tiling')],
-    ['warn', 'Cut a half-scale proof on card before committing to good material'],
-    ['warn', 'Convert text to outlines on export (production SVG does this)']
-  ];
-  rep.innerHTML = rows.map(([c, t]) => `<div class="${c}">${t}</div>`).join('');
+  rep.innerHTML = '<div>Checking…</div>';
+  try {
+    const d = await get('preflight',
+      { ...params(), material: $('#material').value });
+    rep.innerHTML =
+      d.findings.map(f => `<div class="${f.level}"><b>${escAttr(f.title)}</b>`
+        + (f.detail ? `<br>${escAttr(f.detail)}` : '')
+        + (f.fix ? `<br><i>${escAttr(f.fix)}</i>` : '') + '</div>').join('')
+      + `<div class="matnote"><b>${escAttr(d.material)}</b><br>${
+          escAttr(d.material_note)}</div>`;
+  } catch (e) { rep.innerHTML = `<div class="fail">${escAttr(e.message)}</div>`; }
 }
 
 // ────────────────────────────────────────────────────────────── search ───
@@ -861,6 +879,13 @@ function wireExport() {
       const kind = b.dataset.x;
       if (kind === 'png') return exportPng();
       if (kind === 'gedcom') { window.location = '/api/gedcom'; return; }
+      // SHARING A TREE THAT NAMES LIVING CHILDREN AND THEIR BIRTHDAYS is
+      // the one mistake a genealogy program should not help somebody make
+      // silently. Off by default — the export is also how somebody moves
+      // their own file — and one click away here.
+      if (kind === 'gedcom-safe') {
+        window.location = '/api/gedcom?redact=1'; return;
+      }
       const p = { ...params(), name: (META.title || 'family').replace(/\W+/g, '-') };
       if (kind === 'svgprod') p.production = 1;
       if (kind === 'json') { downloadText(JSON.stringify(PLAN, null, 2), 'plan.json'); return; }
@@ -926,6 +951,7 @@ function wireKeys() {
     if (k === 'y') { e.preventDefault(); $('#timelineBtn').click(); }
     if (k === 'i') { e.preventDefault(); $('#importBtn').click(); }
     if (k === 'r') { e.preventDefault(); $('#relateBtn').click(); }
+    if (k === 's') { e.preventDefault(); $('#srcBtn').click(); }
   });
 
   // Undo and redo work while typing too, which is where mistakes happen.

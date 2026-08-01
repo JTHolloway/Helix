@@ -546,7 +546,12 @@ def cmd_import(a):
 
 def cmd_serve(a):
     from .server import serve
-    serve(a.db, host=a.host, port=a.port, open_browser=not a.no_open)
+    # A DELIBERATE ACT, and it says what it is doing. The interface folds
+    # down to a phone and none of that was any use while the server only
+    # listened on 127.0.0.1 -- but a family's whole history on a shared
+    # network is not something to switch on by accident.
+    host = "0.0.0.0" if getattr(a, "lan", False) else a.host
+    serve(a.db, host=host, port=a.port, open_browser=not a.no_open)
 
 
 def main(argv=None):
@@ -647,6 +652,8 @@ def main(argv=None):
 
     p = sub.add_parser("serve", help="open the app in your browser")
     p.add_argument("db"); p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--lan", action="store_true",
+                   help="let phones and tablets on the same network open it")
     p.add_argument("--port", type=int, default=8731)
     p.add_argument("--no-open", action="store_true"); p.set_defaults(f=cmd_serve)
 
