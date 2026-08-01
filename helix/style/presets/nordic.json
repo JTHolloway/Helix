@@ -1,0 +1,56 @@
+{
+  "name": "Nordic",
+  "blurb": "Two values, one weight of line, a great deal of air. People are dots.",
+  "laser": "excellent",
+  "canvas": {
+    "width_mm": 600,
+    "height_mm": 600,
+    "margin_mm": 40,
+    "background": "#FFFDF8"
+  },
+  "layout": {
+    "engine": "radial_organic",
+    "inner_radius_mm": 70,
+    "radius_gamma": 0.5
+  },
+  "cells": {
+    "shape": "none"
+  },
+  "connectors": {
+    "style": "straight",
+    "width_mm": 0.22,
+    "colour": "#111111"
+  },
+  "nodes": {
+    "glyph": "dot",
+    "size_mm": 0.9,
+    "fill": "#111111",
+    "stroke": "#111111"
+  },
+  "type": {
+    "family": "'Futura','Avenir Next',Avenir,'Helvetica Neue',sans-serif",
+    "size_mm": 2.5,
+    "min_size_mm": 2.2,
+    "tracking": 0.06,
+    "colour": "#111111"
+  },
+  "labels": {
+    "template": "{surname}",
+    "by_ring": {
+      "0-2": "{given_first} {surname}"
+    }
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#111111",
+    "stroke_width_mm": 0.9
+  },
+  "ornament": {
+    "time_rings": false,
+    "border": false
+  },
+  "colour": {
+    "mode": "none"
+  },
+  "id": "nordic"
+}

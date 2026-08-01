@@ -1,0 +1,53 @@
+{
+  "name": "Heirloom",
+  "blurb": "Victorian engraved plate. Hairline rules, small-caps surnames, quiet and formal.",
+  "laser": "excellent",
+  "canvas": {
+    "width_mm": 600,
+    "height_mm": 600,
+    "margin_mm": 26,
+    "background": "#EDE4D3"
+  },
+  "layout": {
+    "engine": "radial_sunburst",
+    "inner_radius_mm": 100,
+    "radius_gamma": 0.5
+  },
+  "cells": {
+    "stroke": "#3B2A1E",
+    "stroke_width_mm": 0.22,
+    "radial_depth_mm": 8
+  },
+  "connectors": {
+    "style": "organic",
+    "width_mm": 0.28,
+    "colour": "#3B2A1E"
+  },
+  "type": {
+    "family": "'Cormorant Garamond','EB Garamond',Garamond,serif",
+    "size_mm": 3.0,
+    "min_size_mm": 2.3,
+    "case": "as_typed",
+    "colour": "#3B2A1E"
+  },
+  "labels": {
+    "template": "{given_first} {surname}",
+    "by_ring": {
+      "0-2": "{given} {surname}\\n{lifespan}"
+    }
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#6B2020",
+    "stroke_width_mm": 1.2
+  },
+  "ornament": {
+    "time_rings": true,
+    "time_ring_colour": "#BFAF95",
+    "border": true
+  },
+  "colour": {
+    "mode": "none"
+  },
+  "id": "heirloom"
+}

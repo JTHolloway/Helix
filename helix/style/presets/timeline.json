@@ -1,0 +1,42 @@
+{
+  "name": "Timeline",
+  "blurb": "A year axis across the page, generations in bands. The clearest view of who overlapped with whom.",
+  "laser": "excellent",
+  "canvas": {
+    "width_mm": 1189,
+    "height_mm": 594,
+    "margin_mm": 22,
+    "background": "#FBF8F2"
+  },
+  "layout": {
+    "engine": "timeline_lanes",
+    "lane_height_mm": 5.2
+  },
+  "cells": {
+    "stroke_width_mm": 0.3
+  },
+  "connectors": {
+    "width_mm": 0.22,
+    "colour": "#9A9382"
+  },
+  "type": {
+    "family": "'Iowan Old Style',Georgia,serif",
+    "size_mm": 2.4,
+    "min_size_mm": 2.0
+  },
+  "labels": {
+    "template": "{given_first} {surname}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#A3392B",
+    "stroke_width_mm": 1.2
+  },
+  "ornament": {
+    "time_ring_colour": "#CFC6B4"
+  },
+  "colour": {
+    "mode": "generation"
+  },
+  "id": "timeline"
+}

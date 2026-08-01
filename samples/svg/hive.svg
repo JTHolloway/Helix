@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="900mm" height="900mm" viewBox="0 0 900 900">
+<!-- helix | engine=hive style=default people=23 hash=b8b4d5582bb8 -->
+<rect x="0" y="0" width="900" height="900" fill="#FBF8F2"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<text x="450" y="43.2" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="start" dominant-baseline="central" transform="rotate(-90,450,43.2)">Ashworth · 12</text>
+<text x="768.049" y="196.3643" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="start" dominant-baseline="central" transform="rotate(-38.5714,768.049,196.3643)">Whitcombe · 4</text>
+<text x="846.6007" y="540.5215" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="start" dominant-baseline="central" transform="rotate(12.8571,846.6007,540.5215)">Threlfall · 2</text>
+<text x="626.5039" y="816.5141" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="start" dominant-baseline="central" transform="rotate(64.2857,626.5039,816.5141)">Vasey · 2</text>
+<text x="273.4961" y="816.5141" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="end" dominant-baseline="central" transform="rotate(295.7143,273.4961,816.5141)">Pargeter · 1</text>
+<text x="53.3993" y="540.5215" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="end" dominant-baseline="central" transform="rotate(347.1429,53.3993,540.5215)">Boyce · 1</text>
+<text x="131.951" y="196.3643" font-family="sans-serif" font-size="5.7" fill="#26241F" text-anchor="end" dominant-baseline="central" transform="rotate(398.5714,131.951,196.3643)">Oakley · 1</text>
+<path d="M450,360L450,54" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M520.3648,393.8859L759.6053,203.098" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M537.7435,470.0269L836.0715,538.1183" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M489.0495,531.0872L621.818,806.7837" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M410.9505,531.0872L278.182,806.7837" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M362.2565,470.0269L63.9285,538.1183" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M379.6352,393.8859L140.3947,203.098" fill="none" stroke="#26241F" stroke-width="0.64" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M 550.270,370.037 Q 607.040,414.891 612.325,487.050" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 610.080,322.340 Q 371.605,325.869 213.093,504.073" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 450.000,347.250 Q 543.972,262.571 669.890,274.643" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 344.566,668.935 Q 320.902,472.147 450.000,321.750" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 450.000,296.250 Q 574.603,200.064 729.700,226.947" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 450.000,219.750 Q 672.041,301.895 761.489,521.095" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 588.626,737.860 Q 638.907,435.557 450.000,194.250" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 450.000,270.750 Q 348.904,242.824 260.015,298.492" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<path d="M 522.242,600.011 Q 564.168,406.737 450.000,245.250" fill="none" stroke="#26241F" stroke-width="0.32" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+<circle cx="450" cy="347.25" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="321.75" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="296.25" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="270.75" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="245.25" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="219.75" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="194.25" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="168.75" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="143.25" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="117.75" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="92.25" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="450" cy="66.75" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="550.2699" cy="370.0374" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="610.08" cy="322.3405" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="669.8901" cy="274.6435" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="729.7002" cy="226.9465" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="612.3255" cy="487.0497" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="761.4895" cy="521.0954" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="522.2416" cy="600.0113" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="588.6259" cy="737.8596" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="344.5663" cy="668.9354" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="213.0925" cy="504.0726" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="260.0149" cy="298.492" r="0.88" fill="#26241F" stroke="#26241F" stroke-width="0.28" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="450" y="16" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+</svg>

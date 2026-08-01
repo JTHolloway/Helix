@@ -1,0 +1,53 @@
+{
+  "name": "Circuit",
+  "blurb": "Traces and pads. Superb on black acrylic or anodised aluminium.",
+  "laser": "good",
+  "canvas": {
+    "width_mm": 600,
+    "height_mm": 600,
+    "margin_mm": 22,
+    "background": "#0B3D2E"
+  },
+  "layout": {
+    "engine": "radial_sunburst",
+    "inner_radius_mm": 90,
+    "radius_gamma": 0.5
+  },
+  "cells": {
+    "shape": "annular_sector",
+    "stroke": "#C9A227",
+    "stroke_width_mm": 0.3,
+    "radial_depth_mm": 7,
+    "fill": "none"
+  },
+  "connectors": {
+    "style": "circuit",
+    "width_mm": 0.5,
+    "colour": "#C9A227",
+    "corner_radius_mm": 0.6
+  },
+  "type": {
+    "family": "'Roboto Mono','SF Mono',Menlo,monospace",
+    "size_mm": 2.4,
+    "min_size_mm": 2.1,
+    "tracking": 0.08,
+    "colour": "#E4DFCF",
+    "case": "upper"
+  },
+  "labels": {
+    "template": "{surname}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#E4DFCF",
+    "stroke_width_mm": 1.2
+  },
+  "ornament": {
+    "time_rings": true,
+    "time_ring_colour": "#2A6350"
+  },
+  "colour": {
+    "mode": "none"
+  },
+  "id": "circuit"
+}

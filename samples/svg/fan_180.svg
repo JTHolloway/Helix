@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="460mm" height="460mm" viewBox="0 0 460 460">
+<!-- helix | engine=fan_180 style=default people=7 hash=3fea0c7b579d -->
+<rect x="0" y="0" width="460" height="460" fill="#FBF8F2"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<path d="M230.1885,332.0002L230.2425,306.2003A115.8,115.8 0 1,1 229.7575,306.2003L229.8115,332.0002A90,90 0 1,0 230.1885,332.0002Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M230.2513,302.0003L230.3054,276.2003A145.8,145.8 0 0,1 230.3054,567.7997L230.2513,541.9997A120,120 0 0,0 230.2513,302.0003Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M229.7487,541.9997L229.6946,567.7997A145.8,145.8 0 0,1 229.6946,276.2003L229.7487,302.0003A120,120 0 0,0 229.7487,541.9997Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M230.3142,272.0003L230.3682,246.2004A175.8,175.8 0 0,1 405.7996,421.6318L379.9997,421.6858A150,150 0 0,0 230.3142,272.0003Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M379.9997,422.3142L405.7996,422.3682A175.8,175.8 0 0,1 230.3682,597.7996L230.3142,571.9997A150,150 0 0,0 379.9997,422.3142Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M409.9996,422.377L435.7995,422.431A205.8,205.8 0 0,1 375.827,567.2175L357.5455,549.0124A180,180 0 0,0 409.9996,422.377Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M357.0124,549.5455L375.2175,567.827A205.8,205.8 0 0,1 230.431,627.7995L230.377,601.9996A180,180 0 0,0 357.0124,549.5455Z" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="231.3224" y="515.5907" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(89.1905,231.3224,515.5907)">Beatrice Ashworth</text>
+<text x="228.2601" y="515.5838" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="end" dominant-baseline="central" transform="rotate(271.0651,228.2601,515.5838)">1790–1850</text>
+<text x="353.5929" y="420.6776" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(359.387,353.5929,420.6776)">Reuben Ashworth</text>
+<text x="353.5878" y="423.7399" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(0.8066,353.5878,423.7399)">1756–1800</text>
+<text x="106.4071" y="420.6776" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="end" dominant-baseline="central" transform="rotate(0.613,106.4071,420.6776)">Winifred Susannah Threlfall</text>
+<text x="106.4122" y="423.7399" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="end" dominant-baseline="central" transform="rotate(359.1934,106.4122,423.7399)">1760–1793</text>
+<text x="337.6725" y="312.4574" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(314.5067,337.6725,312.4574)">Joseph Ashworth</text>
+<text x="339.835" y="314.6257" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(315.6491,339.835,314.6257)">1724–1781</text>
+<text x="339.5426" y="529.6725" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(44.5067,339.5426,529.6725)">Hannah Whitcombe</text>
+<text x="337.3743" y="531.835" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(45.6491,337.3743,531.835)">1718–1766</text>
+<text x="400.1259" y="491.0371" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(22.0873,400.1259,491.0371)">Ernest Whitcombe</text>
+<text x="398.9508" y="493.865" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(23.043,398.9508,493.865)">1695–1770</text>
+<text x="301.4806" y="591.1138" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="start" dominant-baseline="central" transform="rotate(67.0873,301.4806,591.1138)">Esther Threlfall</text>
+<text x="298.65" y="592.2825" font-family="Georgia, 'Iowan Old Style', serif" font-size="2.28" fill="#6E675C" text-anchor="start" dominant-baseline="central" transform="rotate(68.043,298.65,592.2825)">1693–1753</text>
+<text x="230" y="20" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+</svg>

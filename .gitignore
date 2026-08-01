@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+*.helix
+*.helix-wal
+*.helix-shm
+backups/
+gallery/
+out/
+.DS_Store
+sample-family.helix
+
+# PyInstaller writes this each time build_app.py runs.
+*.spec
+
+# Screenshots the walkthrough scripts leave behind.
+*-phone.png
+sweep-*.png

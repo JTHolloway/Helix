@@ -1,0 +1,47 @@
+{
+  "name": "Lifelines",
+  "blurb": "Every person is a bar spanning the years they were alive. The most information per square inch of anything here.",
+  "laser": "excellent",
+  "canvas": {
+    "width_mm": 700,
+    "height_mm": 700,
+    "margin_mm": 24,
+    "background": "#FBF8F2"
+  },
+  "layout": {
+    "engine": "radial_lifeline",
+    "inner_radius_mm": 95,
+    "radius_gamma": 0.5,
+    "cell_pad_deg": 0.08
+  },
+  "cells": {
+    "stroke_width_mm": 0.35,
+    "fill": "none"
+  },
+  "connectors": {
+    "width_mm": 0.26,
+    "colour": "#8A8375",
+    "corner_radius_mm": 1.2
+  },
+  "type": {
+    "family": "'Iowan Old Style',Georgia,serif",
+    "size_mm": 2.4,
+    "min_size_mm": 2.1
+  },
+  "labels": {
+    "template": "{given_first} {surname}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#A3392B",
+    "stroke_width_mm": 1.3
+  },
+  "ornament": {
+    "time_rings": true,
+    "time_ring_colour": "#CFC6B4"
+  },
+  "colour": {
+    "mode": "lifespan"
+  },
+  "id": "lifelines"
+}

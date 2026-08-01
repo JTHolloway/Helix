@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Helix</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-mode="simple">
+
+<header class="bar">
+  <!-- On a narrow screen the two sidebars slide over the chart instead of
+       sitting beside it, so each needs a way in. Both buttons are hidden on
+       a wide screen, where the panels are simply there. -->
+  <button id="menuBtn" class="ghost icon narrow" aria-expanded="false"
+    title="Show the panel">☰</button>
+  <div class="brand">Helix<span id="proj"></span></div>
+  <div class="grow"></div>
+  <div class="segmented" role="group" aria-label="What this window is for">
+    <button id="exploreBtn" class="seg on" aria-pressed="true"
+      title="Read the family. Click anyone to see who they are. (E)">Explore</button>
+    <button id="buildBtn" class="seg" aria-pressed="false"
+      title="Add people and change how the chart looks. (B)">Build</button>
+  </div>
+  <input id="search" type="search" placeholder="Find a person…" autocomplete="off">
+  <div id="results" class="results" hidden></div>
+  <!-- Nine buttons fit across a laptop and not across a phone, so on a
+       phone they fold into one menu. Same buttons, same handlers — the
+       container moves, not the controls. -->
+  <button id="toolsBtn" class="ghost icon narrow" aria-expanded="false"
+    title="More">⋯</button>
+  <div id="tools" class="tools">
+    <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶<span class="lbl">Undo</span></button>
+    <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷<span class="lbl">Redo</span></button>
+    <button id="importBtn" class="ghost" title="Add people from a GEDCOM or a spreadsheet">Import</button>
+    <button id="statsBtn" class="ghost" title="What the file says about the family as a whole (N)">Numbers</button>
+    <button id="timelineBtn" class="ghost" title="Every birth, marriage and death in order (T)">Timeline</button>
+    <button id="relateBtn" class="ghost" title="How are these two related? (R)">Relate</button>
+    <button id="srcBtn" class="ghost" title="Every source your research rests on (S)">Sources</button>
+    <button id="toolBtn" class="ghost" title="Find people, households, contacts, history, compare (F)">Find</button>
+    <button id="libBtn" class="ghost" title="Which family is open, and where your files are kept (O)">Family</button>
+    <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
+    <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
+    <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
+  </div>
+  <span id="saved" class="saved" title="Every change is written to your family file the moment you make it">Saved</span>
+  <button id="exportBtn" class="primary">Export</button>
+</header>
+
+<main>
+  <div id="scrim" class="scrim" hidden></div>
+  <!-- ──────────────────── LEFT · EXPLORE ──────────────────────── -->
+  <!-- Everybody in the file, in tabs, closest relation first. The order is
+       the one people name their family in, not the alphabet and not the
+       arithmetic: nobody puts their grandmother above their sister. -->
+  <aside id="kin">
+    <button class="close narrow drawerclose" title="Close">×</button>
+    <section class="panel open" data-panel="scope">
+      <h2>How far the tree spreads</h2>
+      <label>Cousins
+        <select id="kinCousins">
+          <option value="">However far the family goes</option>
+          <option value="2">Out to second cousins</option>
+          <option value="1">First cousins only</option>
+          <option value="0">No cousins at all</option>
+        </select>
+      </label>
+      <label>Generations apart
+        <select id="kinRemoved">
+          <option value="">Any distance</option>
+          <option value="1">At most one generation</option>
+          <option value="0">Same generation only</option>
+        </select>
+      </label>
+      <label>Furthest anybody may be
+        <select id="kinSteps">
+          <option value="">No limit</option>
+          <option value="8">8 steps</option>
+          <option value="6">6 steps</option>
+          <option value="4">4 steps</option>
+          <option value="2">2 steps — the people next to you</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="kinMarried" checked>
+        Include husbands and wives who married in</label>
+      <details class="groups"><summary>Choose relations one by one</summary>
+        <div id="kinGroups" class="grouplist"></div>
+        <button id="kinAll" class="ghost wide">Turn them all back on</button>
+      </details>
+      <div id="kinCount" class="fit"></div>
+    </section>
+
+    <section class="panel open" data-panel="relatives">
+      <h2>Everyone in this family</h2>
+      <p class="hint">Closest first. Open a tab and click a name.</p>
+      <input id="kinFind" type="search" placeholder="Filter these names…"
+        autocomplete="off">
+      <!-- CHOOSING SEVERAL. A census page gives forty people the same
+           parish, and one at a time is forty dialogues and forty undo
+           steps. Filter to a surname, tick what the filter found, set the
+           place once — and one Ctrl-Z takes all of it back. -->
+      <div class="pickbar">
+        <button id="pickMode" class="link">Choose several</button>
+        <span id="pickInfo" hidden></span>
+      </div>
+      <div id="pickTools" class="pickrow" hidden>
+        <button id="pickAll" class="ghost">Tick everyone shown</button>
+        <button id="pickNone" class="ghost">Untick all</button>
+        <button id="pickGo" class="primary" disabled>Change them…</button>
+      </div>
+      <div id="kinList" class="kinlist"></div>
+    </section>
+
+    <!-- WHERE THE TREE CAN STILL GROW. Ranked by how many people a gap is
+         blocking, how likely the record is to have survived, and how much
+         trouble it is to reach — so the top of the list is a findable
+         question worth a Saturday morning, not merely the oldest one. -->
+    <section class="panel open" data-panel="research">
+      <h2>Where to look next</h2>
+      <p class="hint" id="gapHead">Working out what is missing…</p>
+      <div id="gapKinds" class="chips gapkinds"></div>
+      <ol id="gapList" class="gaps"></ol>
+      <button id="gapMore" class="ghost wide" hidden>Show more</button>
+    </section>
+  </aside>
+
+  <!-- ──────────────────── LEFT · BUILD ────────────────────────── -->
+  <aside id="left" hidden>
+    <button class="close narrow drawerclose" title="Close">×</button>
+    <section class="panel open" data-panel="design">
+      <h2>1 · Choose a look</h2>
+      <div id="gallery" class="gallery"></div>
+      <p class="hint" id="designBlurb"></p>
+      <!-- Specified and not built. Listed rather than hidden, because
+           somebody choosing a design should know what is coming — but they
+           are not pictures you can click into an error. -->
+      <details class="planned" id="planned" hidden></details>
+    </section>
+
+    <section class="panel open" data-panel="show">
+      <h2>2 · What to show</h2>
+      <label>Who to include
+        <select id="focus">
+          <option value="bloodline" selected>Everyone I'm related to by blood</option>
+          <option value="thread_siblings">My line, plus brothers and sisters</option>
+          <option value="thread">My direct line only</option>
+          <option value="subtree">My line, siblings and cousins</option>
+          <option value="all">Everyone in the file</option>
+        </select>
+      </label>
+      <label>Generations
+        <select id="gens">
+          <option value="">All of them</option>
+          <option value="3">3</option><option value="4">4</option>
+          <option value="5" selected>5</option><option value="6">6</option>
+          <option value="7">7</option><option value="8">8</option>
+        </select>
+      </label>
+      <label>On each person
+        <select id="tpl">
+          <option value="{given_first} {surname}">Name</option>
+          <option value="{given} {surname}">Full name</option>
+          <option value="{given_first} {surname}|{lifespan}">Name · dates underneath</option>
+          <option value="{given} {surname}|{lifespan}">Full name · dates underneath</option>
+          <option value="{given_first} {surname}|{lifespan}|{occupation}">Name · dates · occupation</option>
+          <option value="{given_first} {surname}|{birth_place}">Name · birthplace</option>
+          <option value="{surname}">Surname only</option>
+          <option value="{initials}">Initials</option>
+          <option value="">Nothing (shape only)</option>
+        </select>
+      </label>
+      <label>Text direction
+        <select id="orient">
+          <option value="tangential" selected>Around the ring (easiest to read)</option>
+          <option value="radial">Along the branch (fits the most)</option>
+          <option value="auto">Whichever fits</option>
+        </select>
+      </label>
+      <label>Colour by
+        <select id="cmode">
+          <option value="none">Nothing — one colour</option>
+          <option value="lineage">Family line</option>
+          <option value="generation">Generation</option>
+          <option value="lifespan">How long they lived</option>
+          <option value="sex">Sex</option>
+          <option value="geography">Where they were born</option>
+          <option value="occupation">Occupation</option>
+          <option value="confidence">How well proven</option>
+          <option value="criticality">How many descend from them</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="marr" checked> Join married couples with a tie</label>
+      <label class="check"><input type="checkbox" id="redact"> Hide details of living people</label>
+    </section>
+
+    <section class="panel open" data-panel="thread">
+      <h2>3 · Your bloodline</h2>
+      <p class="hint">The people you are directly descended from.</p>
+      <label class="check"><input type="checkbox" id="threadOn" checked> Highlight it</label>
+      <label class="check"><input type="checkbox" id="whatif"> <b>What-if mode</b> — hover anyone to see who vanishes without them</label>
+      <button id="criticalBtn" class="ghost wide">Show the 20 most important ancestors</button>
+    </section>
+
+    <section class="panel open" data-panel="size">
+      <h2>4 · The finished piece</h2>
+      <label>Panel
+        <select id="preset">
+          <option value="1000x1000" selected>1000 × 1000 mm — 1 m square</option>
+          <option value="1200x1200">1200 × 1200 mm</option>
+          <option value="800x800">800 × 800 mm</option>
+          <option value="600x600">600 × 600 mm</option>
+          <option value="600x400">600 × 400 mm — common laser bed</option>
+          <option value="1189x841">1189 × 841 mm — A0</option>
+          <option value="841x594">841 × 594 mm — A1</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </label>
+      <label>Width <input type="number" id="w" value="1000" step="10"> mm</label>
+      <label>Height <input type="number" id="h" value="1000" step="10"> mm</label>
+      <label>Gap between rings <input type="range" id="pitch" min="10" max="90" value="25"><output id="pitchV">25 mm (1.0")</output></label>
+      <label>Space between people <input type="range" id="entrygap" min="0" max="30" value="0"><output id="entrygapV">as tight as the text allows</output></label>
+      <label>Keep families together <input type="range" id="cluster" min="0" max="50" value="0"><output id="clusterV">off</output></label>
+      <label>Brothers and sisters <input type="range" id="sibgap" min="0" max="80" value="10"><output id="sibgapV">close together</output></label>
+      <label>Between families <input type="range" id="famgap" min="10" max="200" value="60"><output id="famgapV">0.60 of a cell</output></label>
+      <label>Widest a couple may be <input type="range" id="cellcap" min="3" max="40" value="12"><output id="cellcapV">12°</output></label>
+      <label>A married couple
+        <select id="leaf">
+          <option value="auto">Together, split where it would be unclear</option>
+          <option value="shared">Two names in one leaf, always</option>
+          <option value="split">A leaf each, side by side</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="wedges" checked> Shade each family, so you can see them meet</label>
+      <label>How strong the shading is <input type="range" id="wedgeop" min="0" max="30" value="13"><output id="wedgeopV">0.13</output></label>
+      <div id="fit" class="fit"></div>
+    </section>
+
+    <section class="panel adv" data-panel="size2">
+      <h2>Fine adjustment</h2>
+      <label>Hole in the middle <input type="range" id="inner" min="0" max="250" value="95"><output id="innerV">95 mm</output></label>
+      <label>Time squeeze <input type="range" id="gamma" min="30" max="100" value="50"><output id="gammaV">equal area</output></label>
+      <label class="check"><input type="checkbox" id="timeScale" checked> Rings are years, not generations</label>
+      <label class="check"><input type="checkbox" id="rings" checked> Draw year rings</label>
+    </section>
+
+    <section class="panel adv" data-panel="type">
+      <h2>Lines &amp; type</h2>
+      <label>Text size <input type="range" id="fsize" min="15" max="60" value="29"><output id="fsizeV">2.9 mm</output></label>
+      <label>Line weight <input type="range" id="lw" min="10" max="200" value="40"><output id="lwV">0.40 mm</output></label>
+      <label>Connector style
+        <select id="conn">
+          <option value="orthogonal">Right angles</option>
+          <option value="organic">Flowing curves</option>
+          <option value="straight">Straight</option>
+          <option value="circuit">Chamfered</option>
+          <option value="none">None</option>
+        </select>
+      </label>
+      <label>Start angle <input type="range" id="start" min="-180" max="180" value="-90"><output id="startV">12 o'clock</output></label>
+      <label>Sweep <input type="range" id="sweep" min="90" max="360" value="360"><output id="sweepV">full circle</output></label>
+    </section>
+
+    <section class="panel adv" data-panel="fab">
+      <h2>Making it</h2>
+      <label>Material
+        <select id="material">
+          <option value="birch_ply_3mm">3 mm birch ply</option>
+          <option value="mdf_5mm">5 mm MDF</option>
+          <option value="acrylic_3mm_cast">3 mm cast acrylic</option>
+          <option value="walnut_veneer_ply_4mm">4 mm walnut veneer ply</option>
+          <option value="card_1mm">1 mm card (prototype)</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="clock"> Leave a hole for a clock movement</label>
+      <button id="preflightBtn" class="ghost wide">Check it will cut cleanly</button>
+      <div id="preflight" class="report"></div>
+    </section>
+  </aside>
+
+  <!-- ─────────────────────────── CANVAS ─────────────────────────── -->
+  <section id="stage">
+    <div id="canvasWrap"><div id="canvas"></div></div>
+    <div id="loading" class="loading" hidden>Drawing…</div>
+    <div id="empty" class="empty" hidden>
+      <h2>Nobody here yet</h2>
+      <p>A family tree starts with one person, and the easiest one to start
+        with is you. Everyone else gets added relative to somebody already
+        here — your father, her mother, their children.</p>
+      <button class="primary" id="firstPerson">Add yourself</button>
+    </div>
+    <div id="readout" class="readout"></div>
+    <div id="whatifCard" class="whatif" hidden></div>
+    <div class="zoomers">
+      <button data-z="in" title="Zoom in">+</button>
+      <button data-z="out" title="Zoom out">−</button>
+      <button data-z="fit" title="Fit to window">⤢</button>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── RIGHT ─────────────────────────── -->
+  <aside id="right" hidden>
+    <button id="closeInsp" class="close" title="Close">×</button>
+    <div id="inspector"></div>
+  </aside>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+
+<dialog id="exportDlg">
+  <h2>Export</h2>
+  <p class="hint">The picture on screen is the file you get — same geometry, same size.</p>
+  <div class="exports">
+    <button data-x="archive">Archive — everything, zipped, to keep elsewhere</button>
+    <button data-x="backup">Back up now</button>
+    <button data-x="gedcom">GEDCOM — opens in Ancestry, MyHeritage, FamilySearch</button>
+    <button data-x="gedcom-safe">GEDCOM without the living — to send to
+      somebody else. Living people keep their place and their surname and
+      lose their names, dates and details.</button>
+    <button data-x="svg">SVG — for printing or the laser</button>
+    <button data-x="svgprod">SVG — cut layers only (red = cut, black = engrave)</button>
+    <!-- ALL FOUR FILES, from the program. The PDF, DXF and EPS writers are
+         hand-written and have always worked; they were reachable only from
+         a command line, which is the one thing this program is not
+         supposed to ask anybody to do. -->
+    <button data-x="pdf">PDF — the same drawing, at true size, for a printer</button>
+    <button data-x="dxf">DXF — what most laser and CNC software opens</button>
+    <button data-x="eps">EPS — for a cutter or a print shop that asks for it</button>
+    <button data-x="png">PNG — for sharing</button>
+    <button data-x="json">Plan JSON — for scripting</button>
+  </div>
+  <p class="hint" id="exportSize"></p>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- BRINGING SOMEBODY ELSE'S TREE IN. Reported before anything is written,
+     because nobody's first import is the one they meant, and it all goes
+     into one undoable step so Ctrl-Z takes it back. -->
+<dialog id="importDlg">
+  <h2>Add people from a file</h2>
+  <p class="hint">A GEDCOM from Ancestry, MyHeritage, FamilySearch, Gramps or
+    Family Tree Maker, or a spreadsheet. Anything Helix has no field for is
+    kept in that person's notes.</p>
+  <label class="drop wide" id="impDrop">
+    <span>Choose a .ged or .csv file, or drop one here</span>
+    <input type="file" id="impFile" accept=".ged,.gedcom,.csv,.tsv,.txt" hidden>
+  </label>
+  <div id="impReport" class="impreport" hidden></div>
+  <div class="exports" id="impActions" hidden>
+    <button id="impGo" class="primary">Add these people to my file</button>
+  </div>
+  <p class="hint">Added to the family you have open. Ctrl-Z undoes the whole
+    import in one step.</p>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<dialog id="listDlg"><h2 id="listTitle"></h2><div id="listBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form></dialog>
+
+<!-- EVERY BIRTH, MARRIAGE AND DEATH IN ORDER. The chart says who was
+     related to whom and nothing about when. -->
+<dialog id="tlDlg">
+  <h2>The family, in order</h2>
+  <div id="tlBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- WHICH FAMILY IS OPEN, AND WHERE THE FILES ARE. A desktop application
+     has no address bar, so this is the only way to start a second family,
+     go back to the first, or answer "where exactly is my data?" — which is
+     the question anybody asks within a minute of trusting a program with
+     ten years of work. -->
+<dialog id="libDlg">
+  <h2>Your families</h2>
+  <div id="libBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- THE SAME FAMILY, AS SOMEBODY ELSE'S TREE. Every relation in the program
+     is measured from one person, so changing that person is not a setting —
+     it is a different document about the same family. A niece who wants her
+     own tree gets a file of her own, and nothing she does in it reaches back
+     into yours. -->
+<dialog id="forDlg">
+  <h2>Make this tree for somebody else</h2>
+  <p class="hint">A copy of everything you have, with them at the centre.
+    Yours is not touched.</p>
+  <input id="forFind" type="search" placeholder="Whose tree will it be?"
+    autocomplete="off">
+  <div id="forBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- WHAT THE FILE SAYS ABOUT THE FAMILY AS A WHOLE. A chart answers "who
+     was related to whom"; these are the questions it cannot: how long
+     people lived, where they were, and how much of your own ancestry is
+     actually written down. -->
+<dialog id="statsDlg">
+  <h2>Numbers</h2>
+  <p class="hint">Worked out from what is in the file. People with no dates
+    are not counted, and each figure says how many are behind it.</p>
+  <div id="statsBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- HOW ARE THESE TWO RELATED? The question a family history gets asked more
+     than any other, and until now the program could only answer it about
+     the root person. Any two people, the path between them through the
+     ancestor they share, and what that means for a DNA test. -->
+<dialog id="relateDlg">
+  <h2>How are these two related?</h2>
+  <div class="relpick">
+    <label>Start with
+      <input id="relA" type="search" placeholder="Type a name…" autocomplete="off"
+        role="combobox" aria-expanded="false" aria-controls="relAList">
+      <div id="relAList" class="results inline" hidden></div>
+    </label>
+    <button id="relSwap" class="ghost icon" title="Swap them round">⇄</button>
+    <label>and
+      <input id="relB" type="search" placeholder="Type a name…" autocomplete="off"
+        role="combobox" aria-expanded="false" aria-controls="relBList">
+      <div id="relBList" class="results inline" hidden></div>
+    </label>
+  </div>
+  <div id="relBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- THE SAME PERSON, ENTERED TWICE. Rare while you type and ordinary the
+     moment you import somebody else's tree. Never merged automatically:
+     which of two records is right is a judgement about somebody's
+     research. -->
+<dialog id="dupeDlg">
+  <h2>Possible duplicates</h2>
+  <p class="hint" id="dupeHead"></p>
+  <div id="dupeBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- PRINTING, and the difference between the two kinds of paper.
+     An OFFICIAL RECORD is filed: it says what is known and what is not,
+     and nothing on it is arithmetic over today's file. A PROFILE is
+     everything on screen — the DNA, the origins, the small bloodline tree,
+     what is still to find out — which is working material and goes stale.
+     Both are wanted; they are not the same document. -->
+<!-- WHERE EVERY FACT CAME FROM. `source` and `citation` have been in the
+     schema from the first commit and only the GEDCOM importer ever wrote to
+     them — so the record book could ask "where did this come from?" and the
+     program had no way of being told. -->
+<!-- THE SCREENS THAT READ THE WHOLE FILE and are not about one person.
+     Five in one dialogue with a tab bar, because five more buttons in the
+     header is how a toolbar becomes a wall. -->
+<dialog id="toolDlg">
+  <h2 id="toolTitle">Find</h2>
+  <div class="tabbar" id="toolTabs"></div>
+  <div id="toolBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<dialog id="srcDlg">
+  <h2>Sources</h2>
+  <div id="srcBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<dialog id="printDlg">
+  <h2>Print</h2>
+
+  <div id="prPerson" hidden>
+    <h3 class="prhead">This person <span id="prWho"></span></h3>
+    <div class="exports">
+      <button data-pr="record" class="primary">Official record — one sheet
+        for the folder, with what is not known marked as unknown</button>
+      <button data-pr="profile">Full profile — everything on screen,
+        including where they came from and what is still to find</button>
+    </div>
+  </div>
+
+  <h3 class="prhead">Everyone</h3>
+  <div class="exports">
+    <button data-pr="records" class="primary">The record book — every
+      person, one page each, with a contents and an index</button>
+    <!-- How much paper, BEFORE the button. Four hundred people is four
+         hundred sheets and most of a cartridge. -->
+    <p class="sheets" id="shOn"></p>
+    <button data-pr="profiles">Every profile, one per page</button>
+    <button data-pr="records-all">The record book for everyone in the
+      file, not only those on the chart</button>
+    <p class="sheets" id="shAll"></p>
+    <button data-pr="profiles-all">Every profile for everyone in the file</button>
+  </div>
+
+  <h3 class="prhead">The family tree</h3>
+  <div class="exports">
+    <button data-pr="chart" class="primary">The chart as it looks now,
+      on one sheet</button>
+    <button data-pr="outline">The tree as an indented outline</button>
+    <button data-pr="chronicle">Every birth, marriage and death, in order</button>
+    <button data-pr="research">Where to look next — a list to take with you</button>
+  </div>
+
+  <p class="hint">Each opens in a new tab with a Print button. Everything
+    except the two marked “in the file” covers the same people the chart
+    does.</p>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="841mm" height="594mm" viewBox="0 0 841 594">
+<!-- helix | engine=dendrogram style=blueprint people=23 hash=8697a75d4a5c -->
+<rect x="0" y="0" width="841" height="594" fill="#0F4C81"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<path d="M528,446.0333L650.7,446.0333A0.8,0.8 0 0,0 651.5,445.2333L651.5,126.85A0.8,0.8 0 0,1 652.3,126.05L775,126.05" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34,126.05L156.7,126.05A0.8,0.8 0 0,1 157.5,126.85L157.5,147.1667A0.8,0.8 0 0,0 158.3,147.9667L281,147.9667" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,147.1667A0.8,0.8 0 0,0 405.3,147.9667L528,147.9667" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M528,446.0333L650.7,446.0333A0.8,0.8 0 0,0 651.5,445.2333L651.5,161.9167A0.8,0.8 0 0,1 652.3,161.1167L775,161.1167" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M528,446.0333L650.7,446.0333A0.8,0.8 0 0,0 651.5,445.2333L651.5,196.9833A0.8,0.8 0 0,1 652.3,196.1833L775,196.1833" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34,126.05L156.7,126.05A0.8,0.8 0 0,1 157.5,126.85L157.5,204.15A0.8,0.8 0 0,0 158.3,204.95L281,204.95" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,204.15A0.8,0.8 0 0,0 405.3,204.95L528,204.95" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M528,446.0333L650.7,446.0333A0.8,0.8 0 0,0 651.5,445.2333L651.5,232.05A0.8,0.8 0 0,1 652.3,231.25L775,231.25" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,261.1333A0.8,0.8 0 0,0 405.3,261.9333L528,261.9333" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,296.2A0.8,0.8 0 0,0 405.3,297L528,297" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,353.1833A0.8,0.8 0 0,0 405.3,353.9833L528,353.9833" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,410.1667A0.8,0.8 0 0,0 405.3,410.9667L528,410.9667" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M281,126.05L403.7,126.05A0.8,0.8 0 0,1 404.5,126.85L404.5,445.2333A0.8,0.8 0 0,0 405.3,446.0333L528,446.0333" fill="none" stroke="#9FC6E8" stroke-width="0.3" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M36.7,123.83H69.748A1.2,1.2 0 0,1 70.948,125.03V127.07A1.2,1.2 0 0,1 69.748,128.27H36.7A1.2,1.2 0 0,1 35.5,127.07V125.03A1.2,1.2 0 0,1 36.7,123.83Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M36.7,145.7467H69.748A1.2,1.2 0 0,1 70.948,146.9467V148.9867A1.2,1.2 0 0,1 69.748,150.1867H36.7A1.2,1.2 0 0,1 35.5,148.9867V146.9467A1.2,1.2 0 0,1 36.7,145.7467Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M283.7,123.83H315.5A1.2,1.2 0 0,1 316.7,125.03V127.07A1.2,1.2 0 0,1 315.5,128.27H283.7A1.2,1.2 0 0,1 282.5,127.07V125.03A1.2,1.2 0 0,1 283.7,123.83Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M283.7,145.7467H316.748A1.2,1.2 0 0,1 317.948,146.9467V148.9867A1.2,1.2 0 0,1 316.748,150.1867H283.7A1.2,1.2 0 0,1 282.5,148.9867V146.9467A1.2,1.2 0 0,1 283.7,145.7467Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M283.7,180.8133H310.508A1.2,1.2 0 0,1 311.708,182.0133V184.0533A1.2,1.2 0 0,1 310.508,185.2533H283.7A1.2,1.2 0 0,1 282.5,184.0533V182.0133A1.2,1.2 0 0,1 283.7,180.8133Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M283.7,202.73H316.748A1.2,1.2 0 0,1 317.948,203.93V205.97A1.2,1.2 0 0,1 316.748,207.17H283.7A1.2,1.2 0 0,1 282.5,205.97V203.93A1.2,1.2 0 0,1 283.7,202.73Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,123.83H566.244A1.2,1.2 0 0,1 567.444,125.03V127.07A1.2,1.2 0 0,1 566.244,128.27H530.7A1.2,1.2 0 0,1 529.5,127.07V125.03A1.2,1.2 0 0,1 530.7,123.83Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,145.7467H561.252A1.2,1.2 0 0,1 562.452,146.9467V148.9867A1.2,1.2 0 0,1 561.252,150.1867H530.7A1.2,1.2 0 0,1 529.5,148.9867V146.9467A1.2,1.2 0 0,1 530.7,145.7467Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,180.8133H566.244A1.2,1.2 0 0,1 567.444,182.0133V184.0533A1.2,1.2 0 0,1 566.244,185.2533H530.7A1.2,1.2 0 0,1 529.5,184.0533V182.0133A1.2,1.2 0 0,1 530.7,180.8133Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,202.73H562.5A1.2,1.2 0 0,1 563.7,203.93V205.97A1.2,1.2 0 0,1 562.5,207.17H530.7A1.2,1.2 0 0,1 529.5,205.97V203.93A1.2,1.2 0 0,1 530.7,202.73Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,237.7967H562.5A1.2,1.2 0 0,1 563.7,238.9967V241.0367A1.2,1.2 0 0,1 562.5,242.2367H530.7A1.2,1.2 0 0,1 529.5,241.0367V238.9967A1.2,1.2 0 0,1 530.7,237.7967Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,259.7133H566.244A1.2,1.2 0 0,1 567.444,260.9133V262.9533A1.2,1.2 0 0,1 566.244,264.1533H530.7A1.2,1.2 0 0,1 529.5,262.9533V260.9133A1.2,1.2 0 0,1 530.7,259.7133Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M530.7,294.78H566.244A1.2,1.2 0 0,1 567.444,295.98V298.02A1.2,1.2 0 0,1 566.244,299.22H530.7A1.2,1.2 0 0,1 529.5,298.02V295.98A1.2,1.2 0 0,1 530.7,294.78Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,316.6967H558.756A1.2,1.2 0 0,1 559.956,317.8967V319.9367A1.2,1.2 0 0,1 558.756,321.1367H530.7A1.2,1.2 0 0,1 529.5,319.9367V317.8967A1.2,1.2 0 0,1 530.7,316.6967Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,351.7633H566.244A1.2,1.2 0 0,1 567.444,352.9633V355.0033A1.2,1.2 0 0,1 566.244,356.2033H530.7A1.2,1.2 0 0,1 529.5,355.0033V352.9633A1.2,1.2 0 0,1 530.7,351.7633Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,373.68H558.756A1.2,1.2 0 0,1 559.956,374.88V376.92A1.2,1.2 0 0,1 558.756,378.12H530.7A1.2,1.2 0 0,1 529.5,376.92V374.88A1.2,1.2 0 0,1 530.7,373.68Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,408.7467H555.012A1.2,1.2 0 0,1 556.212,409.9467V411.9867A1.2,1.2 0 0,1 555.012,413.1867H530.7A1.2,1.2 0 0,1 529.5,411.9867V409.9467A1.2,1.2 0 0,1 530.7,408.7467Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M530.7,443.8133H562.5A1.2,1.2 0 0,1 563.7,445.0133V447.0533A1.2,1.2 0 0,1 562.5,448.2533H530.7A1.2,1.2 0 0,1 529.5,447.0533V445.0133A1.2,1.2 0 0,1 530.7,443.8133Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M530.7,465.73H566.244A1.2,1.2 0 0,1 567.444,466.93V468.97A1.2,1.2 0 0,1 566.244,470.17H530.7A1.2,1.2 0 0,1 529.5,468.97V466.93A1.2,1.2 0 0,1 530.7,465.73Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M777.7,123.83H809.5A1.2,1.2 0 0,1 810.7,125.03V127.07A1.2,1.2 0 0,1 809.5,128.27H777.7A1.2,1.2 0 0,1 776.5,127.07V125.03A1.2,1.2 0 0,1 777.7,123.83Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M777.7,158.8967H809.5A1.2,1.2 0 0,1 810.7,160.0967V162.1367A1.2,1.2 0 0,1 809.5,163.3367H777.7A1.2,1.2 0 0,1 776.5,162.1367V160.0967A1.2,1.2 0 0,1 777.7,158.8967Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M777.7,193.9633H810.748A1.2,1.2 0 0,1 811.948,195.1633V197.2033A1.2,1.2 0 0,1 810.748,198.4033H777.7A1.2,1.2 0 0,1 776.5,197.2033V195.1633A1.2,1.2 0 0,1 777.7,193.9633Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M777.7,229.03H811.996A1.2,1.2 0 0,1 813.196,230.23V232.27A1.2,1.2 0 0,1 811.996,233.47H777.7A1.2,1.2 0 0,1 776.5,232.27V230.23A1.2,1.2 0 0,1 777.7,229.03Z" fill="none" stroke="#EAF4FF" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="37" y="126.05" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Ernest Whitcombe 1695–1770</text>
+<text x="37" y="147.9667" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Esther Threlfall 1693–1753</text>
+<text x="284" y="126.05" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Joseph Ashworth 1724–1781</text>
+<text x="284" y="147.9667" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Hannah Whitcombe 1718–1766</text>
+<text x="284" y="183.0333" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Alice Boyce 1717–1798</text>
+<text x="284" y="204.95" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Walter Whitcombe 1715–1773</text>
+<text x="531" y="126.05" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Nathaniel Pargeter 1746–1807</text>
+<text x="531" y="147.9667" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Sarah Ashworth 1747–1815</text>
+<text x="531" y="183.0333" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Florence Whitcombe 1752–1811</text>
+<text x="531" y="204.95" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Samuel Ashworth 1750–1820</text>
+<text x="531" y="240.0167" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Winifred Oakley 1751–1800</text>
+<text x="531" y="261.9333" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Frederick Ashworth 1752–1816</text>
+<text x="531" y="297" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Charlotte Ashworth 1753–1795</text>
+<text x="531" y="318.9167" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Ernest Vasey 1749–1797</text>
+<text x="531" y="353.9833" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Charlotte Ashworth 1759–1815</text>
+<text x="531" y="375.9" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Thomas Vasey 1758–1808</text>
+<text x="531" y="410.9667" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Mary Ashworth –1833</text>
+<text x="531" y="446.0333" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Reuben Ashworth 1756–1800</text>
+<text x="531" y="467.95" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Winifred Threlfall 1760–1793</text>
+<text x="778" y="126.05" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Edward Ashworth 1781–1851</text>
+<text x="778" y="161.1167" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Hannah Ashworth 1784–1847</text>
+<text x="778" y="196.1833" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">William Ashworth 1787–1853</text>
+<text x="778" y="231.25" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="2.4" fill="#EAF4FF" text-anchor="start" dominant-baseline="central">Beatrice Ashworth 1790–1850</text>
+<text x="420.5" y="30" font-family="'Roboto Mono','SF Mono',Menlo,monospace" font-size="5.28" fill="#EAF4FF" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+<g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
+<circle cx="34" cy="126.05" r="1.1" fill="#FF6B4A"/>
+<circle cx="34" cy="147.9667" r="1.1" fill="#FF6B4A"/>
+<circle cx="281" cy="126.05" r="1.1" fill="#FF6B4A"/>
+<circle cx="281" cy="147.9667" r="1.1" fill="#FF6B4A"/>
+<circle cx="528" cy="446.0333" r="1.1" fill="#FF6B4A"/>
+<circle cx="528" cy="467.95" r="1.1" fill="#FF6B4A"/>
+<circle cx="775" cy="231.25" r="1.1" fill="#FF6B4A"/>
+</g>
+</svg>

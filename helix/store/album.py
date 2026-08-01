@@ -1,0 +1,341 @@
+"""Photographs and papers, kept beside the family file.
+
+WHY THE PICTURES ARE COPIED AND NOT REFERENCED. A path into somebody's
+Pictures folder is a promise the program cannot keep: the folder gets tidied,
+the phone gets replaced, the laptop dies, and the file that survives all
+three is the one thing this program tells people to keep. A tree with two
+hundred broken image links is worse than one with none, because it says a
+picture existed and cannot show it.
+
+So an image is COPIED, once, into an album folder beside the database:
+
+    my-family.helix
+    my-family-media/
+        3f2a9c….jpg
+        7b18e0….png
+
+Named by the SHA-256 of its own bytes, which gives three things for free.
+The same photograph attached to five brothers is stored once. Re-attaching a
+picture somebody already added is silently the same picture rather than a
+second copy. And the name can never collide, contain a directory, or be
+talked into pointing somewhere else -- which matters because the name comes
+in over HTTP.
+
+NOT ONLY PICTURES. The things people actually have in a shoebox are the
+order of service from a funeral, a scanned certificate, a letter, a will.
+They are the evidence behind everything else in the file and they belong
+next to the person, not in a folder on a different computer -- so PDFs and
+plain text are stored the same way, by the hash of their own bytes, and go
+into the archive zip with everything else.
+
+The `media` and `media_link` tables were in `schema.sql` from the start;
+this fills them in. `store/archive.py` walks the album so a zip of the
+family holds the pictures too, and a restore puts them back.
+"""
+from __future__ import annotations
+
+import base64
+import hashlib
+import shutil
+from pathlib import Path
+from typing import Optional
+
+from .db import new_id
+
+# What a browser will hand us, and what a laser or a printer can read back.
+# Deliberately short: this is a family archive, not a media library, and
+# every format here will still open in thirty years.
+IMAGES = {
+    "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp",
+    "image/gif": ".gif", "image/heic": ".heic", "image/tiff": ".tif",
+}
+# Papers. A eulogy, a certificate, a letter, a will. PDF because that is
+# what a scanner and a phone both produce and what will still open in
+# thirty years; plain text and rich text because a transcription is often
+# more use than the scan of it.
+PAPERS = {
+    "application/pdf": ".pdf",
+    "text/plain": ".txt",
+    "text/rtf": ".rtf", "application/rtf": ".rtf",
+    "text/markdown": ".md",
+    "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/wav": ".wav",
+}
+TYPES = {**IMAGES, **PAPERS}
+BY_EXT = {v: k for k, v in TYPES.items()}
+# Two limits, because they are two different mistakes. A 24 MB photograph
+# is a camera left on maximum; a 60 MB PDF is a whole parish register
+# somebody meant to crop.
+MAX_BYTES = 24 * 1024 * 1024
+MAX_PAPER_BYTES = 64 * 1024 * 1024
+
+
+def is_image(name_or_mime: str) -> bool:
+    x = (name_or_mime or "").lower()
+    return x in IMAGES or Path(x).suffix.lower() in set(IMAGES.values())
+
+
+def kind_of(name: str) -> str:
+    """"photo", "paper" or "sound" -- what the panel shows it as."""
+    mime = mime_for(name)
+    if mime in IMAGES:
+        return "photo"
+    if mime.startswith("audio/"):
+        return "sound"
+    return "paper"
+
+
+def album_dir(db_path: str | Path, create: bool = False) -> Path:
+    """The folder beside the family file. Named after it, so moving the two
+    together is obvious and moving only one is obviously wrong."""
+    p = Path(db_path)
+    d = p.parent / f"{p.stem}-media"
+    if create:
+        d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _ext_for(mime: str, filename: str) -> str:
+    if mime in TYPES:
+        return TYPES[mime]
+    suf = Path(filename or "").suffix.lower()
+    return suf if suf in BY_EXT else ".jpg"
+
+
+def store_bytes(db_path: str | Path, raw: bytes, *, filename: str = "",
+                mime: str = "") -> tuple[str, Path]:
+    """Put the bytes in the album. Returns (stored name, full path).
+
+    Idempotent by content: the same photograph added twice is one file.
+    """
+    if not raw:
+        raise ValueError("That file was empty. Try choosing it again.")
+    ext = _ext_for(mime, filename)
+    picture = ext in set(IMAGES.values())
+    cap = MAX_BYTES if picture else MAX_PAPER_BYTES
+    if len(raw) > cap:
+        raise ValueError(
+            f"That {'picture' if picture else 'file'} is "
+            f"{len(raw) // (1024 * 1024)} MB and the limit is "
+            f"{cap // (1024 * 1024)} MB. Save a smaller copy and try again"
+            + (" — a photograph does not need to be larger than the screen "
+               "it is looked at on." if picture else "."))
+    name = hashlib.sha256(raw).hexdigest()[:32] + ext
+    d = album_dir(db_path, create=True)
+    path = d / name
+    if not path.exists():
+        path.write_bytes(raw)
+    return name, path
+
+
+def store_data_url(db_path: str | Path, data_url: str,
+                   filename: str = "") -> tuple[str, Path]:
+    """A `data:` URL, which is what a browser's FileReader produces.
+
+    Chosen over multipart because it needs no parser: the standard library
+    has no multipart reader that is safe to point at untrusted input, and
+    writing one to accept a photograph would be the largest attack surface
+    in the program.
+    """
+    head, _, b64 = data_url.partition(",")
+    if not b64 or not head.startswith("data:"):
+        raise ValueError("That did not look like an image. Try again.")
+    mime = head[5:].split(";")[0]
+    if mime and mime not in TYPES:
+        raise ValueError(
+            f"Helix keeps photographs as JPEG, PNG, WebP, GIF, HEIC or TIFF, "
+            f"and that one is {mime}. Export it as a JPEG and try again.")
+    try:
+        raw = base64.b64decode(b64, validate=True)
+    except Exception:
+        raise ValueError("That picture could not be read. Try another copy.")
+    return store_bytes(db_path, raw, filename=filename, mime=mime)
+
+
+def store_file(db_path: str | Path, src: str | Path) -> tuple[str, Path]:
+    """Copy a file already on disk. Used by the importer and the tests."""
+    src = Path(src)
+    return store_bytes(db_path, src.read_bytes(), filename=src.name)
+
+
+def resolve(db_path: str | Path, name: str) -> Optional[Path]:
+    """The full path of a stored picture, or None.
+
+    The name arrives over HTTP, so it is checked rather than trusted: only a
+    bare filename, and the result has to still be inside the album after
+    resolving. `..%2f..%2fetc%2fpasswd` is one request away otherwise.
+    """
+    if not name or "/" in name or "\\" in name or name.startswith("."):
+        return None
+    d = album_dir(db_path).resolve()
+    try:
+        p = (d / name).resolve()
+    except OSError:
+        return None
+    if not str(p).startswith(str(d)) or not p.is_file():
+        return None
+    return p
+
+
+def mime_for(name: str) -> str:
+    return BY_EXT.get(Path(name).suffix.lower(), "application/octet-stream")
+
+
+# --------------------------------------------------------------- the rows --
+def attach(con, pid: str, name: str, *, caption: str = "",
+           portrait: bool = True) -> str:
+    """Link a stored picture to a person.
+
+    Goes through `records.Edit` like every other write, so adding a
+    photograph is undoable and shows up in the history with a plain label.
+    One portrait each: setting a new one demotes the old rather than
+    deleting it, because the previous photograph is still a photograph of
+    them.
+    """
+    from . import records
+    with records.Edit(con, f"Add a photo of {records.display_name(con, pid)}") as e:
+        row = con.execute("SELECT id FROM media WHERE path=?", (name,)).fetchone()
+        mid = row["id"] if row else new_id()
+        if not row:
+            e.insert("media", {"id": mid, "path": name, "type": mime_for(name),
+                               "caption": caption or None,
+                               "sha256": Path(name).stem})
+        if portrait:
+            for r in con.execute(
+                "SELECT media_id FROM media_link WHERE person_id=? "
+                "AND is_portrait=1", (pid,)
+            ):
+                e.update("media_link",
+                         {"media_id": r["media_id"], "person_id": pid,
+                          "event_id": None}, {"is_portrait": 0})
+        have = con.execute(
+            "SELECT 1 FROM media_link WHERE media_id=? AND person_id=?",
+            (mid, pid)).fetchone()
+        if have:
+            e.update("media_link", {"media_id": mid, "person_id": pid,
+                                    "event_id": None},
+                     {"is_portrait": 1 if portrait else 0})
+        else:
+            e.insert("media_link", {"media_id": mid, "person_id": pid,
+                                    "event_id": None,
+                                    "is_portrait": 1 if portrait else 0})
+    return mid
+
+
+def set_taken(con, media_id: str, text: str) -> None:
+    """When a photograph was taken, in whatever form somebody has it.
+
+    Kept verbatim -- rule five. "1974", "abt 1974", "aged 12" and "the
+    summer before he went out to Kenya" are all things a family knows about
+    a photograph, and a box that only took a four-digit year would throw
+    away the other three.
+    """
+    from . import records
+    with records.Edit(con, "Date a photograph") as e:
+        e.update("media", {"id": media_id},
+                 {"taken": (text or "").strip() or None})
+
+
+def set_crop(con, media_id: str, crop: str) -> None:
+    """Which part of a photograph is the face.
+
+    "x,y,w,h" in fractions of the image, or empty to go back to the whole
+    picture. NOTHING IS RE-ENCODED: the family photograph is very often the
+    only copy of a group at a wedding, and cropping it to one face by
+    writing new pixels would destroy everybody else in it. The frame shows
+    the rectangle; the file still holds the wedding; and it undoes like
+    every other edit because it goes through `Edit`.
+    """
+    from . import records
+    crop = (crop or "").strip()
+    if crop:
+        try:
+            x, y, w, h = (float(v) for v in crop.split(","))
+        except ValueError:
+            raise ValueError(
+                "A crop is four numbers — across, down, wide, tall — each a "
+                "fraction of the picture between 0 and 1.")
+        if not (0 <= x < 1 and 0 <= y < 1 and 0 < w <= 1 and 0 < h <= 1
+                and x + w <= 1.0001 and y + h <= 1.0001):
+            raise ValueError(
+                "That crop falls outside the picture. Drag the frame back "
+                "inside it and try again.")
+        crop = f"{x:.4f},{y:.4f},{w:.4f},{h:.4f}"
+    with records.Edit(con, "Crop a photograph") as e:
+        e.update("media", {"id": media_id}, {"crop": crop or None})
+
+
+def detach(con, pid: str, media_id: str) -> None:
+    """Take a picture off a person. The FILE stays in the album: another
+    person may be in it, and a photograph is not something to delete because
+    one caption was wrong."""
+    from . import records
+    with records.Edit(con, f"Remove a photo of "
+                           f"{records.display_name(con, pid)}") as e:
+        e.delete("media_link", {"media_id": media_id, "person_id": pid,
+                                "event_id": None})
+
+
+def photos_of(con, pid: str) -> list[dict]:
+    """Everything linked to somebody, the portrait first.
+
+    Kept under the old name because five callers use it. `kind` is what
+    tells a picture from a scanned eulogy, and only a picture can be the
+    portrait.
+    """
+    return [{"media_id": r["id"], "name": r["path"], "type": r["type"],
+             "caption": r["caption"] or "",
+             # WHEN IT WAS TAKEN, exactly as somebody typed it. A year, a
+             # date, or "aged 12" -- all three are things people know about
+             # a photograph and none of them is worth refusing. What it
+             # MEANS is worked out where the birth date is, which is not
+             # here.
+             "taken": r["taken"] or "",
+             "portrait": bool(r["is_portrait"]),
+             # WHICH PART OF IT IS THE FACE. Four fractions, not new pixels
+             # -- see the v5 migration. Absent means "all of it", which is
+             # what every photograph in every file made before this said.
+             "crop": r["crop"] or "",
+             "kind": kind_of(r["path"])}
+            for r in con.execute(
+                "SELECT m.id, m.path, m.type, m.caption, m.taken, m.crop, "
+                "l.is_portrait "
+                "FROM media m JOIN media_link l ON l.media_id = m.id "
+                "WHERE l.person_id = ? "
+                "ORDER BY l.is_portrait DESC, m.taken IS NULL, m.taken, "
+                "m.path", (pid,))]
+
+
+def files_of(con, pid: str, kind: Optional[str] = None) -> list[dict]:
+    rows = photos_of(con, pid)
+    return [r for r in rows if kind is None or r["kind"] == kind]
+
+
+def portrait_of(con, pid: str) -> Optional[dict]:
+    """The one picture that stands for somebody.
+
+    A scanned will is not a portrait however it was attached, so this only
+    ever returns an image -- otherwise a PDF ended up in the round frame at
+    the top of the profile and on the printed sheet.
+    """
+    ph = [p for p in photos_of(con, pid)
+          if p["portrait"] and p["kind"] == "photo"]
+    if ph:
+        return ph[0]
+    pics = [p for p in photos_of(con, pid) if p["kind"] == "photo"]
+    return pics[0] if pics else None
+
+
+def copy_album(db_path: str | Path, into: str | Path) -> int:
+    """Copy the whole album somewhere. `archive.py` uses it so a zip of the
+    family holds the pictures and not just the rows that name them."""
+    src = album_dir(db_path)
+    if not src.is_dir():
+        return 0
+    dest = Path(into)
+    dest.mkdir(parents=True, exist_ok=True)
+    n = 0
+    for f in sorted(src.iterdir()):
+        if f.is_file():
+            shutil.copy2(f, dest / f.name)
+            n += 1
+    return n

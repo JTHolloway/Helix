@@ -1,0 +1,42 @@
+{
+  "id": "rings_detailed",
+  "extends": "panel1m",
+  "name": "Concentric Rings \u2014 full detail",
+  "blurb": "Name, dates and occupation on separate lines, tangential where there is room.",
+  "laser": "good",
+  "labels": {
+    "lines": [
+      "{given} {surname}",
+      "{lifespan}",
+      "{occupation}"
+    ],
+    "line_scale": [
+      1.0,
+      0.74,
+      0.66
+    ],
+    "line_colour": [
+      "#2A2622",
+      "#6E675C",
+      "#8A8073"
+    ],
+    "orientation": "auto",
+    "by_ring": {
+      "0-2": [
+        "{given} {surname}",
+        "{lifespan}",
+        "{birth_place}"
+      ],
+      "5+": [
+        "{given_first} {surname}"
+      ]
+    }
+  },
+  "layout": {
+    "min_ring_pitch_mm": 34,
+    "sibling_gap_frac": 0.16
+  },
+  "type": {
+    "size_mm": 3.2
+  }
+}

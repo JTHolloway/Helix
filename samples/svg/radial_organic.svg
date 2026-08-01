@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="650mm" height="650mm" viewBox="0 0 650 650">
+<!-- helix | engine=radial_organic style=botanical people=23 hash=78a339ae8a25 -->
+<rect x="0" y="0" width="650" height="650" fill="#F6F3EA"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<path d="M214.3614,325A110.6386,110.6386 0 1,0 435.6386,325A110.6386,110.6386 0 1,0 214.3614,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M149.4933,325A175.5067,175.5067 0 1,0 500.5067,325A175.5067,175.5067 0 1,0 149.4933,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M105.8206,325A219.1794,219.1794 0 1,0 544.1794,325A219.1794,219.1794 0 1,0 105.8206,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M70.1203,325A254.8797,254.8797 0 1,0 579.8797,325A254.8797,254.8797 0 1,0 70.1203,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<path d="M39.0201,325A285.9799,285.9799 0 1,0 610.9799,325A285.9799,285.9799 0 1,0 39.0201,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1.5,2"/>
+<text x="325" y="212.7614" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1700</text>
+<text x="325" y="147.8933" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1720</text>
+<text x="325" y="104.2206" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1740</text>
+<text x="325" y="68.5203" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1760</text>
+<text x="325" y="37.4201" font-family="'Cormorant Garamond',Georgia,serif" font-size="1.872" fill="#CFC7B4" text-anchor="middle" dominant-baseline="central">1780</text>
+<path d="M18,325A307,307 0 1,0 632,325A307,307 0 1,0 18,325Z" fill="none" stroke="#CFC7B4" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M81.4188,273.2252C58.4416,268.3413 567.8113,201.2815 581.7648,194.1718" fill="none" stroke="#525E5E" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M396.5221,288.5577C445.4013,263.6525 457.1766,296.905 492.9497,289.3012" fill="none" stroke="#64524F" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M491.0499,240.3934C515.9509,227.7056 534.6261,280.4426 552.8503,276.5689" fill="none" stroke="#545D5D" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M81.4188,273.2252C56.2865,267.8832 599.3402,310.6224 616.4459,309.726" fill="none" stroke="#575A5A" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M81.4188,273.2252C53.7719,267.3487 583.8702,424.371 601.4617,431.1237" fill="none" stroke="#555C5C" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M396.5221,288.5577C441.1655,265.8107 441.1655,384.1893 470.9277,399.3539" fill="none" stroke="#5C5756" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M491.0499,240.3934C519.3313,225.9832 519.3313,424.0168 538.1856,433.6235" fill="none" stroke="#525D5E" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M81.4188,273.2252C50.9141,266.7412 523.1378,523.1378 537.8391,537.8391" fill="none" stroke="#5A5857" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M491.0499,240.3934C520.8718,225.1983 414.4138,525.8266 423.4894,546.2109" fill="none" stroke="#575B5A" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M491.0499,240.3934C521.801,224.7249 325,545.8749 325,568.8834" fill="none" stroke="#694F4B" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M491.0499,240.3934C527.2355,221.9559 182.1605,501.3921 165.1218,522.4331" fill="none" stroke="#5E5654" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M491.0499,240.3934C520.8731,225.1977 109.9703,370.706 88.1437,375.3454" fill="none" stroke="#B8B0A4" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<path d="M491.0499,240.3934C524.5486,223.3249 105.9354,278.4364 81.4188,273.2252" fill="none" stroke="#67504C" stroke-width="0.6944" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="491.0499" cy="240.3934" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="396.5221" cy="288.5577" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="530.495" cy="220.295" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="581.7648" cy="194.1718" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="492.9497" cy="289.3012" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="378.7981" cy="313.5649" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="552.8503" cy="276.5689" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="616.4459" cy="309.726" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="490.4574" cy="360.169" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="561.8563" cy="375.3454" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="601.4617" cy="431.1237" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="470.9277" cy="399.3539" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="538.1856" cy="433.6235" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="537.8391" cy="537.8391" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="476.3516" cy="511.9036" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="423.4894" cy="546.2109" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="325" cy="568.8834" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="263.6986" cy="553.7798" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="165.1218" cy="522.4331" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="120.8093" cy="473.3533" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="88.1437" cy="375.3454" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="81.4188" cy="273.2252" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="97.1658" cy="208.9127" r="1" fill="#4A3B2A" stroke="#4A3B2A" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="396.5221" y="288.5577" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(-27,396.5221,288.5577)">Ernest Whitcombe</text>
+<text x="378.7981" y="313.5649" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(-12,378.7981,313.5649)">Esther Threlfall</text>
+<text x="491.0499" y="240.3934" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(63,491.0499,240.3934)">Joseph Ashworth</text>
+<text x="492.9497" y="289.3012" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(78,492.9497,289.3012)">Hannah Whitcombe</text>
+<text x="490.4574" y="360.169" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(282,490.4574,360.169)">Alice Boyce</text>
+<text x="470.9277" y="399.3539" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(297,470.9277,399.3539)">Walter Whitcombe</text>
+<text x="530.495" y="220.295" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(63,530.495,220.295)">Nathaniel Pargeter</text>
+<text x="552.8503" y="276.5689" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(78,552.8503,276.5689)">Sarah Ashworth</text>
+<text x="561.8563" y="375.3454" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(282,561.8563,375.3454)">Florence Whitcombe</text>
+<text x="538.1856" y="433.6235" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(297,538.1856,433.6235)">Samuel Ashworth</text>
+<text x="476.3516" y="511.9036" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(321,476.3516,511.9036)">Winifred Oakley</text>
+<text x="423.4894" y="546.2109" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(336,423.4894,546.2109)">Frederick Ashworth</text>
+<text x="325" y="568.8834" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(360,325,568.8834)">Charlotte Ashworth</text>
+<text x="263.6986" y="553.7798" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(375,263.6986,553.7798)">Ernest Vasey</text>
+<text x="165.1218" y="522.4331" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(399,165.1218,522.4331)">Charlotte Ashworth</text>
+<text x="120.8093" y="473.3533" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(414,120.8093,473.3533)">Thomas Vasey</text>
+<text x="88.1437" y="375.3454" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(438,88.1437,375.3454)">Mary Ashworth</text>
+<text x="81.4188" y="273.2252" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(282,81.4188,273.2252)">Reuben Ashworth</text>
+<text x="97.1658" y="208.9127" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(297,97.1658,208.9127)">Winifred Threlfall</text>
+<text x="581.7648" y="194.1718" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(63,581.7648,194.1718)">Edward Ashworth</text>
+<text x="616.4459" y="309.726" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(87,616.4459,309.726)">Hannah Ashworth</text>
+<text x="601.4617" y="431.1237" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(291,601.4617,431.1237)">William Ashworth</text>
+<text x="537.8391" y="537.8391" font-family="'Cormorant Garamond',Georgia,serif" font-size="2.6" fill="#3A3025" text-anchor="middle" dominant-baseline="central" transform="rotate(315,537.8391,537.8391)">Beatrice Ashworth</text>
+<text x="325" y="325" font-family="'Cormorant Garamond',Georgia,serif" font-size="5.72" fill="#3A3025" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+<g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
+<circle cx="491.0499" cy="240.3934" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="396.5221" cy="288.5577" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="492.9497" cy="289.3012" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="378.7981" cy="313.5649" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="537.8391" cy="537.8391" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="81.4188" cy="273.2252" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="97.1658" cy="208.9127" r="3.38" fill="none" stroke="#B7746B" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

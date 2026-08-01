@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="700mm" height="700mm" viewBox="0 0 700 700">
+<!-- helix | engine=circle_pack style=nested people=23 hash=f5eac9165724 -->
+<rect x="0" y="0" width="700" height="700" fill="#F7F4EE"/>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<circle cx="350" cy="156.6905" r="136.6905" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="543.3095" r="136.6905" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="93.8129" r="57.41" fill="none" stroke="#9C6B3F" stroke-width="0.3031" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="219.5681" r="57.41" fill="none" stroke="#9C6B3F" stroke-width="0.3031" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="350" cy="480.4319" r="57.41" fill="none" stroke="#9C6B3F" stroke-width="0.3031" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="606.1871" r="57.41" fill="none" stroke="#9C6B3F" stroke-width="0.3031" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="350" cy="182.4323" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="379.0339" cy="196.4143" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="386.2047" cy="227.8316" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="366.1126" cy="253.0263" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="253.0263" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="313.7953" cy="227.8316" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="320.9661" cy="196.4143" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="350" cy="569.0514" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="379.0339" cy="583.0334" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="386.2047" cy="614.4506" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="366.1126" cy="639.6453" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="639.6453" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="313.7953" cy="614.4506" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="320.9661" cy="583.0334" r="13.385" fill="none" stroke="#3E6B70" stroke-width="0.2578" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="333.8874" cy="245.0399" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="341.8738" cy="253.0263" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="261.0127" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="325.901" cy="253.0263" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="631.6589" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,1.4" opacity="0.8"/>
+<circle cx="341.8738" cy="639.6453" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="647.6317" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="325.901" cy="639.6453" r="3.7924" fill="none" stroke="#A3392B" stroke-width="0.2297" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="350" y="23.5" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Whitcombe</text>
+<text x="350" y="93.8129" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Walter Whitcombe</text>
+<text x="350" y="165.6581" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Whitcombe</text>
+<text x="350" y="182.4323" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Sarah Ashworth</text>
+<text x="379.0339" y="196.4143" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Samuel Ashworth</text>
+<text x="386.2047" y="227.8316" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Frederick Ashworth</text>
+<text x="366.1126" y="253.0263" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Charlotte Ashworth</text>
+<text x="333.8874" y="243.1412" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Ashworth</text>
+<text x="333.8874" y="245.0399" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">Edward Ashworth</text>
+<text x="341.8738" y="253.0263" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">Hannah Ashworth</text>
+<text x="333.8874" y="261.0127" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">William Ashworth</text>
+<text x="325.901" y="253.0263" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">Beatrice Ashworth</text>
+<text x="313.7953" y="227.8316" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Charlotte Ashworth</text>
+<text x="320.9661" y="196.4143" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Mary Ashworth</text>
+<text x="350" y="410.119" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Threlfall</text>
+<text x="350" y="480.4319" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Walter Whitcombe</text>
+<text x="350" y="552.2771" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Whitcombe</text>
+<text x="350" y="569.0514" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Sarah Ashworth</text>
+<text x="379.0339" y="583.0334" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Samuel Ashworth</text>
+<text x="386.2047" y="614.4506" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Frederick Ashworth</text>
+<text x="366.1126" y="639.6453" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Charlotte Ashworth</text>
+<text x="333.8874" y="629.7603" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Ashworth</text>
+<text x="333.8874" y="631.6589" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">Edward Ashworth</text>
+<text x="341.8738" y="639.6453" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">Hannah Ashworth</text>
+<text x="333.8874" y="647.6317" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">William Ashworth</text>
+<text x="325.901" y="639.6453" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.0858" fill="#22201D" text-anchor="middle" dominant-baseline="central">Beatrice Ashworth</text>
+<text x="313.7953" y="614.4506" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Charlotte Ashworth</text>
+<text x="320.9661" y="583.0334" font-family="'Avenir Next',system-ui,sans-serif" font-size="2.6" fill="#22201D" text-anchor="middle" dominant-baseline="central">Mary Ashworth</text>
+<text x="350" y="24" font-family="'Avenir Next',system-ui,sans-serif" font-size="5.72" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+<g id="ENGRAVE_DEEP" inkscape:groupmode="layer" inkscape:label="ENGRAVE_DEEP">
+<circle cx="350" cy="156.6905" r="128.489" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="219.5681" r="53.9654" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="253.0263" r="12.5819" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="325.901" cy="253.0263" r="3.5649" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="543.3095" r="128.489" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="350" cy="606.1871" r="53.9654" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="333.8874" cy="639.6453" r="12.5819" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="325.901" cy="639.6453" r="3.5649" fill="none" stroke="#A3392B" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>

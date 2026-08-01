@@ -1,0 +1,54 @@
+{
+  "name": "Botanical",
+  "blurb": "Roots thickening toward the centre; open circles for the living.",
+  "laser": "good",
+  "canvas": {
+    "width_mm": 650,
+    "height_mm": 650,
+    "margin_mm": 24,
+    "background": "#F6F3EA"
+  },
+  "layout": {
+    "engine": "radial_organic",
+    "inner_radius_mm": 55,
+    "radius_gamma": 0.55
+  },
+  "connectors": {
+    "style": "organic",
+    "width_mm": 0.55,
+    "colour": "#4A3B2A"
+  },
+  "nodes": {
+    "size_mm": 1.0,
+    "fill": "#4A3B2A",
+    "stroke": "#4A3B2A"
+  },
+  "type": {
+    "family": "'Cormorant Garamond',Georgia,serif",
+    "size_mm": 2.6,
+    "colour": "#3A3025"
+  },
+  "labels": {
+    "template": "{given_first} {surname}"
+  },
+  "thread": {
+    "enabled": true,
+    "colour": "#B7746B",
+    "stroke_width_mm": 1.3
+  },
+  "ornament": {
+    "time_rings": true,
+    "time_ring_colour": "#CFC7B4"
+  },
+  "colour": {
+    "mode": "lifespan",
+    "palette": [
+      "#4A3B2A",
+      "#5E6B4F",
+      "#B7746B",
+      "#8A7B4F",
+      "#6E7F82"
+    ]
+  },
+  "id": "botanical"
+}

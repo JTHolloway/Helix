@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" width="841mm" height="1189mm" viewBox="0 0 841 1189">
+<!-- helix | engine=hourglass style=default people=7 hash=dd27420f42a5 -->
+<rect x="0" y="0" width="841" height="1189" fill="#FBF8F2"/>
+<g id="GUIDE" inkscape:groupmode="layer" inkscape:label="GUIDE">
+<path d="M26,881.75L815,881.75" fill="none" stroke="#C9C0B0" stroke-width="0.25" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="2,2.5"/>
+</g>
+<g id="ENGRAVE" inkscape:groupmode="layer" inkscape:label="ENGRAVE">
+<path d="M420.5,881.75L420.5,740.125A2,2 0 0,0 418.5,738.125L225.25,738.125A2,2 0 0,1 223.25,736.125L223.25,594.5" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M420.5,881.75L420.5,740.125A2,2 0 0,1 422.5,738.125L615.75,738.125A2,2 0 0,0 617.75,736.125L617.75,594.5" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M223.25,594.5L223.25,452.875A2,2 0 0,0 221.25,450.875L126.625,450.875A2,2 0 0,1 124.625,448.875L124.625,307.25" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M223.25,594.5L223.25,452.875A2,2 0 0,1 225.25,450.875L319.875,450.875A2,2 0 0,0 321.875,448.875L321.875,307.25" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M321.875,307.25L321.875,165.625A2,2 0 0,0 319.875,163.625L274.5625,163.625A2,2 0 0,1 272.5625,161.625L272.5625,20" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M321.875,307.25L321.875,165.625A2,2 0 0,1 323.875,163.625L369.1875,163.625A2,2 0 0,0 371.1875,161.625L371.1875,20" fill="none" stroke="#22201D" stroke-width="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="420.5" cy="881.75" r="2.88" fill="#A3392B" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="223.25" cy="594.5" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="617.75" cy="594.5" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="124.625" cy="307.25" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="321.875" cy="307.25" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="272.5625" cy="20" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="371.1875" cy="20" r="1.6" fill="#FBF8F2" stroke="#22201D" stroke-width="0.35" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="420.5" y="877.25" font-family="Georgia, 'Iowan Old Style', serif" font-size="3.75" fill="#22201D" text-anchor="middle" dominant-baseline="central">Beatrice Ashworth</text>
+<text x="223.25" y="590" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Reuben Ashworth</text>
+<text x="617.75" y="590" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Winifred Susannah Threlfall</text>
+<text x="124.625" y="302.75" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Joseph Ashworth</text>
+<text x="321.875" y="302.75" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Hannah Whitcombe</text>
+<text x="272.5625" y="15.5" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Ernest Whitcombe</text>
+<text x="371.1875" y="15.5" font-family="Georgia, 'Iowan Old Style', serif" font-size="3" fill="#22201D" text-anchor="middle" dominant-baseline="central">Esther Threlfall</text>
+<text x="420.5" y="24" font-family="Georgia, 'Iowan Old Style', serif" font-size="6.6" fill="#22201D" text-anchor="middle" dominant-baseline="central" font-weight="600">Sample Family</text>
+</g>
+</svg>
