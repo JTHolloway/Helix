@@ -15,6 +15,11 @@ def _todo(name: str, phase: str):
             f"{name} is planned for {phase}. See docs/DESIGN_CATALOGUE.md for "
             f"the full specification."
         )
+    # What tells the gallery to show it as a plan rather than as a picture
+    # you can click. Without it the interface offered twenty designs and
+    # six of them threw.
+    fn.todo = True
+    fn.phase = phase
     return fn
 
 

@@ -74,7 +74,10 @@ export async function show(host, { onOpened, onToast }) {
       </form>
       <div class="libacts">
         <button class="ghost" id="libDup">Make a copy to experiment on</button>
+        <button class="ghost" id="libFor">Make this tree for somebody else…</button>
       </div>
+      <p class="hint">A tree for somebody else is a file of its own with them
+        at the centre. Nothing you do in it touches this one.</p>
       <dl class="libstat">
         <dt>File</dt><dd><code>${esc(st.path)}</code></dd>
         <dt>Backups</dt><dd>${st.backups}${
@@ -108,6 +111,8 @@ export async function show(host, { onOpened, onToast }) {
     act('library/reveal', {}));
   host.querySelector('#libDup').addEventListener('click', () =>
     act('library/duplicate', {}, true));
+  host.querySelector('#libFor').addEventListener('click',
+    () => makeFor({ onOpened, onToast }));
   host.querySelector('#libRename').addEventListener('submit', ev => {
     ev.preventDefault();
     const t = host.querySelector('#libTitle').value.trim();
@@ -162,3 +167,99 @@ export async function show(host, { onOpened, onToast }) {
     }
   });
 }
+
+
+// ─────────────────── the same family, as somebody else's tree ─────────────
+//
+// WHY THIS IS NOT A SETTING. Every relation in the program is measured from
+// one person: who counts as a cousin, whose lines are worth researching,
+// what the chart puts at its centre, what the record book calls each entry.
+// Change that person and you do not have a preference set differently — you
+// have a different document about the same family.
+//
+// So a niece who wants her own tree gets a FILE OF HER OWN, and the original
+// is not touched, not linked to and never consulted again. That is what
+// makes it safe to hand over.
+export async function makeFor({ onOpened, onToast }) {
+  const dlg = document.querySelector('#forDlg');
+  const body = document.querySelector('#forBody');
+  const find = document.querySelector('#forFind');
+  let chosen = null, plan = null;
+  find.value = '';
+  body.innerHTML = '<p class="hint">Find the person whose tree it will be.</p>';
+  dlg.showModal();
+  find.focus();
+
+  let t = null;
+  find.oninput = () => {
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const q = find.value.trim();
+      if (q.length < 2) return;
+      const rows = await get('person/search', { q, limit: 8 });
+      body.innerHTML = rows.length
+        ? `<div class="libhits">${rows.map(r =>
+            `<button class="libhit" data-pick="${esc(r.id)}"><b>${esc(r.name)}</b>
+              <span>${esc(r.life || '')}</span></button>`).join('')}</div>`
+        : '<p class="none">Nobody of that name in this file.</p>';
+      body.querySelectorAll('[data-pick]').forEach(b =>
+        b.addEventListener('click', () => pick(b.dataset.pick)));
+    }, 200);
+  };
+
+  async function pick(id) {
+    chosen = id;
+    body.innerHTML = '<p class="hint">Working out what their tree looks like…</p>';
+    plan = await post('library/copy-for', { id, preview: true });
+    // THE QUESTION, WITH REAL NAMES IN IT. "Leave out 34 people" is a number
+    // nobody can check; "Michaela Denton's own family, 34 people" is a
+    // decision somebody can actually make.
+    body.innerHTML = `
+      <div class="forwho"><b>${esc(plan.root.name)}</b>
+        <span>${esc(plan.root.life || 'dates unknown')}</span></div>
+      <label class="forname">What to call the new file
+        <input id="forTitle" value="${esc(plan.title)}"></label>
+      ${plan.branches.length ? `
+        <p class="forq">These ${plan.unrelated} people are in your file and
+          are no relation to ${esc(firstName(plan.root.name))} — they married
+          into <em>your</em> family, not hers. Leave them out?</p>
+        <ul class="forbranch">${plan.branches.map(b => `<li>
+          <b>${esc(b.label)}</b> <span>${esc(b.blurb)}</span>
+          <small>${b.names.map(esc).join(', ')}${
+            b.count > b.names.length ? '…' : ''}</small></li>`).join('')}</ul>
+        <label class="check"><input type="checkbox" id="forPrune" checked>
+          Leave these ${plan.unrelated} out of the new file</label>
+        <p class="hint">Nothing is deleted. They stay in your file, and one
+          Ctrl-Z in the new one brings them back.</p>`
+        : `<p class="hint">Everybody in this file is related to
+           ${esc(firstName(plan.root.name))} one way or another, so the new
+           tree gets all ${plan.people} of them.</p>`}
+      <div class="exports">
+        <button class="primary" id="forGo">Make it</button>
+      </div>`;
+    body.querySelector('#forGo').addEventListener('click', go);
+  }
+
+  async function go() {
+    const btn = body.querySelector('#forGo');
+    btn.disabled = true; btn.textContent = 'Making it…';
+    try {
+      const r = await post('library/copy-for', {
+        id: chosen,
+        title: body.querySelector('#forTitle').value.trim(),
+        prune: !!body.querySelector('#forPrune')?.checked,
+      });
+      dlg.close();
+      onToast(r.message);
+      // Deliberately NOT opened. The point of the feature is that this file
+      // carries on being yours; switching you into somebody else's tree
+      // without being asked is the one thing it must not do.
+      show(document.querySelector('#libBody'), { onOpened, onToast });
+    } catch (e) {
+      onToast(e.message);
+      btn.disabled = false; btn.textContent = 'Make it';
+    }
+  }
+}
+
+const firstName = n => String(n || '').trim().split(/\s+/)[0] || 'them';

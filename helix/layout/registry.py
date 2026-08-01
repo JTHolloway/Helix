@@ -21,6 +21,18 @@ class DesignInfo:
     laser: str             # excellent | good | poor
     fn: Optional[Callable] = None
 
+    @property
+    def built(self) -> bool:
+        """Whether this design actually draws anything yet.
+
+        SIX OF TWENTY DID NOT. They were registered so the gallery could
+        show them "greyed out with a clear note", and nothing ever greyed
+        them out -- so a third of the gallery was pictures you could click
+        to get an error. A design says for itself whether it is finished,
+        and the gallery reads that rather than finding out by crashing.
+        """
+        return not getattr(self.fn, "todo", False)
+
 
 _REGISTRY: dict[str, DesignInfo] = {}
 

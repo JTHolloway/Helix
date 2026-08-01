@@ -24,6 +24,7 @@ from __future__ import annotations
 import html
 from typing import Optional
 
+from ..graph.build import union_word
 from ..graph.kinship import (Kinship, bloodline, dna_display, heritage_display,
                              heritage_of, household, shared_dna, siblings_of)
 
@@ -109,10 +110,11 @@ def esc(s) -> str:
     return html.escape(str(s or ""))
 
 
-def page(title: str, body: str, note: str = "") -> str:
+def page(title: str, body: str, note: str = "", extra_css: str = "") -> str:
     return (f"<!doctype html><html lang=en><head><meta charset=utf-8>"
             f"<meta name=viewport content='width=device-width,initial-scale=1'>"
-            f"<title>{esc(title)}</title><style>{CSS}</style></head><body>"
+            f"<title>{esc(title)}</title><style>{CSS}{extra_css}</style>"
+            f"</head><body>"
             f"{BAR % esc(note)}<div class=sheet>{body}</div></body></html>")
 
 
@@ -349,6 +351,200 @@ def chronicle(graph, tl: dict, *, title="") -> str:
             + f"<div class=sub>{esc(e['date'])}</div></td></tr>")
     body.append("</tbody></table>")
     return page(title or "The family, in order", "".join(body), note=title)
+
+
+# ------------------------------------------------------ the record book --
+RECORD_CSS = """
+.rb{font:11pt/1.55 Georgia,'Iowan Old Style',serif}
+.rbcover{text-align:center;padding:38mm 0 0}
+.rbcover h1{font-size:30pt;letter-spacing:.02em;margin:0 0 3mm}
+.rbcover .rule{width:56mm;height:1px;background:var(--ink);margin:6mm auto}
+.rbcover p{color:var(--muted);font-size:11pt;margin:1mm 0}
+.rbcover .crest{font-size:40pt;line-height:1;margin-bottom:6mm;
+                letter-spacing:.3em;color:var(--accent)}
+.rbtoc{columns:2;column-gap:10mm;font-size:10pt;list-style:none;padding:0}
+.rbtoc li{break-inside:avoid;margin:.4mm 0}
+.rbtoc .n{color:var(--muted);display:inline-block;width:9mm}
+/* ONE PERSON, ONE SHEET. A binder is filed, added to and pulled apart:
+   somebody wants the page for their grandmother, and if two other people
+   are on the back of it they cannot have it. So every entry starts a
+   page — and a life with a great deal written about it runs on to a
+   second and a third rather than being cut to fit. */
+.entry{page-break-before:always;break-before:page;
+       padding-top:2mm;display:flex;flex-direction:column;min-height:238mm}
+.entry:first-of-type{page-break-before:auto;break-before:auto}
+.entry > .grow{flex:1}
+.entry h2{border:0;margin:0 0 1mm;font-size:19pt;display:flex;
+          align-items:baseline;gap:3mm;letter-spacing:.01em}
+.entry h2 .no{color:var(--muted);font-size:11pt;font-weight:400;
+              min-width:9mm}
+.entry .sub{font-size:11pt}
+.entry .hr{height:1px;background:var(--rule);margin:3mm 0 4mm}
+.entry .body{display:flex;gap:7mm;align-items:flex-start}
+.entry .txt{flex:1;min-width:0}
+.entry .port{width:42mm;height:53mm;object-fit:cover;
+             border:1px solid var(--rule);background:#f6f2ea}
+.rbfacts{display:grid;grid-template-columns:30mm 1fr;gap:1mm 4mm;
+         margin:0 0 3mm;font-size:11pt}
+.rbfacts dt{color:var(--muted);font-size:9.5pt;padding-top:.5mm}
+.rbfacts dd{margin:0}
+.rbsec{font-size:9pt;letter-spacing:.09em;text-transform:uppercase;
+       color:var(--muted);margin:5mm 0 1.5mm;border-bottom:1px solid var(--rule);
+       padding-bottom:.8mm}
+.rbrel{font-size:10.5pt;margin:1.5mm 0 0}
+.rbrel b{color:var(--muted);font-weight:400;font-size:9.5pt;
+         display:block;letter-spacing:.04em}
+.rbnote{white-space:pre-wrap;font-size:10.5pt;margin:1.5mm 0 0}
+.rbpapers{font-size:9.5pt;color:var(--muted);margin:1.5mm 0 0}
+/* The foot of the sheet, so a page that has come loose can be put back. */
+.rbfoot{display:flex;justify-content:space-between;font-size:8.5pt;
+        color:var(--muted);border-top:1px solid var(--rule);
+        padding-top:1.5mm;margin-top:5mm}
+.rbindex{font-size:9.5pt;columns:2;column-gap:10mm}
+.rbindex div{break-inside:avoid}
+.newpage{page-break-before:always;break-before:page}
+@media print{.rbcover{padding-top:50mm}}
+"""
+
+
+def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
+                subtitle="") -> str:
+    """Every person, every relation, as one document you can file.
+
+    WHAT AN OFFICIAL RECORD IS AND IS NOT. This is the thing that goes in a
+    ring binder and is read by somebody in thirty years: a numbered entry
+    per person, their facts, their family, and their photograph. Every
+    entry cross-references the others by number, so the binder can be
+    followed without the program that made it.
+
+    WHAT IS DELIBERATELY LEFT OUT. The inbreeding coefficient, the DNA
+    percentages, the completeness score and the research list. Those are
+    working numbers -- they are arithmetic over the file as it stands
+    today, they change the moment a grandparent is added, and on a filed
+    document they read as findings rather than as the working notes they
+    are. What goes in the binder is what is KNOWN.
+    """
+    people = [p for p in ids if p in graph.people]
+    order = {pid: i + 1 for i, pid in enumerate(people)}
+
+    def ref(pid) -> str:
+        if pid not in order:
+            return esc(graph.people[pid].full_name) if pid in graph.people else ""
+        return f"{esc(graph.people[pid].full_name)} <span class=no>" \
+               f"[{order[pid]}]</span>"
+
+    body = [f"<div class=rb>"]
+    # ---- the cover
+    body.append(
+        "<div class=rbcover>"
+        "<div class=crest>&#10022;</div>"
+        f"<h1>{esc(title or 'Family Records')}</h1>"
+        "<div class=rule></div>"
+        f"<p>{esc(subtitle) if subtitle else ''}</p>"
+        f"<p>{len(people)} people, "
+        f"{len([u for u in graph.unions.values() if any(x in order for x in u.partners)])}"
+        f" marriages</p>"
+        f"<p>Compiled {__import__('datetime').date.today().strftime('%d %B %Y')}"
+        "</p></div>")
+
+    # ---- the contents
+    body.append("<div class=newpage><h2>Contents</h2><ol class=rbtoc>")
+    for pid in people:
+        p = graph.people[pid]
+        body.append(f"<li><span class=n>{order[pid]}</span> {esc(p.full_name)}"
+                    + (f" <span class=sub>{esc(p.lifespan)}</span>"
+                       if p.lifespan else "") + "</li>")
+    body.append("</ol></div>")
+
+    # ---- the entries
+    body.append("<div class=newpage>")
+    for pid in people:
+        p = graph.people[pid]
+        pics = [x for x in (photos_for(pid) if photos_for else [])
+                if x.get("kind", "photo") == "photo" and x.get("portrait")]
+        papers = [x for x in (photos_for(pid) if photos_for else [])
+                  if x.get("kind", "photo") != "photo"]
+        img = (f"<img class=port src='/api/media?name={esc(pics[0]['name'])}' "
+               f"alt=''>") if pics else ""
+        rows = [("Born", p.birth.display), ("Born in", p.birth_place),
+                ("Died", p.death.display), ("Died in", p.death_place),
+                ("Lived", p.age), ("Occupation", p.occupation),
+                ("Education", p.education)]
+        facts = "".join(f"<dt>{esc(k)}</dt><dd>{esc(v)}</dd>"
+                        for k, v in rows if v)
+        fam = []
+        pars = [x for x in graph.parents(pid, primary_only=False)
+                if x in graph.people]
+        if pars:
+            fam.append("<b>Parents</b>" + ", ".join(ref(x) for x in pars))
+        sibs = [x for x in siblings_of(graph, pid) if x in graph.people]
+        if sibs:
+            fam.append("<b>Brothers and sisters</b>"
+                       + ", ".join(ref(x) for x in sibs))
+        for uid in p.unions:
+            u = graph.unions.get(uid)
+            if not u:
+                continue
+            others = [x for x in u.partners if x != pid and x in graph.people]
+            kids = [x for x in u.children if x in graph.people]
+            # NEVER SAYS "MARRIED" OF PEOPLE WHO DID NOT MARRY. On a filed
+            # record that is not a nicety -- it is the one document in the
+            # house that somebody will quote in thirty years.
+            head = union_word(u).capitalize()
+            bit = f"<b>{esc(head)}</b>" + (", ".join(ref(x) for x in others)
+                                           or "somebody not recorded")
+            if u.date.known:
+                bit += f", {esc(u.date.display)}"
+            fam.append(bit)
+            if kids:
+                fam.append("<b>Children</b>"
+                           + ", ".join(ref(x) for x in kids))
+        k = kin.of(pid) if kin else None
+        rel = (f"<b>Relation</b>{esc(k.label)}"
+               if k and k.group != "self" and k.steps < 99 else
+               ("<b>Relation</b>whose records these are"
+                if k and k.group == "self" else ""))
+        if rel:
+            fam.append(rel)
+
+        body.append(
+            f"<article class=entry>"
+            f"<h2><span class=no>{order[pid]}</span> {esc(p.full_name)}</h2>"
+            f"<p class=sub>{esc(p.lifespan or 'dates not recorded')}</p>"
+            f"<div class=hr></div>"
+            f"<div class=body>{img}<div class=txt>"
+            + (f"<dl class=rbfacts>{facts}</dl>" if facts
+               else "<p class=none>No dates or places recorded.</p>")
+            + ("<p class=rbsec>Family</p>"
+               + "".join(f"<p class=rbrel>{x}</p>" for x in fam)
+               if fam else "")
+            + (f"<p class=rbsec>What is known about them</p>"
+               f"<div class=rbnote>{esc(p.notes)}</div>" if p.notes else "")
+            + (("<p class=rbsec>Papers on file</p><p class=rbpapers>"
+                + ", ".join(esc(x.get("caption") or x["name"]) for x in papers)
+                + "</p>") if papers else "")
+            + "</div></div><div class=grow></div>"
+            f"<div class=rbfoot><span>{esc(title or 'Family Records')}</span>"
+            f"<span>{esc(p.full_name)} &middot; no. {order[pid]}</span>"
+            f"</div></article>")
+    body.append("</div>")
+
+    # ---- the index, by surname
+    body.append("<div class=newpage><h2>Index of names</h2><div class=rbindex>")
+    by_sur: dict = {}
+    for pid in people:
+        p = graph.people[pid]
+        by_sur.setdefault((p.surname or "—").upper(), []).append(pid)
+    for sur in sorted(by_sur):
+        entries = sorted(by_sur[sur],
+                         key=lambda x: graph.people[x].given or "")
+        body.append(f"<div><b>{esc(sur)}</b><br>" + "<br>".join(
+            f"{esc(graph.people[x].given or '—')} "
+            f"<span class=sub>{order[x]}</span>" for x in entries) + "</div>")
+    body.append("</div></div></div>")
+
+    return page(title or "Family Records", "".join(body),
+                note=title, extra_css=RECORD_CSS)
 
 
 def one(graph, con, pid: str, *, kin=None, photos=None, title="") -> str:

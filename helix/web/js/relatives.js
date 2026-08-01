@@ -48,7 +48,11 @@ export function draw(host, { onSelect, selected, onScope }) {
     });
 
     const sum = document.createElement('summary');
+    const need = people.filter(p => p.needs).length;
     sum.innerHTML = `<span class="t">${esc(g.title)}</span>` +
+                    (need ? `<i class="dot" title="${need} ${
+                      need === 1 ? 'record needs' : 'records need'
+                      } something">${need}</i>` : '') +
                     `<span class="n">${people.length}</span>`;
     sum.title = g.blurb || '';
     box.appendChild(sum);
@@ -65,7 +69,11 @@ export function draw(host, { onSelect, selected, onScope }) {
           : `<span class="av blank">${esc(initials(p.name))}</span>`) +
         `<span class="who"><b>${esc(p.name)}</b>` +
         `<small>${esc(p.life || '')}${p.life && p.relation ? ' · ' : ''}` +
-        `${esc(p.relation || '')}</small></span>`;
+        `${esc(p.relation || '')}</small></span>` +
+        // ONE DOT, NOT A LIST. A red mark beside four hundred names is
+        // decoration; this is only shown for the things that stop somebody
+        // being findable at all, and the reason is in the tooltip.
+        (p.needs ? `<i class="dot" title="${esc(p.needs)}"></i>` : '');
       b.addEventListener('click', () => onSelect(p.id));
       ul.appendChild(b);
     }

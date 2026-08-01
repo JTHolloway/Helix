@@ -12,6 +12,7 @@ import * as relatives from './relatives.js';
 import { addPerson as addFirstPerson } from './edit.js';
 import * as insight from './insight.js';
 import * as librarypanel from './librarypanel.js';
+import * as narrow from './narrow.js';
 
 const $ = s => document.querySelector(s);
 const wrap = $('#canvasWrap'), host = $('#canvas');
@@ -51,6 +52,7 @@ init().catch(fail);
 async function init() {
   META = await get('meta');
   $('#proj').textContent = META.title || '';
+  inspector.setKinds(META.union_kinds);
   buildGallery();
   wireControls();
   wireSearch();
@@ -64,6 +66,8 @@ async function init() {
   wireImport();
   wireInsight();
   wireLibrary();
+  wireRelate();
+  narrow.wire({ onClose: () => view.refit() });
   undoLabels();
   await Promise.all([refresh(), loadRelatives(), loadGaps()]);
   view.fit();
@@ -212,8 +216,16 @@ function readout() {
 // ───────────────────────────────────────────────────────────── gallery ───
 function buildGallery() {
   const g = $('#gallery');
+  GALLERY_V = (META.stats.people || 0) + ':' + (META.subject || '');
   g.innerHTML = '';
-  for (const d of META.designs) {
+  // FOURTEEN DESIGNS THAT DRAW, and six that are specified and not built.
+  // The six were in the gallery all along, indistinguishable from the rest
+  // and throwing an error when clicked. They are still listed — somebody
+  // choosing a design should know what is coming — but as a plan, at the
+  // end, and they cannot be picked.
+  const ready = META.designs.filter(d => d.built !== false);
+  const planned = META.designs.filter(d => d.built === false);
+  for (const d of ready) {
     const b = document.createElement('button');
     b.innerHTML = thumb(d.key) + `<span>${d.name}</span>`;
     b.setAttribute('aria-pressed', d.key === S.design);
@@ -230,26 +242,34 @@ function buildGallery() {
     });
     g.appendChild(b);
   }
-  $('#designBlurb').textContent = META.designs.find(d => d.key === S.design)?.blurb || '';
+  $('#designBlurb').textContent =
+    META.designs.find(d => d.key === S.design)?.blurb || '';
+
+  const box = $('#planned');
+  if (box) {
+    box.hidden = !planned.length;
+    box.innerHTML = planned.length
+      ? `<summary>${planned.length} more designs are specified, not built
+           yet</summary><ul>${planned.map(d =>
+          `<li><b>${d.name}</b> ${d.blurb}</li>`).join('')}</ul>` : '';
+  }
 }
 
-// Tiny hand-drawn icons so the gallery is choosable at a glance, before any
-// real render exists. Cheaper and clearer than 11 live previews.
+// THE THUMBNAIL IS THE DESIGN, run on YOUR family, at 120 pixels.
+//
+// It used to be a hand-drawn icon per design, and there were eleven of them
+// for twenty designs — so nine showed a sunburst whatever they actually
+// drew, and two more had drifted from the geometry they were meant to
+// illustrate. A picture of a chart cannot go out of date.
+//
+// Lazily loaded, so opening Build does not render twenty layouts at once,
+// and re-fetched when the family changes.
 function thumb(key) {
-  const P = { radial_sunburst: 'M50 50m-30 0a30 30 0 1 0 60 0a30 30 0 1 0-60 0M50 50m-18 0a18 18 0 1 0 36 0a18 18 0 1 0-36 0M50 20V32M74 36 63 43M74 64 63 57M50 80V68M26 64 37 57M26 36 37 43',
-    radial_rings: 'M20 50a30 30 0 0 1 34 -29M32 50a18 18 0 0 1 30 -12M42 50a8 8 0 0 1 14 -4M50 50V21M56 34l14 -9M62 22V12M76 32l7 -5',
-    radial_organic: 'M50 50C50 36 40 30 30 22M50 50C50 36 60 30 70 22M50 50C50 64 40 70 30 78M50 50C50 64 60 70 70 78M50 50v0',
-    radial_lifeline: 'M50 20v22M65 26l-9 20M35 26l9 20M72 42l-20 8M28 42l20 8M50 80V58M66 74l-9-20M34 74l9-20',
-    radial_spiral: 'M50 50c0-4 4-8 8-8s10 5 10 12-7 14-16 14-20-9-20-20 11-24 24-24 28 12 28 28',
-    metro_map: 'M12 30h20l14 14h30M12 60h30l14-14h32M32 30v30M60 44v26M76 30h12',
-    timeline_lanes: 'M14 26h40M14 42h58M14 58h30M14 74h50M14 18v62',
-    dendrogram: 'M14 50h14v-24h20M28 50h14M28 50v24h20M62 26h14M62 74h14M48 26v0',
-    icicle: 'M12 22h76M12 40h44M58 40h30M12 58h24M38 58h18M60 58h28M12 76h14M28 76h20',
-    arc_diagram: 'M14 74h72M22 74a14 14 0 0 1 28 0M36 74a22 22 0 0 1 44 0M50 74a10 10 0 0 1 20 0',
-    circle_pack: 'M50 50m-34 0a34 34 0 1 0 68 0a34 34 0 1 0-68 0M36 40m-11 0a11 11 0 1 0 22 0a11 11 0 1 0-22 0M64 58m-13 0a13 13 0 1 0 26 0a13 13 0 1 0-26 0' };
-  return `<svg viewBox="0 0 100 100"><path d="${P[key] || P.radial_sunburst}"
-    fill="none" stroke="#26241F" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+  return `<img loading="lazy" alt="" src="/api/thumb?design=${
+    encodeURIComponent(key)}&v=${GALLERY_V}">`;
 }
+
+let GALLERY_V = 0;
 
 // ───────────────────────────────────────────────────────────── controls ──
 function wireControls() {
@@ -319,6 +339,7 @@ async function select(pid) {
   SEL = pid;
   markSelected();
   $('#right').hidden = false;
+  narrow.chose();          // on a phone the drawer is over the answer
   relatives.mark($('#kinList'), pid);
   if (MODE === 'explore') return showProfile(pid);
   await inspector.show($('#inspector'), pid, {
@@ -337,6 +358,7 @@ async function showProfile(pid) {
     onToast: toast,
     onHighlight: paintHalo,
     onEdit: p => { setMode('build'); select(p); },
+    onRelate: p => { $('#relateDlg').showModal(); RELATE.open(p, ''); },
     onChanged: async () => {
       META = await get('meta'); await loadRelatives(); refresh();
     },
@@ -578,6 +600,22 @@ function wireInsight() {
   });
 }
 
+// HOW ARE THESE TWO RELATED? Built once and reopened, so the two names stay
+// where you left them -- comparing a run of people against the same one is
+// the ordinary way this gets used.
+let RELATE = null;
+function wireRelate() {
+  RELATE = insight.relateScreen($('#relBody'), {
+    people: () => (META ? META.people : []),
+    onSelect: pid => { $('#relateDlg').close(); setMode('explore'); select(pid); },
+  });
+  $('#relateBtn').addEventListener('click', () => {
+    $('#relateDlg').showModal();
+    // Whoever is on screen is nearly always one of the two.
+    RELATE.open(SEL || META?.subject || '', '');
+  });
+}
+
 // Offered rather than forced. Duplicates are rare while you type and
 // ordinary after an import, so this is where it is put in front of you --
 // but merging is never automatic, because which of two records is right is
@@ -682,7 +720,8 @@ function wirePrint() {
         url = `/print/profile?id=${encodeURIComponent(SEL)}`;
       } else if (what === 'profiles-all') {
         url = '/print/profiles?all=1';
-      } else if (['outline', 'research', 'chronicle'].includes(what)) {
+      } else if (['outline', 'research', 'chronicle', 'records']
+                   .includes(what)) {
         url = `/print/${what}?${q}`;
       } else {
         url = `/print/profiles?${q}`;
@@ -867,6 +906,7 @@ function wireKeys() {
     if (k === 't' && !e.shiftKey) { /* thread toggle keeps t */ }
     if (k === 'y') { e.preventDefault(); $('#timelineBtn').click(); }
     if (k === 'i') { e.preventDefault(); $('#importBtn').click(); }
+    if (k === 'r') { e.preventDefault(); $('#relateBtn').click(); }
   });
 
   // Undo and redo work while typing too, which is where mistakes happen.

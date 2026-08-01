@@ -1,4 +1,4 @@
-"""Photographs, kept beside the family file.
+"""Photographs and papers, kept beside the family file.
 
 WHY THE PICTURES ARE COPIED AND NOT REFERENCED. A path into somebody's
 Pictures folder is a promise the program cannot keep: the folder gets tidied,
@@ -21,6 +21,13 @@ second copy. And the name can never collide, contain a directory, or be
 talked into pointing somewhere else -- which matters because the name comes
 in over HTTP.
 
+NOT ONLY PICTURES. The things people actually have in a shoebox are the
+order of service from a funeral, a scanned certificate, a letter, a will.
+They are the evidence behind everything else in the file and they belong
+next to the person, not in a folder on a different computer -- so PDFs and
+plain text are stored the same way, by the hash of their own bytes, and go
+into the archive zip with everything else.
+
 The `media` and `media_link` tables were in `schema.sql` from the start;
 this fills them in. `store/archive.py` walks the album so a zip of the
 family holds the pictures too, and a restore puts them back.
@@ -38,12 +45,43 @@ from .db import new_id
 # What a browser will hand us, and what a laser or a printer can read back.
 # Deliberately short: this is a family archive, not a media library, and
 # every format here will still open in thirty years.
-TYPES = {
+IMAGES = {
     "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp",
     "image/gif": ".gif", "image/heic": ".heic", "image/tiff": ".tif",
 }
+# Papers. A eulogy, a certificate, a letter, a will. PDF because that is
+# what a scanner and a phone both produce and what will still open in
+# thirty years; plain text and rich text because a transcription is often
+# more use than the scan of it.
+PAPERS = {
+    "application/pdf": ".pdf",
+    "text/plain": ".txt",
+    "text/rtf": ".rtf", "application/rtf": ".rtf",
+    "text/markdown": ".md",
+    "audio/mpeg": ".mp3", "audio/mp4": ".m4a", "audio/wav": ".wav",
+}
+TYPES = {**IMAGES, **PAPERS}
 BY_EXT = {v: k for k, v in TYPES.items()}
+# Two limits, because they are two different mistakes. A 24 MB photograph
+# is a camera left on maximum; a 60 MB PDF is a whole parish register
+# somebody meant to crop.
 MAX_BYTES = 24 * 1024 * 1024
+MAX_PAPER_BYTES = 64 * 1024 * 1024
+
+
+def is_image(name_or_mime: str) -> bool:
+    x = (name_or_mime or "").lower()
+    return x in IMAGES or Path(x).suffix.lower() in set(IMAGES.values())
+
+
+def kind_of(name: str) -> str:
+    """"photo", "paper" or "sound" -- what the panel shows it as."""
+    mime = mime_for(name)
+    if mime in IMAGES:
+        return "photo"
+    if mime.startswith("audio/"):
+        return "sound"
+    return "paper"
 
 
 def album_dir(db_path: str | Path, create: bool = False) -> Path:
@@ -71,13 +109,17 @@ def store_bytes(db_path: str | Path, raw: bytes, *, filename: str = "",
     """
     if not raw:
         raise ValueError("That file was empty. Try choosing it again.")
-    if len(raw) > MAX_BYTES:
+    ext = _ext_for(mime, filename)
+    picture = ext in set(IMAGES.values())
+    cap = MAX_BYTES if picture else MAX_PAPER_BYTES
+    if len(raw) > cap:
         raise ValueError(
-            f"That picture is {len(raw) // (1024 * 1024)} MB, and the limit is "
-            f"{MAX_BYTES // (1024 * 1024)} MB. Save a smaller copy and try "
-            f"again — a photograph does not need to be larger than the "
-            f"screen it is looked at on.")
-    name = hashlib.sha256(raw).hexdigest()[:32] + _ext_for(mime, filename)
+            f"That {'picture' if picture else 'file'} is "
+            f"{len(raw) // (1024 * 1024)} MB and the limit is "
+            f"{cap // (1024 * 1024)} MB. Save a smaller copy and try again"
+            + (" — a photograph does not need to be larger than the screen "
+               "it is looked at on." if picture else "."))
+    name = hashlib.sha256(raw).hexdigest()[:32] + ext
     d = album_dir(db_path, create=True)
     path = d / name
     if not path.exists():
@@ -179,6 +221,20 @@ def attach(con, pid: str, name: str, *, caption: str = "",
     return mid
 
 
+def set_taken(con, media_id: str, text: str) -> None:
+    """When a photograph was taken, in whatever form somebody has it.
+
+    Kept verbatim -- rule five. "1974", "abt 1974", "aged 12" and "the
+    summer before he went out to Kenya" are all things a family knows about
+    a photograph, and a box that only took a four-digit year would throw
+    away the other three.
+    """
+    from . import records
+    with records.Edit(con, "Date a photograph") as e:
+        e.update("media", {"id": media_id},
+                 {"taken": (text or "").strip() or None})
+
+
 def detach(con, pid: str, media_id: str) -> None:
     """Take a picture off a person. The FILE stays in the album: another
     person may be in it, and a photograph is not something to delete because
@@ -191,19 +247,49 @@ def detach(con, pid: str, media_id: str) -> None:
 
 
 def photos_of(con, pid: str) -> list[dict]:
-    """Every picture linked to somebody, the portrait first."""
+    """Everything linked to somebody, the portrait first.
+
+    Kept under the old name because five callers use it. `kind` is what
+    tells a picture from a scanned eulogy, and only a picture can be the
+    portrait.
+    """
     return [{"media_id": r["id"], "name": r["path"], "type": r["type"],
-             "caption": r["caption"] or "", "portrait": bool(r["is_portrait"])}
+             "caption": r["caption"] or "",
+             # WHEN IT WAS TAKEN, exactly as somebody typed it. A year, a
+             # date, or "aged 12" -- all three are things people know about
+             # a photograph and none of them is worth refusing. What it
+             # MEANS is worked out where the birth date is, which is not
+             # here.
+             "taken": r["taken"] or "",
+             "portrait": bool(r["is_portrait"]),
+             "kind": kind_of(r["path"])}
             for r in con.execute(
-                "SELECT m.id, m.path, m.type, m.caption, l.is_portrait "
+                "SELECT m.id, m.path, m.type, m.caption, m.taken, "
+                "l.is_portrait "
                 "FROM media m JOIN media_link l ON l.media_id = m.id "
                 "WHERE l.person_id = ? "
-                "ORDER BY l.is_portrait DESC, m.path", (pid,))]
+                "ORDER BY l.is_portrait DESC, m.taken IS NULL, m.taken, "
+                "m.path", (pid,))]
+
+
+def files_of(con, pid: str, kind: Optional[str] = None) -> list[dict]:
+    rows = photos_of(con, pid)
+    return [r for r in rows if kind is None or r["kind"] == kind]
 
 
 def portrait_of(con, pid: str) -> Optional[dict]:
-    ph = [p for p in photos_of(con, pid) if p["portrait"]]
-    return ph[0] if ph else None
+    """The one picture that stands for somebody.
+
+    A scanned will is not a portrait however it was attached, so this only
+    ever returns an image -- otherwise a PDF ended up in the round frame at
+    the top of the profile and on the printed sheet.
+    """
+    ph = [p for p in photos_of(con, pid)
+          if p["portrait"] and p["kind"] == "photo"]
+    if ph:
+        return ph[0]
+    pics = [p for p in photos_of(con, pid) if p["kind"] == "photo"]
+    return pics[0] if pics else None
 
 
 def copy_album(db_path: str | Path, into: str | Path) -> int:

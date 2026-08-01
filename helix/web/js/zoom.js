@@ -11,31 +11,77 @@
 // replaced — but ONLY while the person has not chosen a view of their own.
 // One wheel click or one drag and the view is theirs; re-centring it under
 // them every time a sidebar moved would be worse than the bug.
+// ON A TOUCH SCREEN there is no wheel and no cursor, and a chart a metre
+// across is the one thing you cannot read at 380 pixels without pinching.
+// Both gestures come off the same pointer events: one finger down is a
+// drag, two is a pinch about the point between them — which is what makes
+// it feel right, because the thing under your fingers stays under them.
 export function attach(wrap, target, { min = 0.05, max = 40 } = {}) {
   let k = 1, x = 0, y = 0, dragging = false, sx = 0, sy = 0;
   let touched = false;
+  const live = new Map();                 // pointerId -> {x, y}
+  let pinch = null;                       // {d, cx, cy} at the last frame
   const apply = () => target.style.transform = `translate(${x}px,${y}px) scale(${k})`;
+
+  // Scale about a point in the wrapper's own coordinates, so whatever is
+  // under the cursor or between the fingers does not move.
+  const scaleAbout = (mx, my, f) => {
+    const nk = Math.min(max, Math.max(min, k * f));
+    x = mx - (mx - x) * (nk / k); y = my - (my - y) * (nk / k); k = nk;
+    touched = true;
+  };
 
   wrap.addEventListener('wheel', ev => {
     ev.preventDefault();
     const r = wrap.getBoundingClientRect();
-    const mx = ev.clientX - r.left, my = ev.clientY - r.top;
-    const f = Math.exp(-ev.deltaY * 0.0015);
-    const nk = Math.min(max, Math.max(min, k * f));
-    x = mx - (mx - x) * (nk / k); y = my - (my - y) * (nk / k); k = nk;
-    touched = true; apply();
+    scaleAbout(ev.clientX - r.left, ev.clientY - r.top,
+               Math.exp(-ev.deltaY * 0.0015));
+    apply();
   }, { passive: false });
 
+  const twoFinger = () => {
+    const [a, b] = [...live.values()];
+    return { d: Math.hypot(a.x - b.x, a.y - b.y),
+             cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2 };
+  };
+
   wrap.addEventListener('pointerdown', ev => {
-    if (ev.button !== 0) return;
-    dragging = true; sx = ev.clientX - x; sy = ev.clientY - y;
-    wrap.setPointerCapture(ev.pointerId); wrap.classList.add('drag');
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+    live.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    wrap.setPointerCapture(ev.pointerId);
+    if (live.size === 2) { pinch = twoFinger(); dragging = false; wrap.classList.remove('drag'); }
+    else if (live.size === 1) {
+      dragging = true; sx = ev.clientX - x; sy = ev.clientY - y;
+      wrap.classList.add('drag');
+    }
   });
+
   wrap.addEventListener('pointermove', ev => {
+    if (!live.has(ev.pointerId)) return;
+    live.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    if (live.size >= 2 && pinch) {
+      const now = twoFinger(), r = wrap.getBoundingClientRect();
+      if (pinch.d > 0) scaleAbout(now.cx - r.left, now.cy - r.top, now.d / pinch.d);
+      // Two fingers moving together pan as well as pinch: that is one
+      // gesture to a hand, and splitting it makes the chart feel stuck.
+      x += now.cx - pinch.cx; y += now.cy - pinch.cy;
+      pinch = now; touched = true; apply();
+      return;
+    }
     if (!dragging) return;
     x = ev.clientX - sx; y = ev.clientY - sy; touched = true; apply();
   });
-  const stop = () => { dragging = false; wrap.classList.remove('drag'); };
+
+  const stop = ev => {
+    if (ev) live.delete(ev.pointerId);
+    if (live.size < 2) pinch = null;
+    // Lifting one of two fingers must not jump the chart: carry on the
+    // drag from wherever the finger that is left actually is.
+    if (live.size === 1) {
+      const [p] = [...live.values()];
+      dragging = true; sx = p.x - x; sy = p.y - y; wrap.classList.add('drag');
+    } else if (!live.size) { dragging = false; wrap.classList.remove('drag'); }
+  };
   wrap.addEventListener('pointerup', stop);
   wrap.addEventListener('pointercancel', stop);
 

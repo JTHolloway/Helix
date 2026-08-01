@@ -574,10 +574,27 @@ def display_name(con, pid: str) -> str:
 
 
 # ================================================================ the links ===
-def _new_union(e: Edit) -> str:
+def _new_union(e: Edit, kind: str = "marriage") -> str:
+    """A new family.
+
+    THE DEFAULT IS A MARRIAGE because that is what "add a partner" means to
+    the person clicking it. A couple who never married is said so
+    deliberately, on the family, and is never guessed at from silence --
+    guessing would be a claim about two real people made by a default.
+    """
     uid = new_id()
-    e.insert("union_", {"id": uid, "type": "unknown", "active": 1})
+    e.insert("union_", {"id": uid, "type": _union_kind(kind), "active": 1})
     return uid
+
+
+def _union_kind(kind: str) -> str:
+    from ..graph.build import UNION_KIND
+    k = (kind or "").strip() or "marriage"
+    if k not in UNION_KIND:
+        raise ValueError(
+            f"'{kind}' is not a kind of family Helix knows. Choose one of: "
+            + ", ".join(sorted(UNION_KIND)) + ".")
+    return k
 
 
 def _role_for(con, pid: str) -> str:
@@ -614,7 +631,9 @@ def parents_union(e: Edit, pid: str) -> str:
                       "ORDER BY is_primary DESC LIMIT 1", (pid,)).fetchone()
     if r:
         return r["union_id"]
-    uid = _new_union(e)
+    # SCAFFOLDING, not a claim. Adding "my father" says nothing about
+    # whether his parents married, so this one is left unstated.
+    uid = _new_union(e, "unknown")
     add_child(e, uid, pid)
     return uid
 
@@ -629,7 +648,7 @@ def _childless_union(e: Edit, pid: str) -> str:
                           (r["union_id"],)).fetchone()["n"]
         if n == 1:
             return r["union_id"]
-    uid = _new_union(e)
+    uid = _new_union(e, "unknown")
     add_partner(e, uid, pid)
     return uid
 
@@ -721,9 +740,10 @@ def union_op(con, body: dict) -> dict:
     action = body.get("action", "create")
     with Edit(con, {"create": "Add a family",
                     "add_partner": "Add a partner",
+                    "set_kind": "Change what kind of couple this is",
                     "remove_partner": "Remove a partner"}.get(action, "Edit a family")) as e:
         if action == "create":
-            uid = _new_union(e)
+            uid = _new_union(e, body.get("kind", "marriage"))
             for p in body.get("partners", []):
                 add_partner(e, uid, p)
             return {"ok": True, "union_id": uid}
@@ -733,6 +753,11 @@ def union_op(con, body: dict) -> dict:
         elif action == "remove_partner":
             e.delete("union_partner", {"union_id": uid,
                                        "person_id": body["person_id"]})
+        elif action == "set_kind":
+            # MARRIED OR NOT is a fact about two people, and undoable like
+            # every other. Set the wrong one and Ctrl-Z puts it back.
+            e.update("union_", {"id": uid},
+                     {"type": _union_kind(body.get("kind", "marriage"))})
         else:
             raise ValueError(f"Unknown action '{action}'.")
     return {"ok": True, "union_id": uid}

@@ -101,7 +101,12 @@ def main() -> None:
             if confidence <= 1:
                 txt = f"abt {year}"
             _event(con, pid, "birth", txt, rng.choice(list(places.values())), src)
-        # death
+        # DEATH IS DECIDED NOW AND WRITTEN AT THE END. An age drawn here and
+        # recorded here gave eighty people in a four-hundred-person file who
+        # died before their own children were born -- a man dead at two with
+        # five sons -- because the pedigree is built afterwards and nothing
+        # went back to check. The intention is kept and `_write_deaths`
+        # settles it once the family is known.
         alive = year > 1955 and rng.random() < 0.75
         if not alive:
             if rng.random() < 0.13:
@@ -109,18 +114,25 @@ def main() -> None:
             else:
                 age = int(rng.gauss(66, 16))
             age = max(0, min(101, age))
-            _event(con, pid, "death", str(year + age),
-                   rng.choice(list(places.values())), src)
         else:
+            age = None
             con.execute("UPDATE person SET living=1 WHERE id=?", (pid,))
         if rng.random() < 0.55:
             _event(con, pid, "occupation", None, None, src,
                    desc=rng.choice(OCCS))
         people.append(pid)
-        meta[pid] = {"sex": sex, "surname": surname, "year": year, "gen": gen}
+        meta[pid] = {"sex": sex, "surname": surname, "year": year, "gen": gen,
+                     "death_age": age, "last": year}
         return pid
 
+    def note_event(pid, year):
+        """The latest year this person is known to have been alive in."""
+        if pid in meta:
+            meta[pid]["last"] = max(meta[pid]["last"], year)
+
     def add_union(a, b, year):
+        note_event(a, year)
+        note_event(b, year)
         uid = _db.new_id()
         con.execute("INSERT INTO union_(id,type) VALUES(?,?)", (uid, "marriage"))
         for i, x in enumerate((a, b)):
@@ -169,6 +181,8 @@ def main() -> None:
                 con.execute("INSERT INTO union_child(union_id,person_id,"
                             "is_primary,birth_order) VALUES(?,?,1,?)",
                             (uid, kid, k))
+                note_event(m, by)          # neither parent may die before
+                note_event(f, by)          # their own child is born
                 kids.append(kid)
             for kid in kids:
                 if meta[kid]["year"] > 1990:
@@ -181,6 +195,35 @@ def main() -> None:
                     a, b = (kid, sp) if meta[kid]["sex"] == "M" else (sp, kid)
                     nxt.append((a, b, my))
         frontier = nxt
+
+    # --- settle the deaths -------------------------------------------------
+    #
+    # NOBODY DIES BEFORE THEIR OWN CHILDREN ARE BORN. The age was drawn when
+    # the person was made, which is before the program knows whether they
+    # went on to have a family; here it is reconciled against every event
+    # they took part in. Eighty people in a four-hundred-person file failed
+    # that -- a man dead at two with five sons -- because nothing went back
+    # to check.
+    #
+    # A father may leave a child born after him and a mother may not, which
+    # is the one place the two sexes genuinely differ and is worth getting
+    # right in the file everybody sees first.
+    #
+    # Worked out here and WRITTEN LOWER DOWN, because the adoption below has
+    # to know who was still alive.
+    for pid in people:
+        m = meta[pid]
+        if m["death_age"] is None:
+            continue
+        year = m["year"] + m["death_age"]
+        floor = m["last"] + (0 if m["sex"] == "M" else 1)
+        if year < floor:
+            year = floor + rng.randint(0, 26)
+        m["death_year"] = min(year, m["year"] + 101)
+
+    def alive_in(pid, year):
+        d = meta[pid].get("death_year")
+        return d is None or d >= year
 
     # --- awkward but real cases -------------------------------------------
     # a cousin marriage: two people from different branches with a shared line
@@ -207,12 +250,20 @@ def main() -> None:
                 "SELECT person_id FROM union_child WHERE union_id=?", (u,))]
             if child in already or child in partners or len(partners) < 2:
                 continue
-            if all(meta[x]["year"] <= meta[child]["year"] - 18 for x in partners):
+            # Old enough to be their parents, and still alive to do it.
+            if all(meta[x]["year"] <= meta[child]["year"] - 18
+                   and alive_in(x, meta[child]["year"]) for x in partners):
                 con.execute(
                     "INSERT INTO union_child(union_id,person_id,is_primary,"
                     "rel_partner1,rel_partner2) VALUES(?,?,0,'adopted','adopted')",
                     (u, child))
                 break
+
+    # --- and only now, the death events ------------------------------------
+    for pid in people:
+        if meta[pid].get("death_year") is not None:
+            _event(con, pid, "death", str(meta[pid]["death_year"]),
+                   rng.choice(list(places.values())), src)
 
     # Pick a subject who is genuinely descended from the founders, so the
     # Thread and the what-if analysis have something to show.

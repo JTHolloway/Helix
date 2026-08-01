@@ -387,3 +387,144 @@ def test_the_word_union_never_reaches_the_screen(app):
     assert "union" not in prose.lower()
     assert "union" not in str(c.get("history")).lower()
     assert "union" not in c.post("person/retire", {"id": me})["message"].lower()
+
+
+# ══════════════════════ married, or not ═══════════════════════════════════
+#
+# Two people with a child between them are a family whether or not they ever
+# married, and a program that only knows how to say "married" tells a small
+# lie about them on every screen it has -- including the printed record,
+# which is the one document in the house somebody will still be quoting in
+# thirty years.
+def test_a_couple_who_never_married_are_not_called_married(app):
+    c = app
+    her = add(c, "Heather", "Whitcombe", birth="1988", sex="F")
+    c.post("subject", {"id": her})
+    add(c, "Dean", "Pargeter", her, "partner", birth="1986", sex="M")
+    fam = c.get("person", id=her)["families"]
+    assert fam and fam[0]["married"] is True, "adding a partner means married"
+
+    r = c.post("union", {"action": "set_kind", "union_id": fam[0]["union_id"],
+                         "kind": "unmarried"})
+    assert r["ok"]
+    f = c.get("person", id=her)["families"][0]
+    assert f["kind"] == "unmarried"
+    assert f["married"] is False
+    assert "married" not in f["word"]
+
+    # and it goes back, like every other edit
+    c.post("undo", {})
+    assert c.get("person", id=her)["families"][0]["married"] is True
+
+
+def test_a_kind_of_couple_helix_does_not_know_says_what_to_use(app):
+    """Rule eight: every error says what to do next."""
+    c = app
+    a = add(c, "Heather", "Whitcombe", sex="F")
+    add(c, "Dean", "Pargeter", a, "partner", sex="M")
+    u = c.get("person", id=a)["families"][0]["union_id"]
+    with pytest.raises(AssertionError) as e:
+        c.post("union", {"action": "set_kind", "union_id": u, "kind": "engaged"})
+    assert "unmarried" in str(e.value), "it must list the ones that do work"
+
+
+def test_divorce_is_not_a_kind_of_couple(app):
+    """A couple who married and divorced WERE married: the marriage is a
+    fact with a date on it and it stays on the record. That is why the list
+    of kinds has no entry for it."""
+    kinds = {k["key"] for k in app.get("meta")["union_kinds"]}
+    assert "unmarried" in kinds and "marriage" in kinds
+    assert not any("divor" in k for k in kinds)
+
+
+# ══════════════════════ everything added can be taken off ═════════════════
+#
+# Anything a person can add, they can take off again, and undo puts it back.
+# Taking somebody OUT OF A FAMILY is not deleting them -- they stay in the
+# file with everything known about them -- which is a distinction the panel
+# has to make in words as well as in code.
+def test_a_parent_hung_on_the_wrong_person_comes_off(app):
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    add(c, "Susan", "Pargeter", me, "mother", birth="1962", sex="F")
+
+    rows = c.get("person", id=me)["parents"]
+    assert all(p["union_id"] for p in rows), "the panel needs the family to undo"
+    u = next(p["union_id"] for p in rows if p["id"] == dad)
+
+    c.post("union", {"action": "remove_partner", "union_id": u,
+                     "person_id": dad})
+    assert names(c.get("person", id=me)["parents"]) == {"Susan Pargeter"}
+    # ...and Peter is still in the file, with everything known about him
+    assert c.get("person", id=dad)["birth"] == "1960"
+    c.post("undo", {})
+    assert len(c.get("person", id=me)["parents"]) == 2
+
+
+def test_a_child_in_the_wrong_family_comes_off(app):
+    c = app
+    me = add(c, "James", "Whitcombe", sex="M")
+    c.post("subject", {"id": me})
+    add(c, "Erica", "Vale", me, "partner", sex="F")
+    kid = add(c, "Rosie", "Whitcombe", me, "child", birth="2015")
+    fam = [f for f in c.get("person", id=me)["families"] if f["children"]][0]
+
+    c.post("union/child", {"action": "detach", "union_id": fam["union_id"],
+                           "person_id": kid})
+    assert not any(f["children"] for f in c.get("person", id=me)["families"])
+    assert c.get("person", id=kid)["birth"] == "2015", "still in the file"
+    c.post("undo", {})
+    assert any(f["children"] for f in c.get("person", id=me)["families"])
+
+
+# ══════════════════════ a face over a lifetime ════════════════════════════
+def test_the_new_photograph_becomes_the_one_shown_and_the_old_one_stays(app):
+    """Somebody at twenty and the same person at eighty are two photographs
+    of one person. Replacing the first with the second throws away half of
+    what a family album is for."""
+    import base64
+    import struct
+    import zlib
+
+    def png(shade):
+        def chunk(tag, data):
+            c = tag + data
+            return (struct.pack(">I", len(data)) + c
+                    + struct.pack(">I", zlib.crc32(c)))
+        return (b"\x89PNG\r\n\x1a\n"
+                + chunk(b"IHDR", struct.pack(">IIBBBBB", 2, 1, 8, 2, 0, 0, 0))
+                + chunk(b"IDAT", zlib.compress(b"\x00" + bytes([shade]) * 6))
+                + chunk(b"IEND", b""))
+
+    c = app
+    me = add(c, "Harriet", "Whitcombe", birth="1952", sex="F")
+    ids = []
+    for i, shade in enumerate((10, 120, 240)):
+        url = "data:image/png;base64," + base64.b64encode(png(shade)).decode()
+        ids.append(c.post("person/photo", {"id": me, "data": url,
+                                           "filename": f"p{i}.png"})["media_id"])
+
+    photos = c.get("person", id=me)["photos"]
+    assert sum(1 for p in photos if p["portrait"]) == 1, "one at a time"
+    assert len(photos) == 3, "the earlier ones are kept, not replaced"
+
+    # WHEN, in any of the three forms a family actually has it.
+    c.post("person/photo/taken", {"media_id": ids[0], "taken": "1972"})
+    c.post("person/photo/taken", {"media_id": ids[1], "taken": "aged 12"})
+    c.post("person/photo/taken", {"media_id": ids[2],
+                                  "taken": "the summer before Kenya"})
+    by_id = {p["media_id"]: p for p in c.get("person", id=me)["photos"]}
+    assert by_id[ids[0]]["age"] == 20, "a year gives the age"
+    assert by_id[ids[1]]["year"] == 1964, "an age gives the year"
+    assert by_id[ids[2]]["when"] == "the summer before Kenya", \
+        "and anything else is kept exactly as it was typed"
+
+    # showing an older one demotes the newer, and undo swaps them back
+    c.post("person/photo/portrait", {"id": me, "media_id": ids[0]})
+    shown = [p for p in c.get("person", id=me)["photos"] if p["portrait"]]
+    assert len(shown) == 1 and shown[0]["media_id"] == ids[0]
+    c.post("undo", {})
+    shown = [p for p in c.get("person", id=me)["photos"] if p["portrait"]]
+    assert shown[0]["media_id"] == ids[2]

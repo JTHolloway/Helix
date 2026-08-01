@@ -290,3 +290,155 @@ checks that a structural test cannot — touching arcs, the long way round,
 text on a line, lines crossing, loose ends, a marriage above the siblings,
 and a relationship that is not drawn at all — and the answer to all seven
 should be zero.
+
+---
+
+## The root person is the whole document
+
+Every relation in the program is measured from one person: who counts as a
+cousin, whose lines are worth researching, what the chart puts at its
+centre, what the record book calls each entry. So changing the root is not
+setting a preference — it is a different document about the same family.
+
+**Nobody is told to research an in-law's parents.** A person who married
+into the family is at every gathering and is not somebody whose parents you
+are chasing; their line is a different family's line, real and somebody
+else's. Asked for anyway, the research panel filled with "who were her
+mother's parents?" about surnames nobody in the family carries, and the
+questions that mattered were pushed off the end. Move the root to a
+grandchild and the same woman is a grandmother, her line is the direct line,
+and her parents become the first question on the list — with no setting to
+find and nothing to switch on.
+
+**`library.copy_for` is the other half of that idea.** A niece who wants her
+own tree gets a FILE OF HER OWN: the original is not touched, not linked to,
+and never consulted again, so she can add her mother's family, delete a
+branch, get the dates wrong, and none of it reaches back. Pruning is offered
+rather than done, by name and with a count — "Michaela Denton's own family,
+3 people" is a decision somebody can make; "leave out 34 people" is a number
+nobody can check. What is left out is retired, never deleted, so one Ctrl-Z
+in the new file brings it back.
+
+Branches are found by walking parents, children AND partners until the lump
+stops. Grouped by ancestry alone, a woman and her own brother came out as
+two separate branches, which is two questions about one family and the wrong
+two.
+
+## Married, or not
+
+Two people with a child between them are a family whether or not they ever
+married, and a program that only knows how to say "married" tells a small
+lie about them on every screen it has — including the printed record, which
+is the one document in the house somebody will still be quoting in thirty
+years. The kind lives on the union, and every place that puts it into words
+asks `graph.build.union_word` rather than assuming.
+
+**Never married is not divorced.** A couple who married and later divorced
+were married: the marriage is a fact with a date and it stays on the record.
+A divorce is an EVENT on the union, not a kind of union, which is why the
+enum has no entry for it.
+
+**On the chart it is the same tie with a break struck through the middle**,
+at a slant no other mark uses. It reads the way a break in a line always
+reads, and it survives being cut in wood at a millimetre and a half — which
+a dashed line does not, because the dashes fall between the laser's steps
+and come out as a solid line or as nothing. The key explains it only on a
+chart that has one.
+
+**Adding a partner still means a marriage.** A couple who never married is
+said so deliberately; guessing it from silence would be a claim about two
+real people made by a default.
+
+## Brothers and sisters with no parents in the file
+
+"My father had a brother" is a thing somebody types on their first evening,
+long before they know either grandparent's name. It makes a family with two
+children in it and nobody in the parents' row — honest, and invisible to a
+kinship walk that goes from person to person, because there is no person
+there to walk through. The uncle came out as "no known relation" and a chart
+narrowed to blood relatives left him off; worse, `copy_for` offered to prune
+him.
+
+The union itself is the shared ancestor: it stands exactly where the unnamed
+couple stands, so two children of it are (1, 1) — brother and sister — and
+everything downstream follows. Applied ONLY where the union has no partners
+in the file; with a parent present the ordinary pass has already measured
+everybody through them, and measuring twice is how two answers start to
+disagree.
+
+## A face over a lifetime
+
+Somebody at twenty and the same person at eighty are two photographs of one
+person, and replacing the first with the second throws away half of what a
+family album is for. Setting a new portrait demotes the old rather than
+deleting it, and the earlier ones stay in order with the age they were in
+each.
+
+The date box takes a year, a date, or an age, and keeps whatever was typed
+(rule five). Given a year it works out the age; given an age it works out
+the year; given "the summer before he went out to Kenya" it keeps that,
+because a family that knows only that has still said something worth
+keeping.
+
+## One page per person in the record book
+
+A binder is filed, added to and pulled apart: somebody wants the page for
+their grandmother, and if two other people are on the back of it they cannot
+have it. So every entry starts a page, and a life with a great deal written
+about it runs on to a second and a third rather than being cut to fit. The
+foot of each sheet carries the title and the entry number, so a page that
+has come loose can be put back.
+
+## The gallery shows the designs, not pictures of them
+
+There were eleven hand-drawn icons for twenty designs, so nine showed a
+sunburst whatever they actually drew, and two more had drifted from the
+geometry they were meant to illustrate. A thumbnail is now the design itself,
+run on your own family, cropped to its ink by `pathflatten` — the same
+geometry the DXF export gets, not a guess at where a path goes. It answers
+the question somebody is really asking: not "what is an icicle plot" but
+"what does MY family look like as one".
+
+**Six of the twenty were never built.** They were registered so the gallery
+could show them "greyed out with a clear note", and nothing ever greyed them
+out — so a third of the gallery was pictures you could click to get an
+error. A design now says for itself whether it is finished
+(`DesignInfo.built`), and the six are listed as plans, at the end, and cannot
+be picked.
+
+## A phone is where a family history gets looked at
+
+Standing in a churchyard; sitting with an aunt who has the photograph you
+need. Nothing is removed at 380 pixels, it is FOLDED: the two sidebars slide
+over the chart, the header's tools fold into one menu, the profile becomes a
+sheet. Same DOM, same ids, one set of handlers — a phone version would drift.
+
+Pinch and drag come off the same pointer events, and `touch-action: none` on
+the canvas is what lets a finger drag the chart instead of scrolling the page
+underneath it.
+
+## Nothing in the browser is compiled until it runs
+
+Python fails a test somewhere the moment a module has a typo in it. The
+front-end modules are not read by anything in the test suite, so a syntax
+error in one sails through a completely green run and then takes the WHOLE
+interface down — every module, because one that fails to parse stops the
+import graph. A regular expression written across two lines with Python's
+`/x` flag on the end did exactly that, and the window came up as an empty
+grey rectangle with a working header. `tests/test_web.py` parses every module
+with node.
+
+## Nobody dies before their own children are born
+
+The sample generator drew a death age when it made each person, which is
+before it knows whether they went on to have a family: eighty people in a
+four-hundred-person file died before their own children were born, one of
+them a man dead at two with five sons. Deaths are now settled after the
+pedigree is built, against every event the person takes part in. A father may
+leave a child born after him and a mother may not, which is the one place the
+rule genuinely differs by sex.
+
+`graph/validate.py` gained the check that would have caught it, because it is
+also the commonest way two families get joined by mistake: two men of the
+same name in the same parish, and the children of the younger hung on the
+father of the elder.

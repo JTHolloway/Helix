@@ -10,6 +10,11 @@
 <body data-mode="simple">
 
 <header class="bar">
+  <!-- On a narrow screen the two sidebars slide over the chart instead of
+       sitting beside it, so each needs a way in. Both buttons are hidden on
+       a wide screen, where the panels are simply there. -->
+  <button id="menuBtn" class="ghost icon narrow" aria-expanded="false"
+    title="Show the panel">☰</button>
   <div class="brand">Helix<span id="proj"></span></div>
   <div class="grow"></div>
   <div class="segmented" role="group" aria-label="What this window is for">
@@ -20,25 +25,35 @@
   </div>
   <input id="search" type="search" placeholder="Find a person…" autocomplete="off">
   <div id="results" class="results" hidden></div>
-  <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶</button>
-  <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷</button>
-  <button id="importBtn" class="ghost" title="Add people from a GEDCOM or a spreadsheet">Import</button>
-  <button id="statsBtn" class="ghost" title="What the file says about the family as a whole (N)">Numbers</button>
-  <button id="timelineBtn" class="ghost" title="Every birth, marriage and death in order (T)">Timeline</button>
-  <button id="libBtn" class="ghost" title="Which family is open, and where your files are kept (O)">Family</button>
-  <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
-  <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
-  <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
+  <!-- Nine buttons fit across a laptop and not across a phone, so on a
+       phone they fold into one menu. Same buttons, same handlers — the
+       container moves, not the controls. -->
+  <button id="toolsBtn" class="ghost icon narrow" aria-expanded="false"
+    title="More">⋯</button>
+  <div id="tools" class="tools">
+    <button id="undoBtn" class="ghost icon" title="Undo (Ctrl-Z)">↶<span class="lbl">Undo</span></button>
+    <button id="redoBtn" class="ghost icon" title="Redo (Ctrl-Y)">↷<span class="lbl">Redo</span></button>
+    <button id="importBtn" class="ghost" title="Add people from a GEDCOM or a spreadsheet">Import</button>
+    <button id="statsBtn" class="ghost" title="What the file says about the family as a whole (N)">Numbers</button>
+    <button id="timelineBtn" class="ghost" title="Every birth, marriage and death in order (T)">Timeline</button>
+    <button id="relateBtn" class="ghost" title="How are these two related? (R)">Relate</button>
+    <button id="libBtn" class="ghost" title="Which family is open, and where your files are kept (O)">Family</button>
+    <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
+    <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
+    <button id="modeBtn" class="ghost" title="Show every control">Advanced</button>
+  </div>
   <span id="saved" class="saved" title="Every change is written to your family file the moment you make it">Saved</span>
   <button id="exportBtn" class="primary">Export</button>
 </header>
 
 <main>
+  <div id="scrim" class="scrim" hidden></div>
   <!-- ──────────────────── LEFT · EXPLORE ──────────────────────── -->
   <!-- Everybody in the file, in tabs, closest relation first. The order is
        the one people name their family in, not the alphabet and not the
        arithmetic: nobody puts their grandmother above their sister. -->
   <aside id="kin">
+    <button class="close narrow drawerclose" title="Close">×</button>
     <section class="panel open" data-panel="scope">
       <h2>How far the tree spreads</h2>
       <label>Cousins
@@ -97,10 +112,15 @@
 
   <!-- ──────────────────── LEFT · BUILD ────────────────────────── -->
   <aside id="left" hidden>
+    <button class="close narrow drawerclose" title="Close">×</button>
     <section class="panel open" data-panel="design">
       <h2>1 · Choose a look</h2>
       <div id="gallery" class="gallery"></div>
       <p class="hint" id="designBlurb"></p>
+      <!-- Specified and not built. Listed rather than hidden, because
+           somebody choosing a design should know what is coming — but they
+           are not pictures you can click into an error. -->
+      <details class="planned" id="planned" hidden></details>
     </section>
 
     <section class="panel open" data-panel="show">
@@ -331,6 +351,21 @@
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
 
+<!-- THE SAME FAMILY, AS SOMEBODY ELSE'S TREE. Every relation in the program
+     is measured from one person, so changing that person is not a setting —
+     it is a different document about the same family. A niece who wants her
+     own tree gets a file of her own, and nothing she does in it reaches back
+     into yours. -->
+<dialog id="forDlg">
+  <h2>Make this tree for somebody else</h2>
+  <p class="hint">A copy of everything you have, with them at the centre.
+    Yours is not touched.</p>
+  <input id="forFind" type="search" placeholder="Whose tree will it be?"
+    autocomplete="off">
+  <div id="forBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
 <!-- WHAT THE FILE SAYS ABOUT THE FAMILY AS A WHOLE. A chart answers "who
      was related to whom"; these are the questions it cannot: how long
      people lived, where they were, and how much of your own ancestry is
@@ -340,6 +375,29 @@
   <p class="hint">Worked out from what is in the file. People with no dates
     are not counted, and each figure says how many are behind it.</p>
   <div id="statsBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
+<!-- HOW ARE THESE TWO RELATED? The question a family history gets asked more
+     than any other, and until now the program could only answer it about
+     the root person. Any two people, the path between them through the
+     ancestor they share, and what that means for a DNA test. -->
+<dialog id="relateDlg">
+  <h2>How are these two related?</h2>
+  <div class="relpick">
+    <label>Start with
+      <input id="relA" type="search" placeholder="Type a name…" autocomplete="off"
+        role="combobox" aria-expanded="false" aria-controls="relAList">
+      <div id="relAList" class="results inline" hidden></div>
+    </label>
+    <button id="relSwap" class="ghost icon" title="Swap them round">⇄</button>
+    <label>and
+      <input id="relB" type="search" placeholder="Type a name…" autocomplete="off"
+        role="combobox" aria-expanded="false" aria-controls="relBList">
+      <div id="relBList" class="results inline" hidden></div>
+    </label>
+  </div>
+  <div id="relBody"></div>
   <form method="dialog"><button class="ghost">Close</button></form>
 </dialog>
 
@@ -360,6 +418,8 @@
     same people the chart does. A profile carries what is known; the research
     list prints on its own sheet.</p>
   <div class="exports">
+    <button data-pr="records" class="primary">The record book — everyone,
+      numbered and cross-referenced, for a folder</button>
     <button data-pr="profile">This person's profile</button>
     <button data-pr="profiles">Everyone on the chart — one profile per page</button>
     <button data-pr="profiles-all">Everyone in the file — one profile per page</button>

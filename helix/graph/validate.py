@@ -101,6 +101,29 @@ def validate(graph) -> list[Issue]:
                                  f"{MIN_PARENT_AGE} when {p.full_name} was "
                                  f"born.", pid))
 
+            # --- a child born after their parent died ---------------------
+            #
+            # THE COMMONEST WAY TWO FAMILIES GET JOINED BY MISTAKE, and the
+            # check the program was missing: two men of the same name in the
+            # same parish, and the children of the younger are hung on the
+            # father of the elder. It shows up as a man who died in 1778
+            # with a son born in 1799.
+            #
+            # A widow bears a child after her husband dies, so a FATHER is
+            # allowed the nine months it takes. A mother is not, and that is
+            # the one place the rule genuinely differs by sex.
+            after = _min_gap_years(pp.death, p.birth)
+            allowed = 0.77 if pp.sex == "M" else 0.0
+            if after is not None and after > allowed:
+                out.append(Issue(
+                    "error", "born_after_parent_died",
+                    f"{p.full_name} was born {int(after)} "
+                    f"{'year' if int(after) == 1 else 'years'} after "
+                    f"{pp.full_name} died ({pp.death.display}, then "
+                    f"{p.birth.display}). Either a date is wrong or this is "
+                    f"a different {pp.full_name} — check the parish "
+                    f"register for two of the name.", pid))
+
         # --- structural ----------------------------------------------------
         if len(p.child_of_all) > 1 and not p.child_of:
             out.append(Issue("error", "no_primary_parents",

@@ -775,26 +775,51 @@ def test_a_middle_name_is_two_boxes_and_one_field(family):
 
 
 # -------------------------------------------- families that married in ----
-def test_a_family_that_married_in_is_its_own_kind_of_job(family):
-    """Ranked purely by score a blood ancestor's missing birth year always
-    beats a whole in-law family nobody has begun -- correct arithmetic, and
-    it means that job is never seen. They are offered as their own list."""
+def test_nobody_is_told_to_research_an_in_laws_parents(family):
+    """WHOSE LINES ARE WORTH FOLLOWING is decided by the root person, and
+    only by that. Somebody who married into the family is at every
+    gathering and is not somebody whose parents you are researching --
+    their line is a different family's line. Asked for it anyway, the panel
+    filled with questions about surnames nobody in the family carries."""
     c, ids, _db = family
-    d = c.get("gaps", limit=200, **{"all": "1"})
-    assert any(g["key"] == "in_laws" for g in d["groups"]), \
-        f"no in-law group in {[g['key'] for g in d['groups']]}"
-    only = c.get("gaps", limit=200, kind="in_laws", **{"all": "1"})
-    assert only["gaps"], "the in-law list is empty"
-    for g in only["gaps"]:
-        assert g["kind"] == "in_laws"
-        assert "branch nobody has started" in g["why"]
-        assert g["where"], "and it still says where to look"
+    d = c.get("gaps", limit=400, **{"all": "1"})
+    names = {p["id"]: p for p in c.get("meta")["people"]}
+    rel = c.get("relatives")
+    married = {p["id"] for g in rel["groups"] if g["key"] == "married_in"
+               for p in g["people"]}
+    assert married, "the fixture has nobody who married in"
+    for g in d["gaps"]:
+        assert not (g["kind"] == "parents" and g["pid"] in married), \
+            f"asked who {g['name']}'s parents were, and they married in"
+    assert not any(g["key"] == "in_laws" for g in d["groups"])
 
 
-def test_the_summary_counts_the_unstarted_families(family):
+def test_moving_the_root_is_what_makes_a_line_worth_following(family):
+    """The same woman, asked about from two different chairs. Married into
+    the family she is a stranger's daughter; make her grandchild the root
+    and she is a grandmother, her line is the direct line, and her parents
+    are the first question on the list. There is no setting for this: it is
+    what the root person MEANS."""
     c, ids, _db = family
-    d = c.get("gaps", limit=200, **{"all": "1"})
-    assert "married in" in d["summary"]["headline"]
+    # Laura married the subject's uncle. Put her children in the marriage,
+    # so she is a mother rather than only a wife -- which is the shape the
+    # question is really about.
+    laura = next(p["id"] for g in c.get("relatives")["groups"]
+                 for p in g["people"] if p["name"] == "Laura Whitcombe")
+    u = c.get("person", id=laura)["families"][0]["union_id"]
+    kids = [p["id"] for p in c.get("meta")["people"]
+            if p["name"] in ("Alice Whitcombe", "Jack Whitcombe")]
+    for kid in kids:
+        c.post("union/child", {"union_id": u, "person_id": kid,
+                               "action": "attach"})
+
+    asked = lambda: {g["pid"] for g in c.get("gaps", limit=400,
+                                             **{"all": "1"})["gaps"]
+                     if g["kind"] == "parents"}
+    assert laura not in asked(), "asked about an in-law's parents"
+    c.post("subject", {"id": kids[0]})            # the chart moves to Alice
+    assert laura in asked(), \
+        "made the root her daughter and still nobody asks about her parents"
 
 
 # ------------------------------------------------------- related lines ----

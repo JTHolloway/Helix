@@ -296,6 +296,173 @@ def duplicate(path: str | Path) -> Path:
     return dest
 
 
+def copy_for(path: str | Path, person_id: str, *, title: str = "",
+             prune: bool = False, dry_run: bool = False) -> dict:
+    """The same family, as somebody else's tree.
+
+    WHY THIS IS A WHOLE FEATURE AND NOT A SETTING. Every relation in this
+    program is measured from one person: who counts as a cousin, whose lines
+    are worth researching, what the chart puts at its centre, what the record
+    book calls each entry. Change that person and you have not changed a
+    preference — you have a different document about the same family.
+
+    So a niece who wants her own tree gets a FILE OF HER OWN. The original is
+    not touched, not linked to and not consulted again: she can add her
+    mother's family, delete a branch, get the dates wrong, and none of it
+    reaches back. That is what makes it safe to hand over.
+
+    PRUNING, and why it is offered rather than done. Her father's brother's
+    wife's parents are in the file and are no relation to her at all. Leaving
+    them in is not wrong exactly -- they are somebody's family -- but they
+    are a third of a chart she cannot read and a research list about
+    strangers. So the branches with no path to her are offered up, BY NAME
+    and with a count, and she decides. Left in, nothing happens; taken out,
+    they are retired the ordinary way and one Ctrl-Z in the new file brings
+    them back.
+
+    Returns what was done, or -- with `dry_run` -- what WOULD be done, which
+    is what the interface asks for first so the question can be put in front
+    of somebody with real names in it.
+    """
+    from ..graph.build import load
+    from ..graph.kinship import Kinship
+    from ..store.db import connect, set_setting
+    from ..store.records import Edit
+    from ..store.archive import _copy_consistent
+
+    src = Path(path)
+    con = connect(src, create=False)
+    g = load(con)
+    if person_id not in g.people:
+        con.close()
+        raise ValueError("Choose somebody who is in this family file.")
+    who = g.people[person_id]
+    kin = Kinship(g, person_id)
+
+    # NO PATH TO THEM AT ALL. Not blood, not marriage, not a marriage to
+    # somebody they are related to -- `Kinship` has already worked out all
+    # three, and this reads its answer rather than deciding again.
+    strangers = sorted(
+        (pid for pid in g.people
+         if kin.of(pid).group == "unrelated" and pid != person_id),
+        key=lambda p: (g.people[p].surname or "", g.people[p].given or ""))
+
+    # Grouped into FAMILIES, because "leave out 34 people" is a number
+    # nobody can check and "Michaela Denton's own family, 34 people" is a
+    # decision somebody can actually make.
+    #
+    # A family here is a connected lump: parents, children and partners
+    # followed until it stops. Grouped by ancestry alone a woman and her own
+    # brother came out as two separate branches, which is two questions
+    # about one family and the wrong two.
+    rest = set(strangers)
+    branches: list[dict] = []
+    while rest:
+        seed = next(iter(rest))
+        lump, queue = set(), [seed]
+        while queue:
+            x = queue.pop()
+            if x in lump or x not in rest:
+                continue
+            lump.add(x)
+            queue.extend(g.parents(x, primary_only=False))
+            queue.extend(g.children(x))
+            queue.extend(g.partners(x))
+        rest -= lump
+        # WHO IN THE FILE THIS LUMP HANGS OFF, because that is the name the
+        # person deciding will recognise. Michaela's parents and her brother
+        # are three strangers with a Denton surname; "Michaela Denton's own
+        # family" is a thing somebody can say yes or no to.
+        #
+        # Looked for through partners ALONE it was not found: the bridge is
+        # usually the married-in person, and she is her brother's SISTER,
+        # not anybody's partner in this lump. So every kind of link counts.
+        touching: list[str] = []
+        for x in sorted(lump):
+            for near in (g.partners(x) + g.children(x)
+                         + g.parents(x, primary_only=False)
+                         + [c for u in g.people[x].child_of_all
+                            for c in g.unions[u].children]):
+                if near in g.people and near not in lump \
+                        and kin.of(near).group != "unrelated":
+                    touching.append(near)
+        via = ""
+        if touching:
+            # The married-in person first: they are the join, and everybody
+            # else is only near it.
+            touching.sort(key=lambda p: (kin.of(p).group != "married_in",
+                                         kin.of(p).rank))
+            via = g.people[touching[0]].full_name
+        # The oldest of them is the one to name a nameless branch after.
+        head = min(lump, key=lambda p: (g.people[p].birth.sort_value or 9e9,
+                                        g.people[p].full_name))
+        branches.append({
+            "id": head, "name": g.people[head].full_name,
+            "people": sorted(lump), "count": len(lump),
+            "through": via,
+            "label": (f"{via}'s own family" if via else
+                      f"{g.people[head].full_name} and their line"),
+            "blurb": f"{len(lump)} " + ("person" if len(lump) == 1
+                                        else "people"),
+            "names": [g.people[p].full_name for p in sorted(
+                lump, key=lambda p: (g.people[p].birth.sort_value or 9e9))][:6],
+        })
+    branches.sort(key=lambda b: (-b["count"], b["label"]))
+
+    plan = {
+        "root": {"id": person_id, "name": who.full_name,
+                 "life": who.lifespan},
+        "people": len(g.people),
+        "unrelated": len(strangers),
+        "branches": branches,
+        "title": title or f"{who.short_name}'s family",
+    }
+    if dry_run:
+        con.close()
+        return plan
+
+    con.close()
+    dest = unique_path(plan["title"], src.parent)
+    _copy_consistent(src, dest)
+    media = src.with_name(src.stem + "-media")
+    if media.is_dir():
+        shutil.copytree(media, dest.with_name(dest.stem + "-media"),
+                        dirs_exist_ok=True)
+
+    out = connect(dest, create=False)
+    set_setting(out, "project_title", plan["title"])
+    set_setting(out, "subject_person_id", person_id)
+    removed = 0
+    if prune and strangers:
+        # ONE undoable step, so the whole pruning goes back together. Retire
+        # and not delete: rule seven, and the reason somebody can hand this
+        # file to a relative without holding their breath.
+        with Edit(out, f"Leave out {len(strangers)} people no relation "
+                       f"to {who.short_name}") as e:
+            for pid in strangers:
+                e.update("person", {"id": pid}, {"active": 0})
+                for r in out.execute("SELECT union_id FROM union_partner "
+                                     "WHERE person_id=?", (pid,)).fetchall():
+                    e.delete("union_partner",
+                             {"union_id": r["union_id"], "person_id": pid})
+                for r in out.execute("SELECT union_id FROM union_child "
+                                     "WHERE person_id=?", (pid,)).fetchall():
+                    e.delete("union_child",
+                             {"union_id": r["union_id"], "person_id": pid})
+                removed += 1
+    out.commit()
+    out.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    out.close()
+    remember(dest)
+    return {**plan, "path": str(dest), "removed": removed,
+            "message": (f"{plan['title']} is a file of its own, with "
+                        f"{who.short_name} at the centre."
+                        + (f" {removed} people who are no relation to "
+                           f"{who.short_name} were left out — open it and "
+                           f"press Ctrl-Z to bring them back."
+                           if removed else ""))}
+
+
 def reveal(path: str | Path) -> bool:
     """Show the file in Finder or Explorer.
 

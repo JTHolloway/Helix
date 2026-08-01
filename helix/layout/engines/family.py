@@ -1017,6 +1017,34 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # own, attached to nothing.
     rule_at: dict[frozenset, float] = {}
 
+    # A COUPLE WHO NEVER MARRIED. The tie between two names on this chart
+    # means "these two were a couple", and for most of them that is a
+    # marriage. For some it is not, and the chart has to be able to say so
+    # without a legend and without a second kind of line.
+    #
+    # So it is the SAME tie with a break struck through the middle of it, at
+    # a slant no other mark on the chart uses. It reads the way a break in a
+    # line always reads -- something is not joined -- and it survives being
+    # cut in wood at a millimetre and a half, which a dashed line does not:
+    # the dashes fall between the laser's steps and come out as a solid line
+    # or as nothing.
+    #
+    # NOT DIVORCE. A couple who married and divorced were married, the date
+    # is a fact, and it stays on the chart as a marriage.
+    def mark_kind(a_pid, b_pid, r, t_mid, tick):
+        u = graph.union_between(a_pid, b_pid)
+        if u is None or u.married:
+            return
+        d = tick * 0.62
+        dt = (d / max(r, 1e-6)) * 1.15          # the same length, as an angle
+        plan.add(Element(
+            kind="path", layer="ENGRAVE",
+            d=G.polyline([G.polar(cx, cy, r - d, t_mid - dt),
+                          G.polar(cx, cy, r + d, t_mid + dt)]),
+            stroke=style.get("lines.marriage_colour", col),
+            stroke_width=lw * 0.9, fill="none",
+            person_id=a_pid, role="not_married", z=9))
+
     for cid, members in cells.items():
         members.sort(key=lambda x: (x.row, x.tc))
         split = len(members) > 1 and all(m.row == 0 for m in members)
@@ -1053,6 +1081,12 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                                  stroke_width=lw * 0.9, fill="none",
                                  person_id=a.pid, line_id=cid,
                                  role="marriage", z=8))
+                # The MIDDLE of the short way round, which is not the mean
+                # of the two angles for a couple lying either side of the
+                # start angle -- the same trap `short_arc` exists for.
+                ta = theta(a.tc)
+                mark_kind(a.pid, b.pid, r,
+                          (ta + _near(theta(b.tc), ta)) / 2, size * 0.5)
                 if k:
                     # the divider, across the name the two marriages share
                     plan.add(Element(
@@ -1087,6 +1121,7 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
                              stroke=style.get("lines.marriage_colour", col),
                              stroke_width=lw * 0.6, fill="none",
                              person_id=sl.pid, role="marriage", z=8))
+            mark_kind(sl.pid, members[k + 1].pid, r, mid, size * 0.45)
 
     # ---- 4. one stem per family, one arc per sibling group ----------------
     #
@@ -1562,8 +1597,13 @@ def radial_family(graph, s: LayoutSettings, style) -> RenderPlan:
     # On a full disc the key goes in the hole, where there is room and where
     # the cut line will reach it. On a fan it goes in the corner of the
     # plaque, which the cut line also reaches.
+    # The key says what the marks on THIS chart mean, so the line about
+    # couples who never married appears only on a chart that has one.
+    # Explained on every chart it would be four hundred charts carrying a
+    # note about something not on them.
     _key(plan, style, W, H, margin, lw, col,
-         at=(cx, cy) if disc else None, maxw=inner * 1.7 if disc else 0.0)
+         at=(cx, cy) if disc else None, maxw=inner * 1.7 if disc else 0.0,
+         unmarried=any(e.role == "not_married" for e in plan.elements))
     return plan
 
 
@@ -1732,7 +1772,8 @@ def _thread(graph, s) -> set:
     return set(thread(graph, s.subject_id).members)
 
 
-def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0):
+def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0,
+         unmarried=False):
     """Four lines. A chart that outlives its maker has to say what its own
     marks mean.
 
@@ -1750,6 +1791,9 @@ def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0):
             ("arc", "an arc over brothers and sisters"),
             ("stem", "a stem from a couple to their children"),
             ("chord", "a marriage between two people already on the chart")]
+    if unmarried:
+        rows.insert(1, ("nomarr", "a break in that line — a couple who "
+                                  "never married"))
     need = max(est_text_width(t, size) for _, t in rows) + 12
     if maxw > 0 and need > maxw:
         size *= maxw / need
@@ -1779,6 +1823,18 @@ def _key(plan, style, W, H, margin, lw, col, at=None, maxw=0.0):
                              d=f"M {x:.3f},{yy:.3f} L {x + 7:.3f},{yy:.3f}",
                              stroke=style.get("lines.marriage_colour", col),
                              stroke_width=lw * 0.55, fill="none",
+                             role="key", z=90))
+        elif kind == "nomarr":
+            plan.add(Element(kind="path", layer="ENGRAVE",
+                             d=f"M {x:.3f},{yy:.3f} L {x + 7:.3f},{yy:.3f}",
+                             stroke=style.get("lines.marriage_colour", col),
+                             stroke_width=lw * 0.55, fill="none",
+                             role="key", z=90))
+            plan.add(Element(kind="path", layer="ENGRAVE",
+                             d=f"M {x + 2.6:.3f},{yy + 1.3:.3f} "
+                               f"L {x + 4.4:.3f},{yy - 1.3:.3f}",
+                             stroke=style.get("lines.marriage_colour", col),
+                             stroke_width=lw * 0.8, fill="none",
                              role="key", z=90))
         else:
             plan.add(Element(kind="path", layer="ENGRAVE",

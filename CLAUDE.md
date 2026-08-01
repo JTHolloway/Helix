@@ -2,7 +2,7 @@
 
 A genealogy program that renders family trees as laser-cuttable charts, and
 keeps everything you know about the people on them. Python 3.11+, **zero
-required dependencies**, 528 tests.
+required dependencies**, 548 tests.
 
 ## Read this before anything else
 
@@ -30,6 +30,14 @@ pre-flight that passes. Blocker 3 is built too: `helix/io/gedcom/` reads and wri
 round trip through 463 people is exact) and `helix/io/csv_import.py` takes a
 relative's spreadsheet. `BLOCKERS.md` lists what is left, none of it
 blocking.
+
+**The root person is the whole document.** Every relation is measured from
+one person, so changing the root is not a preference — it is a different
+document about the same family. `desktop/library.copy_for` is that idea made
+into a feature: a copy of the file with somebody else at the centre, offering
+by name to leave out the branches that are no relation to them. Nothing
+reaches back into the original. It is also why nobody is told to research an
+in-law's parents: move the root and the same question appears on its own.
 
 **It is also an ancestry program now, not only a chart generator.**
 `helix/graph/kinship.py` is the keystone: it turns "how are we related" into
@@ -87,7 +95,7 @@ Then read, in this order:
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 528 tests, must stay green
+python3 -m pytest tests -q      # 548 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 
@@ -143,6 +151,13 @@ hard way and each names the failure it prevents.
 - **A highlight rule must not set `fill` on linework.** The chart's paths are
   drawn with `fill:none` and mean it; one rule setting both stroke and fill
   turned the whole disc into a solid red shape.
+- **Nothing in the browser is compiled until it runs.** A syntax error in one
+  front-end module takes the WHOLE interface down — every module, because one
+  that fails to parse stops the import graph — and sails through a green test
+  run. `tests/test_web.py` parses every module with node. Keep it passing.
+- **A design says for itself whether it is built.** Six of the twenty are
+  specified and not implemented; `DesignInfo.built` is what keeps them out of
+  the gallery instead of letting somebody click one into an error.
 - **The window opens on `radial_family`.** It opened on `radial_rings` for a
   long time, so the flagship — the design every layout document describes,
   and the only one that draws the pruned-branch marks — was something you had

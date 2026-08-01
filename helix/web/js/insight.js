@@ -276,3 +276,117 @@ export async function showConsanguinity(host, onSelect) {
   host.querySelectorAll('[data-go]').forEach(b =>
     b.addEventListener('click', () => onSelect(b.dataset.go)));
 }
+
+// ───────────────────────────────────── how are these two related? ─────────
+//
+// The question a family history is asked more often than any other, and
+// until this the program could only answer it about one person — whoever
+// the chart happened to be centred on.
+//
+// THE PATH IS THE ANSWER. "Second cousins once removed" is a label nobody
+// repeats; "up to William Whitcombe, who was her great-grandfather and his
+// great-great-grandfather" is what actually gets said, and it is the only
+// form somebody can check against their own research. So the path is the
+// biggest thing on the screen and the label sits above it.
+export function relateScreen(host, { onSelect, people }) {
+  const A = document.querySelector('#relA'), B = document.querySelector('#relB');
+  const state = { a: '', b: '' };
+
+  // Typing a name and picking one from the list. The same two lines as the
+  // header search, kept here so the dialogue works with the header closed.
+  const picker = (input, listEl, key) => {
+    const close = () => { listEl.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      state[key] = '';
+      if (q.length < 2) return close();
+      const hits = people().filter(p => p.name.toLowerCase().includes(q)).slice(0, 8);
+      if (!hits.length) return close();
+      listEl.innerHTML = hits.map(p =>
+        `<button type="button" data-id="${esc(p.id)}" data-name="${esc(p.name)}"
+           >${esc(p.name)} <small>${esc(p.life || '')}</small></button>`).join('');
+      listEl.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+      listEl.querySelectorAll('button').forEach(b =>
+        b.addEventListener('click', () => {
+          state[key] = b.dataset.id;
+          // The NAME, not the button's text — that carries the lifespan in
+          // a <small>, and the box came back reading "Heather Whitcombe 198".
+          input.value = b.dataset.name;
+          close(); run();
+        }));
+    });
+    input.addEventListener('blur', () => setTimeout(close, 160));
+  };
+  picker(A, document.querySelector('#relAList'), 'a');
+  picker(B, document.querySelector('#relBList'), 'b');
+
+  document.querySelector('#relSwap').addEventListener('click', () => {
+    [state.a, state.b] = [state.b, state.a];
+    [A.value, B.value] = [B.value, A.value];
+    run();
+  });
+
+  async function run() {
+    if (!state.a || !state.b) {
+      host.innerHTML = '<p class="hint">Pick two people and Helix will work '
+        + 'out how they are related.</p>';
+      return;
+    }
+    if (state.a === state.b) {
+      host.innerHTML = '<div class="verdict nowt"><b>The same person</b></div>';
+      return;
+    }
+    host.innerHTML = '<p class="hint">Working it out…</p>';
+    const d = await get('relate', { a: state.a, b: state.b });
+    if (!d.ok) { host.innerHTML = `<p class="hint">${esc(d.error)}</p>`; return; }
+    draw(d);
+  }
+
+  function draw(d) {
+    const a = d.people.a, b = d.people.b;
+    // Said in both directions, because half the time the person asking
+    // wants the other one: "he is her second cousin" and "she is his".
+    const verdict = d.related
+      ? `<div class="verdict"><b>${esc(b.name)} is ${esc(a.name)}'s ${
+           esc(d.label)}</b><span>${esc(a.name)} is ${esc(b.name)}'s ${
+           esc(d.a_of_b)}</span></div>`
+      : `<div class="verdict nowt"><b>No relation has been recorded</b>
+           <span>They may still be related — nobody has entered the link
+           yet.</span></div>`;
+
+    const path = d.path.length ? `<h4>The way through</h4>
+      <ol class="relpath">${d.path.map(s => `<li class="${
+        s.move === 'top' ? 'top' : ''}">
+        <button data-go="${esc(s.id)}">${esc(s.name)}</button>
+        <small>${esc(s.life || '')}</small>
+        ${s.note ? `<small>${esc(s.note)}</small>` : ''}
+      </li>`).join('')}</ol>` : '';
+
+    const facts = `<div class="relfacts">
+      <div><b>${esc(d.dna_display || '0%')}</b>
+        <span>DNA expected in common</span></div>
+      ${d.married ? `<div><b>${esc(d.inbreeding
+          ? d.inbreeding.percent : '0%')}</b>
+        <span>a child of theirs would carry</span></div>`
+        : `<div><b>${d.kin && d.kin.steps < 99 ? d.kin.steps : '—'}</b>
+        <span>steps apart in the tree</span></div>`}
+    </div>`;
+
+    host.innerHTML = verdict + path + facts
+      + `<p class="hint">${esc(d.note)} DNA is an expected average — real
+         sharing varies either side of it.</p>`;
+    host.querySelectorAll('[data-go]').forEach(el =>
+      el.addEventListener('click', () => onSelect(el.dataset.go)));
+  }
+
+  // Somebody is usually asking about the person already on screen.
+  return {
+    open(seedA, seedB) {
+      const find = id => (people().find(p => p.id === id) || {});
+      if (seedA) { state.a = seedA; A.value = find(seedA).name || ''; }
+      if (seedB) { state.b = seedB; B.value = find(seedB).name || ''; }
+      run();
+    }
+  };
+}

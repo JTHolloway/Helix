@@ -26,7 +26,7 @@ export const HALO = [
 ];
 
 export async function show(host, pid, hooks) {
-  const { onSelect, onEdit, onToast, onChanged, onHighlight } = hooks;
+  const { onSelect, onEdit, onToast, onChanged, onHighlight, onRelate } = hooks;
   const [d, k] = await Promise.all([get('person', { id: pid }),
                                     get('kin', { id: pid })]);
   const port = (d.photos || []).find(p => p.portrait);
@@ -35,10 +35,10 @@ export async function show(host, pid, hooks) {
   host.innerHTML = `
     <div class="pro">
       <div class="prohead">
-        <label class="drop" id="dropZone" title="Add a photograph">
+        <label class="drop" id="dropZone" title="Add a photograph, a scan or a recording">
           ${port
             ? `<img src="/api/media?name=${encodeURIComponent(port.name)}" alt="">`
-            : `<span class="ph">${esc(initials(d.name))}<em>add a photo</em></span>`}
+            : `<span class="ph">${esc(initials(d.name))}<em>add a photo or a scan</em></span>`}
           <input type="file" id="photoIn" accept="image/*" hidden>
         </label>
         <div class="protxt">
@@ -100,7 +100,7 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
 
       <div id="lifeline"></div>
 
-      ${(d.photos || []).length > 1 ? gallery(d.photos) : ''}
+      ${filesBlock(d)}
 
       ${gapsBlock(d)}
 
@@ -116,6 +116,9 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
       </div>
       <div class="proacts">
         <button class="ghost" id="goEdit">Edit this person</button>
+        <button class="ghost" id="goRelate"
+          title="How are they related to somebody else in the file?">Relate
+          to…</button>
         <button class="ghost" id="goPrint">Print this profile</button>
       </div>
     </div>`;
@@ -158,10 +161,20 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     sendPhoto(ev.dataTransfer.files[0]);
   });
 
+  // JavaScript has no extended-regex flag and no multi-line literal: written
+  // across two lines with an /x on the end, this threw "Invalid regular
+  // expression" at parse time and took the WHOLE front end down with it —
+  // no chart, no sidebar, no dialogs, because one bad module stops them all.
+  const OK = /^(image\/|application\/pdf|text\/(plain|markdown|rtf)|application\/rtf|audio\/)/;
+
   async function sendPhoto(file) {
     if (!file) return;
-    if (!/^image\//.test(file.type)) {
-      onToast('That is not a picture. Choose a JPEG or a PNG.'); return;
+    if (!OK.test(file.type || '') &&
+        !/\.(jpe?g|png|webp|gif|heic|tiff?|pdf|txt|md|rtf|mp3|m4a|wav)$/i
+          .test(file.name || '')) {
+      onToast('Helix keeps pictures, PDFs, text and recordings. ' +
+              'Scan a certificate as a PDF or a JPEG and try that.');
+      return;
     }
     const data = await new Promise((res, rej) => {
       const r = new FileReader();
@@ -170,8 +183,10 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
       r.readAsDataURL(file);
     });
     try {
-      await post('person/photo', { id: pid, filename: file.name, data });
-      onToast('Photograph added.');
+      const r = await post('person/photo', { id: pid, filename: file.name,
+                                             data, caption: file.name });
+      onToast(r.kind === 'photo' ? 'Photograph added.'
+              : `Added ${file.name}. Say what it is so you know in ten years.`);
       show(host, pid, hooks);
       onChanged && onChanged();
     } catch (e) { onToast(e.message); }
@@ -180,9 +195,40 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
   host.querySelectorAll('[data-drop]').forEach(b =>
     b.addEventListener('click', async () => {
       await post('person/photo/remove', { id: pid, media_id: b.dataset.drop });
-      onToast('Photograph removed from this person. The file is still in your album.');
+      onToast('Taken off this person. The file is still in your album.');
       show(host, pid, hooks);
     }));
+  host.querySelectorAll('[data-port]').forEach(b =>
+    b.addEventListener('click', async () => {
+      await post('person/photo/portrait', { id: pid, media_id: b.dataset.port });
+      // The one it replaces is DEMOTED, not deleted: `album.attach` clears
+      // the old flag and leaves the row. A face at twenty is not made
+      // worthless by a face at eighty.
+      onToast('Now the one shown. The one it replaces is kept below — '
+            + 'Ctrl-Z puts it back.');
+      show(host, pid, hooks);
+      onChanged && onChanged();
+    }));
+  // WHEN IT WAS TAKEN, or how old they were. Both, because both are things
+  // a family knows about a photograph and neither is worth refusing.
+  host.querySelectorAll('[data-when]').forEach(el => {
+    let t = null;
+    const save = () => post('person/photo/taken',
+      { id: pid, media_id: el.dataset.when, taken: el.value })
+      .then(() => show(host, pid, hooks))
+      .catch(e => onToast(e.message));
+    el.addEventListener('change', save);
+    el.addEventListener('input', () => { clearTimeout(t); t = setTimeout(save, 1200); });
+  });
+  host.querySelectorAll('[data-cap]').forEach(el => {
+    let t = null;
+    el.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => post('person/photo/caption',
+        { id: pid, media_id: el.dataset.cap, caption: el.value })
+        .catch(e => onToast(e.message)), 600);
+    });
+  });
 
   // ---- the facts -------------------------------------------------------
   host.querySelector('#facts').addEventListener('submit', async ev => {
@@ -285,6 +331,8 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
     onChanged && onChanged();
   });
   host.querySelector('#goEdit').addEventListener('click', () => onEdit(pid));
+  host.querySelector('#goRelate').addEventListener('click', () =>
+    onRelate && onRelate(pid));
   host.querySelector('#goPrint').addEventListener('click', () =>
     window.open(`/print/profile?id=${encodeURIComponent(pid)}`, '_blank'));
   host.querySelectorAll('[data-kin]').forEach(b =>
@@ -455,7 +503,7 @@ function inbreedingBlock(d) {
           stops four generations back cannot see further.</small>
       </div>`}
     ${mine.length ? `<ul class="relmarried">${mine.map(m => `<li>
-      Married <b>${esc(m.name)}</b>, their ${esc(m.label)}${
+      ${esc(m.word || 'Married')} <b>${esc(m.name)}</b>, their ${esc(m.label)}${
         m.ancestor_names.length
           ? ` — both descend from ${esc(m.ancestor_names.join(' and '))}` : ''}.
       </li>`).join('')}</ul>` : ''}`;
@@ -516,11 +564,63 @@ function field(id, label, value, ph) {
     ph ? ` placeholder="${esc(ph)}"` : ''}></label>`;
 }
 
-function gallery(photos) {
-  return '<h4>Photographs</h4><div class="progal">' + photos.map(p =>
-    `<figure><img src="/api/media?name=${encodeURIComponent(p.name)}" alt="">
-      <button class="x" data-drop="${esc(p.media_id)}" title="Take this off
-      this person">×</button></figure>`).join('') + '</div>';
+// PICTURES AND PAPERS. The things people actually have in a shoebox are the
+// order of service from a funeral, a scanned certificate, a letter, a will —
+// the evidence behind everything else in the file. They belong next to the
+// person, so they are stored the same way as a photograph and listed here.
+// A FACE OVER A LIFETIME, and the papers behind it.
+//
+// Somebody at twenty and the same person at eighty are two photographs of
+// one person, and replacing the first with the second throws away half of
+// what a family album is for. So the newest is the portrait -- the one on
+// the chart, the profile and the printed record -- and every earlier one
+// stays, in order, with the age they were in it.
+//
+// The age is the whole point of keeping them. A shoebox of undated faces is
+// what a family history is trying to stop being.
+function filesBlock(d) {
+  const all = d.photos || [];
+  const pics = all.filter(x => x.kind === 'photo');
+  const papers = all.filter(x => x.kind !== 'photo');
+  const earlier = pics.filter(p => !p.portrait);
+  if (!all.length) return `<h4>Pictures and papers</h4>
+    <p class="none">Nothing attached yet. Drop a photograph, a scanned
+      certificate or an order of service on the frame above.</p>`;
+  const pic = p => `
+      <figure>
+        <img src="/api/media?name=${encodeURIComponent(p.name)}" alt="">
+        ${p.portrait ? '<i class="isport">shown now</i>'
+          : `<button class="mkport" data-port="${esc(p.media_id)}"
+               title="Show this one instead. The one it replaces is kept."
+               >show this one</button>`}
+        <button class="x" data-drop="${esc(p.media_id)}"
+          title="Take this off this person">×</button>
+        <figcaption>
+          <input class="whenbox" data-when="${esc(p.media_id)}"
+            value="${esc(p.taken)}" placeholder="when? e.g. 1974, or 12">
+          ${p.when ? `<span>${esc(p.when)}</span>` : ''}
+        </figcaption>
+      </figure>`;
+  return `<h4>Pictures and papers</h4>
+    ${pics.length > 1 ? `
+      <p class="hint">The one marked <b>shown now</b> is the one on the chart
+        and on printed records. The others are how they looked before —
+        put a year or an age under each.</p>
+      <div class="progal">${pics.filter(p => p.portrait).map(pic).join('')}
+        ${earlier.map(pic).join('')}</div>` : ''}
+    ${papers.length ? `<ul class="papers">${papers.map(p => `<li>
+      <a href="/api/media?name=${encodeURIComponent(p.name)}&as=${
+        encodeURIComponent(p.caption || p.name)}" target="_blank"
+        class="paperlink">
+        <b>${esc(p.caption || 'Untitled')}</b>
+        <span>${esc(p.kind === 'sound' ? 'recording' : 'document')} ·
+          ${esc(p.name.split('.').pop())}</span>
+      </a>
+      <input class="papercap" data-cap="${esc(p.media_id)}"
+        value="${esc(p.caption)}" placeholder="What is it?">
+      <button class="x" data-drop="${esc(p.media_id)}"
+        title="Take this off this person">×</button>
+    </li>`).join('')}</ul>` : ''}`;
 }
 
 // "Harriet Florence Ann" -> "Harriet" and "Florence Ann".

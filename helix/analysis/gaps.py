@@ -47,7 +47,6 @@ from typing import Optional
 # in a county record office is 5; writing to an archive abroad is 10.
 EFFORT = {
     "parents":     2.0,     # index search, sometimes a certificate
-    "in_laws":     2.0,     # the same search, for somebody who married in
     "spouse":      2.0,
     "birth":       1.6,
     "death":       1.6,
@@ -65,11 +64,6 @@ EFFORT = {
 # colour to one person.
 WEIGHT = {
     "parents":     3.0,
-    # A WHOLE FAMILY NOBODY HAS STARTED. Somebody who married in and has no
-    # parents recorded is not a missing detail -- they are the door to an
-    # entire branch that is not in the file at all, and half of every
-    # descendant's ancestry comes through it.
-    "in_laws":     3.2,
     "spouse":      1.4,
     "birth":       1.5,
     "death":       0.9,
@@ -84,7 +78,6 @@ WEIGHT = {
 
 QUESTION = {
     "parents":     "Who were {name}'s parents?",
-    "in_laws":     "Who were {name}'s parents?",
     "spouse":      "Who did {name} marry?",
     "birth":       "When was {name} born?",
     "death":       "When did {name} die?",
@@ -330,21 +323,39 @@ def _gaps_for(graph, pid: str, reach: dict[str, int], country: str,
                        country=c, name=p.full_name, life=p.lifespan, why=why,
                        where=_where(kind, year, c)))
 
-    if not graph.parents(pid, primary_only=False):
-        if married_in:
-            add("in_laws",
-                f"{p.given_first or 'They'} married into the family and none "
-                f"of their own is in the file. Their parents are the whole "
-                f"of a branch nobody has started"
-                + (f", and {n} {'person' if n == 1 else 'people'} here "
-                   f"descend from it." if n > 1 else "."))
-        else:
-            add("parents", f"The line stops here. {n} "
-                           f"{'person' if n == 1 else 'people'} descend from "
-                           f"{p.given_first or 'them'} with nothing beyond.")
+    # WHOSE LINES ARE WORTH FOLLOWING is decided by who the chart belongs
+    # to, and only by that.
+    #
+    # A person who married into the family is at every gathering and is not
+    # somebody whose parents you are researching. Their line is a different
+    # family's line -- real, and somebody else's. Asked for it anyway, the
+    # panel filled with "who were her mother's parents?" about people whose
+    # surnames nobody in the family carries, and the questions that matter
+    # were pushed off the end.
+    #
+    # This is not a preference dressed up as a rule: it is what the root
+    # person MEANS. Move the root to a grandchild and the same woman is a
+    # grandmother, her line is the direct line, and her parents become the
+    # first question on the list -- with no setting to find and nothing to
+    # switch on. `copy_for` is the whole of that idea, and this is the half
+    # of it that lives here.
+    if not graph.parents(pid, primary_only=False) and not married_in:
+        add("parents", f"The line stops here. {n} "
+                       f"{'person' if n == 1 else 'people'} descend from "
+                       f"{p.given_first or 'them'} with nothing beyond.")
     if not p.given or not p.surname or pid in placeholders:
-        add("name", "Recorded without a full name, so they cannot be "
-                    "searched for in any index.")
+        # A PERSON WITH HALF A NAME IS THE MOST FINDABLE GAP THERE IS.
+        # "Erica", married to a first cousin, is one telephone call away;
+        # a surname on its own three hundred years back is a parish
+        # register. Both are worth asking, and the first is worth asking
+        # first, which is what the reach and the era already do -- this
+        # only makes sure the question names what is missing.
+        got = ("Only a first name is recorded" if p.given and not p.surname
+               else "Only a surname is recorded" if p.surname and not p.given
+               else "No name is recorded at all")
+        add("name", f"{got}. Every index is filed under the part that is "
+                    f"missing, so they cannot be looked up until it is "
+                    f"known.")
     if not p.birth_year:
         add("birth", "No birth year, so nothing else can be dated "
                      "against them.")
@@ -402,12 +413,18 @@ def rank(graph, con=None, *, country: str = "england", limit: int = 40,
         for pid in people:
             k = kin.of(pid)
             if k.group == "married_in":
+                # THEIR OWN LINE IS SOMEBODY ELSE'S RESEARCH -- see
+                # `_gaps_for`, which asks nothing about their parents at
+                # all. What is left is what a chart of THIS family still
+                # wants about them: a birth year, a photograph. Worth
+                # asking, and never above a direct ancestor's.
                 married.add(pid)
-                # through whoever they married: 1.9 for a parent's or
-                # sibling's spouse, falling away with distance
-                through = kin.of(k.through) if k.through else None
-                steps = through.steps if through and through.steps < 99 else 6
-                boost[pid] = max(0.7, 2.0 - 0.22 * steps)
+                boost[pid] = 0.5
+            elif k.group == "unrelated":
+                # Nobody has joined them to the family yet. Whatever is
+                # missing about them, the missing LINK is the question, and
+                # a list of birthplaces is not the way to it.
+                boost[pid] = 0.35
             elif k.blood and k.down == 0:            # a direct ancestor
                 boost[pid] = 3.0 if k.up <= 4 else 2.0
             elif k.blood and k.steps < 99:
@@ -449,15 +466,11 @@ def summary(gaps: list[dict]) -> dict:
     for g in gaps:
         kinds[g["kind"]] = kinds.get(g["kind"], 0) + 1
     ends = kinds.get("parents", 0)
-    inlaw = kinds.get("in_laws", 0)
     bits = []
     if ends:
         bits.append(f"{ends} line{'s' if ends != 1 else ''} "
                     f"stop{'' if ends != 1 else 's'} at a person with no "
                     f"known parents")
-    if inlaw:
-        bits.append(f"{inlaw} {'family has' if inlaw == 1 else 'families have'} "
-                    f"married in and not been started")
     if kinds.get("story"):
         bits.append(f"{kinds['story']} within living memory with nothing "
                     f"written down")

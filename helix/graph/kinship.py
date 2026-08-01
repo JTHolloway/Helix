@@ -293,6 +293,42 @@ class Kinship:
                     continue
                 self.by_id[pid] = self._make(pid, up, down)
 
+        # PASS ONE AND A HALF: BROTHERS AND SISTERS WHOSE PARENTS ARE NOT IN
+        # THE FILE.
+        #
+        # "My father had a brother" is a thing somebody types on their first
+        # evening, long before they know either grandparent's name. It makes
+        # a family with two children in it and NOBODY in the parents' row --
+        # which is honest, and which pass one cannot see, because pass one
+        # walks from person to person and there is no person there to walk
+        # through. The uncle came out as "no known relation", and a chart
+        # narrowed to blood relatives left him off.
+        #
+        # The union itself is the shared ancestor. It stands exactly where
+        # the unnamed couple stands, so two children of it are one step
+        # below a shared parent -- (1, 1), brother and sister -- and
+        # everything downstream follows from that.
+        #
+        # ONLY where the union has no partners in the file. With a parent
+        # present pass one has already measured everybody through them, and
+        # measuring twice is how two answers start to disagree.
+        empty = [u for u in g.unions.values()
+                 if not any(x in g.people for x in u.partners)]
+        if empty:
+            up_of = {subj: 0, **mine}
+            for u in empty:
+                kids = [c for c in u.children if c in g.people]
+                # How far up this family sits: one step above whichever of
+                # its children the subject can already be measured from.
+                base = min((up_of[c] for c in kids if c in up_of), default=None)
+                if base is None:
+                    continue
+                for kid in kids:
+                    for pid, down in g.descendants(kid).items():
+                        if pid in self.by_id or pid == subj:
+                            continue
+                        self.by_id[pid] = self._make(pid, base + 1, down + 1)
+
         # PASS TWO: married in. Somebody with no shared ancestor who is
         # married to somebody who has one. Named for whoever they married,
         # so a cousin's wife reads as "married to your first cousin" and
@@ -306,9 +342,17 @@ class Kinship:
                 if k and k.blood and (best is None or k.rank < best.rank):
                     best = k
             if best is not None:
+                # The subject's OWN husband or wife is the one case where
+                # the pattern breaks: "married to your you" is what it said
+                # for a year, because the subject's own label is "you".
+                if best.pid == subj:
+                    sex = g.people[pid].sex if pid in g.people else "U"
+                    label = {"M": "your husband",
+                             "F": "your wife"}.get(sex, "married to you")
+                else:
+                    label = f"married to your {best.label}"
                 self.by_id[pid] = Kin(
-                    pid=pid, group=MARRIED_IN,
-                    label=f"married to your {best.label}",
+                    pid=pid, group=MARRIED_IN, label=label,
                     steps=best.steps + 1, blood=False, through=best.pid)
             else:
                 self.by_id[pid] = Kin(pid=pid, group=UNRELATED,
@@ -823,3 +867,142 @@ def heritage_display(mix: dict[str, float]) -> list[dict]:
         out.append({"label": "not recorded", "share": 1 - known,
                     "pct": round((1 - known) * 100, 1), "gap": True})
     return out
+
+
+# --------------------------------------------------- any two people ---------
+#
+# "HOW ARE THESE TWO RELATED?" is the question a family history is asked
+# more often than any other, and until this the program could only answer it
+# about one person -- whoever the chart was centred on. Everything needed
+# was already here; what was missing was the path.
+#
+# THE PATH IS THE ANSWER, not the label. "Second cousins once removed" is a
+# fact nobody repeats. "Up to Elias Whitcombe, who was your
+# great-grandfather and her great-great-grandfather" is what gets said at a
+# funeral, and it is also the only form somebody can check against their own
+# research.
+@dataclass(frozen=True)
+class Step:
+    """One person on the path between two others.
+
+    `life` is not decoration. Four Alice Whitcombes in one parish is the
+    ordinary case, not the odd one, and a path that names two of them
+    without dates cannot be checked against anybody's own research.
+    """
+    pid: str
+    name: str
+    move: str = "up"          # up | top | down | married
+    note: str = ""
+    life: str = ""
+
+    def to_dict(self) -> dict:
+        return {"id": self.pid, "name": self.name, "move": self.move,
+                "note": self.note, "life": self.life}
+
+
+@dataclass(frozen=True)
+class Relation:
+    """How two people are related, and the way through."""
+    a: str
+    b: str
+    related: bool = False
+    label: str = "no known relationship"
+    a_of_b: str = ""           # what A is TO B: "her second cousin"
+    b_of_a: str = ""
+    kin: Optional[Kin] = None
+    ancestors: tuple = ()
+    path: tuple = ()
+    dna: Optional[float] = None
+
+    def to_dict(self) -> dict:
+        return {"a": self.a, "b": self.b, "related": self.related,
+                "label": self.label, "a_of_b": self.a_of_b,
+                "b_of_a": self.b_of_a,
+                "kin": self.kin.to_dict() if self.kin else None,
+                "ancestors": list(self.ancestors),
+                "path": [s.to_dict() for s in self.path],
+                "dna": self.dna, "dna_display": dna_display(self.dna)}
+
+
+def _walk_up(graph, start: str, target: str, limit: int = 40) -> list[str]:
+    """The chain of people from `start` up to `target`, both included.
+
+    Breadth-first over parents, so the SHORTEST way up wins. In a file where
+    cousins married, two people share an ancestor by more than one route and
+    the near one is the one that describes the relation.
+    """
+    if start == target:
+        return [start]
+    seen, queue = {start: None}, [start]
+    while queue:
+        cur = queue.pop(0)
+        for par in graph.parents(cur, primary_only=False):
+            if par in seen or par not in graph.people:
+                continue
+            seen[par] = cur
+            if par == target:
+                chain, node = [], par
+                while node is not None:
+                    chain.append(node)
+                    node = seen[node]
+                return list(reversed(chain))
+            if len(seen) < limit * 60:
+                queue.append(par)
+    return []
+
+
+def relate(graph, a: str, b: str, index: Optional["Kinship"] = None) -> Relation:
+    """How A and B are related, with the way through spelt out.
+
+    Reads `Kinship` for the measurement rather than deciding for itself what
+    a cousin is -- rule nine. What it adds is the route: up from A to the
+    ancestor they share, and down from there to B.
+    """
+    if a not in graph.people or b not in graph.people:
+        return Relation(a, b)
+    name = lambda p: graph.people[p].full_name if p in graph.people else "?"
+    life = lambda p: graph.people[p].lifespan if p in graph.people else ""
+    step = lambda p, move, note="": Step(p, name(p), move, note, life(p))
+    if a == b:
+        return Relation(a, b, True, "the same person", "", "",
+                        path=(step(a, "top"),), dna=1.0)
+
+    idx = index or Kinship(graph, a)
+    k = idx.of(b)                       # what B is to A
+    back = Kinship(graph, b).of(a)      # and what A is to B
+    dna = shared_dna(graph, a, b, k)
+
+    if k.blood and k.steps < 99:
+        A, B = graph.ancestors(a), graph.ancestors(b)
+        shared = sorted(x for x in A if x in B
+                        and A[x] == k.up and B[x] == k.down)
+        top = shared[0] if shared else None
+        path: list[Step] = []
+        if top:
+            # Two shared ancestors at the same distance means a COUPLE, and
+            # a couple is the ordinary case -- it is exactly what tells a
+            # full sibling from a half one, and worth twice the DNA. Said on
+            # the one line where the path turns round.
+            both = (f"and {name(shared[1])} — the couple they both descend from"
+                    if len(shared) > 1 else "the nearest ancestor they share")
+            if top in (a, b):
+                both = ""          # a straight line down: nobody "shares" it
+            up = _walk_up(graph, a, top)
+            down = _walk_up(graph, b, top)
+            for pid in up:
+                path.append(step(pid, "top" if pid == top else "up",
+                                 both if pid == top else ""))
+            for pid in reversed(down[:-1]):     # the shared one is already on
+                path.append(step(pid, "down"))
+        return Relation(a, b, True, k.label, back.label, k.label, k,
+                        tuple(shared[:2]), tuple(path), dna)
+
+    if k.group == MARRIED_IN and k.through:
+        thr = relate(graph, a, k.through, idx)
+        path = list(thr.path) + [step(b, "married",
+                                      f"married {name(k.through)}")]
+        return Relation(a, b, True, k.label, back.label, k.label, k,
+                        thr.ancestors, tuple(path), 0.0)
+
+    return Relation(a, b, False, "no known relationship", back.label,
+                    k.label, k, (), (), dna)

@@ -42,7 +42,8 @@ export async function show(host, pid, hooks) {
 
     <div class="group">
       <h5>Parents</h5>
-      ${d.parents.length ? list(d.parents) : '<p class="none">Nobody recorded yet.</p>'}
+      ${d.parents.length ? parentList(d.parents)
+                         : '<p class="none">Nobody recorded yet.</p>'}
       ${room > 0 && !parentSexes.has('M') ? btn('father', '+ Add father') : ''}
       ${room > 0 && !parentSexes.has('F') ? btn('mother', '+ Add mother') : ''}
       ${room > 0 && parentSexes.has('M') && parentSexes.has('F')
@@ -51,9 +52,21 @@ export async function show(host, pid, hooks) {
 
     <div class="group">
       <h5>Partners</h5>
-      ${d.families.filter(f => f.partner).map(f =>
-        `<div class="kinrow"><button data-kin="${esc(f.partner.id)}">${esc(f.partner.name)}</button>
-          <small>${esc(f.partner.life || '')} · ${kids(f.children.length)}</small></div>`
+      ${d.families.filter(f => f.partner).map(f => `
+        <div class="famrow">
+          <div class="kinrow">
+            <button data-kin="${esc(f.partner.id)}">${esc(f.partner.name)}</button>
+            <small>${esc(f.partner.life || '')} · ${kids(f.children.length)}</small>
+            <button class="x" data-unpartner="${esc(f.union_id)}"
+              data-who="${esc(f.partner.id)}" data-name="${esc(f.partner.name)}"
+              title="They were not a couple — take this off">×</button>
+          </div>
+          <label class="kindpick">Were they married?
+            <select data-kind="${esc(f.union_id)}">
+              ${kindOptions(f.kind)}
+            </select>
+          </label>
+        </div>`
       ).join('') || '<p class="none">Nobody recorded yet.</p>'}
       ${btn('partner', '+ Add a partner')}
     </div>
@@ -63,7 +76,7 @@ export async function show(host, pid, hooks) {
       ${d.families.length ? d.families.map(f => `
         <div class="family">
           <h6>${f.partner ? 'with ' + esc(f.partner.name) : 'with someone not recorded'}</h6>
-          ${f.children.length ? list(f.children) : '<p class="none">No children recorded.</p>'}
+          ${f.children.length ? list(f.children, f.union_id) : '<p class="none">No children recorded.</p>'}
           ${btn('child', '+ Add a child', f.union_id)}
           ${f.partner ? '' : btn('partner', '+ Add the other parent', f.union_id)}
         </div>`).join('')
@@ -153,11 +166,85 @@ export async function show(host, pid, hooks) {
   });
   $('#retireBtn').addEventListener('click', () =>
     retire(pid, d.name, msg => { onToast(msg); onChanged(); onSelect(pid); }));
+
+  // ---- married, or not ----------------------------------------------------
+  //
+  // Two people with a child between them are a family whether or not they
+  // ever married, and until this the program could only say "married". It is
+  // recorded on the FAMILY rather than on either person, because it is a
+  // fact about the two of them.
+  host.querySelectorAll('[data-kind]').forEach(sel =>
+    sel.addEventListener('change', async () => {
+      const r = await post('union', { action: 'set_kind',
+                                      union_id: sel.dataset.kind,
+                                      kind: sel.value });
+      if (r.error) return onToast(r.error, 'warn');
+      onToast(sel.value === 'unmarried'
+        ? 'Recorded as a couple who never married. The chart marks the tie '
+          + 'between them, and nothing will say they were married.'
+        : 'Saved.');
+      onChanged();
+    }));
+
+  // ---- taking things off again -------------------------------------------
+  host.querySelectorAll('[data-unpartner]').forEach(b =>
+    b.addEventListener('click', async () => {
+      if (!confirm(`Take ${b.dataset.name} off this family?\n\n`
+                 + `They stay in your file with everything you know about `
+                 + `them — this only says the two were not a couple. `
+                 + `Ctrl-Z puts it back.`)) return;
+      const r = await post('union', { action: 'remove_partner',
+                                      union_id: b.dataset.unpartner,
+                                      person_id: b.dataset.who });
+      if (r.error) return onToast(r.error, 'warn');
+      onToast(`${b.dataset.name} is no longer recorded as a partner. Ctrl-Z undoes it.`);
+      onChanged(); onSelect(pid);
+    }));
+  host.querySelectorAll('[data-unchild]').forEach(b =>
+    b.addEventListener('click', async () => {
+      if (!confirm(`Take ${b.dataset.name} out of this family?\n\n`
+                 + `They stay in your file — this only says these are not `
+                 + `their parents. Ctrl-Z puts it back.`)) return;
+      const r = await post('union/child', { action: 'detach',
+                                            union_id: b.dataset.unchild,
+                                            person_id: b.dataset.who });
+      if (r.error) return onToast(r.error, 'warn');
+      onToast(`${b.dataset.name} is no longer in this family. Ctrl-Z undoes it.`);
+      onChanged(); onSelect(pid);
+    }));
 }
 
-const list = rows => '<div class="kin">' + rows.map(r =>
+// A PARENT HUNG ON THE WRONG PERSON is the commonest thing to want back,
+// and until this there was no way to say so short of deleting them.
+const parentList = rows => '<div class="kin">' + rows.map(r =>
   `<div class="kinrow"><button data-kin="${esc(r.id)}">${esc(r.name)}</button>
-    <small>${esc(r.life || '')}</small></div>`).join('') + '</div>';
+    <small>${esc(r.life || '')}</small>${r.union_id ? `
+    <button class="x" data-unpartner="${esc(r.union_id)}" data-who="${esc(r.id)}"
+      data-name="${esc(r.name)}" title="Not their parent — take this off">×</button>`
+    : ''}</div>`).join('') + '</div>';
+
+// EVERYTHING THAT CAN BE ADDED CAN BE TAKEN OFF AGAIN, and taking a child
+// off a family does not delete the person — it unhooks them, and Ctrl-Z
+// hooks them back. Deleting somebody is a separate, deliberate act with its
+// own button and its own wording.
+const list = (rows, union) => '<div class="kin">' + rows.map(r =>
+  `<div class="kinrow"><button data-kin="${esc(r.id)}">${esc(r.name)}</button>
+    <small>${esc(r.life || '')}</small>${union ? `
+    <button class="x" data-unchild="${esc(union)}" data-who="${esc(r.id)}"
+      data-name="${esc(r.name)}"
+      title="Not a child of this family — take them off">×</button>` : ''}
+  </div>`).join('') + '</div>';
+
+// The kinds of couple, straight from the schema by way of /api/meta, so a
+// kind added there appears here without any further wiring.
+let KINDS = [{ key: 'marriage', label: 'Married' },
+             { key: 'unmarried', label: 'Together, never married' }];
+export function setKinds(list) { if (list && list.length) KINDS = list; }
+const kindOptions = now => KINDS.map(k =>
+  `<option value="${esc(k.key)}"${k.key === (now || 'marriage') ? ' selected' : ''}
+    >${esc(k.label)}</option>`).join('')
+  + (KINDS.some(k => k.key === now) ? ''
+     : `<option value="${esc(now)}" selected>not recorded</option>`);
 
 const btn = (as, label, union) =>
   `<button class="addlink" data-add="${as}"${union ? ` data-union="${esc(union)}"` : ''}>${label}</button>`;

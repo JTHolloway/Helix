@@ -15,6 +15,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from .graph import build as gbuild
+from .graph.build import UNION_CHOICES
 from .graph.kinship import (KinFilter, Kinship, all_groups, household,
                             siblings_of)
 from .graph.thread import Contingency, thread
@@ -44,24 +45,66 @@ _RECORD_ROUTES = {
     "/api/redo":          lambda con, b: records.redo(con),
     "/api/person/photo":  lambda con, b: _add_photo(con, b),
     "/api/person/photo/remove": lambda con, b: _drop_photo(con, b),
+    "/api/person/photo/caption": lambda con, b: _caption(con, b),
+    "/api/person/photo/portrait": lambda con, b: _set_portrait(con, b),
+    "/api/person/photo/taken": lambda con, b: _taken(con, b),
     "/api/person/heritage": lambda con, b: records.set_heritage(con, b),
     "/api/person/merge":  lambda con, b: records.merge(con, b),
 }
 
 
 def _add_photo(con, b: dict) -> dict:
-    """A photograph, copied into the album beside the family file.
+    """A photograph or a paper, copied into the album beside the family file.
 
     The bytes arrive as a `data:` URL because that is what a browser's
     FileReader produces and because the standard library has no multipart
     parser it would be wise to point at untrusted input.
+
+    ONLY A PICTURE CAN BE THE PORTRAIT. A scanned order of service attached
+    to somebody is not what should appear in the round frame at the top of
+    their profile, so the flag is refused for anything that is not an image
+    whatever the request asked for.
     """
     from .store import album
     name, _path = album.store_data_url(ST.dbpath, b["data"],
                                        b.get("filename", ""))
+    want = b.get("portrait", album.kind_of(name) == "photo") is not False
     mid = album.attach(con, b["id"], name, caption=b.get("caption", ""),
-                       portrait=b.get("portrait", True) is not False)
-    return {"ok": True, "id": b["id"], "media_id": mid, "name": name}
+                       portrait=want and album.kind_of(name) == "photo")
+    return {"ok": True, "id": b["id"], "media_id": mid, "name": name,
+            "kind": album.kind_of(name)}
+
+
+def _caption(con, b: dict) -> dict:
+    """What a scan IS. "Order of service, St Mary's, 14 March 1998" is the
+    difference between a file and a record."""
+    from .store import records
+    with records.Edit(con, "Describe a file") as e:
+        e.update("media", {"id": b["media_id"]},
+                 {"caption": (b.get("caption") or "").strip() or None})
+    return {"ok": True, "id": b.get("id")}
+
+
+def _taken(con, b: dict) -> dict:
+    """When a photograph was taken, or how old they were in it.
+
+    Somebody's face at 20 and at 80 are both worth keeping and the new one
+    goes at the top -- so the old ones need to say WHEN, or a profile is a
+    pile of pictures in upload order.
+    """
+    from .store import album
+    album.set_taken(con, b["media_id"], b.get("taken", ""))
+    return {"ok": True, "id": b.get("id")}
+
+
+def _set_portrait(con, b: dict) -> dict:
+    from .store import album
+    row = con.execute("SELECT path FROM media WHERE id=?",
+                      (b["media_id"],)).fetchone()
+    if row and album.kind_of(row["path"]) != "photo":
+        raise ValueError("Only a picture can be somebody's portrait.")
+    album.attach(con, b["id"], row["path"], portrait=True)
+    return {"ok": True, "id": b["id"]}
 
 
 def _drop_photo(con, b: dict) -> dict:
@@ -181,13 +224,26 @@ class Handler(BaseHTTPRequestHandler):
                 "stats": g.stats(),
                 "designs": [{"key": d.key, "name": d.name, "family": d.family,
                              "blurb": d.blurb, "good_for": d.good_for,
-                             "laser": d.laser} for d in registry.all_designs()],
+                             "laser": d.laser, "built": d.built}
+                            for d in registry.all_designs()],
                 "styles": Style.list_presets(),
+                # What kinds of couple there are, so the panel offers them
+                # rather than hard-coding a list that drifts from the schema.
+                "union_kinds": UNION_CHOICES,
                 "people": [{"id": p.id, "name": p.full_name,
                             "life": p.lifespan, "sex": p.sex}
                            for p in sorted(g.people.values(),
                                            key=lambda x: (x.surname, x.given))],
             })
+        if route == "thumb":
+            body = _thumb(q.get("design") or "radial_family").encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/svg+xml")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         if route == "plan":
             return self._json(_plan(q).to_dict())
         if route == "svg":
@@ -265,6 +321,10 @@ class Handler(BaseHTTPRequestHandler):
             from .analysis import consang
             return self._json({"couples": consang.couples(ST.graph),
                                **consang.summary(ST.graph)})
+        if route == "relate":
+            # HOW ARE THESE TWO RELATED? Any two people in the file, not
+            # only whoever the chart is centred on.
+            return self._json(_relate(ST, q.get("a", ""), q.get("b", "")))
         if route == "gaps":
             # WHERE MORE RESEARCH IS NEEDED, ranked. Scoped to whatever is
             # on the chart when a focus is given, because a to-do list for
@@ -278,6 +338,13 @@ class Handler(BaseHTTPRequestHandler):
             body = p.read_bytes()
             self.send_response(200)
             self.send_header("Content-Type", album.mime_for(p.name))
+            if album.kind_of(p.name) != "photo":
+                # A scan is opened or saved, not laid out in a page. The
+                # filename somebody sees is the caption they gave it, not
+                # the hash the album stores it under.
+                want = (q.get("as") or p.name).replace('"', "")
+                self.send_header("Content-Disposition",
+                                 f'inline; filename="{want}"')
             # named by the hash of its own bytes, so it can never go stale
             self.send_header("Cache-Control", "public, max-age=31536000, immutable")
             self.send_header("Content-Length", str(len(body)))
@@ -375,6 +442,16 @@ class Handler(BaseHTTPRequestHandler):
             return self._html(dossier.everybody(
                 g, ST.con, ids, kin=k, photos_for=photos,
                 title=f"{ST.title} — profiles"))
+        if what == "records":
+            # THE BINDER. Every person numbered, every relation
+            # cross-referenced by number, and nothing on it that is
+            # arithmetic over today's file.
+            ids = _print_cast(q)
+            return self._html(dossier.record_book(
+                g, ST.con, ids, kin=k, photos_for=photos,
+                title=ST.title or "Family Records",
+                subtitle=("Everyone in the file" if q.get("all") == "1"
+                          else "Everyone on the chart")))
         if what == "chronicle":
             from .analysis import stats
             within = None if q.get("all") == "1" else _scoped_ids(q)
@@ -463,6 +540,101 @@ def _plan(q):
             "drawn": False,
         }
     return plan
+
+
+# ─────────────────────────── the design gallery ──────────────────────────
+#
+# WHAT THE THUMBNAIL IS. It is the design, run on YOUR family, at 120
+# pixels. Not a hand-drawn icon of what the design is supposed to look
+# like -- there were eleven of those for twenty designs, so nine of them
+# showed a sunburst whatever they actually drew, and two more had drifted
+# from the geometry they were meant to illustrate.
+#
+# A picture of a chart that cannot go out of date is worth the render. And
+# because it is your own file, the gallery answers the question somebody is
+# really asking: not "what is an icicle plot" but "what does MY family look
+# like as one".
+_THUMBS: dict = {}
+
+
+def _thumb(design: str) -> str:
+    """One design, small, cached until the file changes.
+
+    Cut down to the people around the subject and stripped of type, because
+    at 120 pixels a name is a smudge and the SHAPE is the whole message.
+    """
+    stamp = (ST.dbpath, len(ST.graph.people), ST.subject)
+    hit = _THUMBS.get(design)
+    if hit and hit[0] == stamp:
+        return hit[1]
+    style = Style.load()
+    style.set("layout.engine", design)
+    style.set("labels.show", False)
+    style.set("ornament.time_rings", False)
+    style.set("lines.key", False)
+    style.set("ornament.title", False)
+    style.set("canvas.width_mm", 300)
+    style.set("canvas.height_mm", 300)
+    style.set("connectors.width_mm", 1.6)
+    # EVERYBODY, not the narrowed cast. A thumbnail is a picture of a
+    # SHAPE, and a shape needs enough people to have one -- narrowed to
+    # four generations of one bloodline, half the designs drew a small
+    # cluster in the corner of an empty disc.
+    s = LayoutSettings(engine=design, subject_id=ST.subject,
+                       focus="all", max_people=120,
+                       weight_mode=style.get("layout.weight_mode", "leaves"))
+    try:
+        plan = registry.run(design, ST.graph, s, style)
+        out = _crop(svgrender.render(plan), plan)
+    except Exception:
+        # A design that cannot draw this family gets an honest blank rather
+        # than a broken gallery. It is still selectable; it will say why.
+        out = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>"
+               "<text x='50' y='54' text-anchor='middle' font-size='9' "
+               "fill='#7A7367'>no preview</text></svg>")
+    _THUMBS[design] = (stamp, out)
+    return out
+
+
+def _crop(svg: str, plan) -> str:
+    """Tighten the viewBox onto what was actually drawn.
+
+    A DESIGN THAT CENTRES A SMALL FAMILY IN A METRE-WIDE DISC is correct at
+    a metre and useless at 120 pixels: the picture is a faint ring with a
+    thumbprint of chart in the bottom third, and every such design looks
+    like every other. Cropping to the ink is what makes the thumbnail a
+    picture of the SHAPE.
+
+    The points come from `pathflatten`, which already turns arcs and
+    beziers into line segments for the CAD exports -- so this is the same
+    geometry the DXF gets, not a guess at where a path goes.
+    """
+    from .render.pathflatten import flatten_d
+    lo_x = lo_y = float("inf")
+    hi_x = hi_y = float("-inf")
+    for el in plan.elements:
+        pts = []
+        if el.kind == "path" and el.d:
+            # `flatten_d` yields (points, closed) per subpath -- extending
+            # with the pair instead of the points is how the first version
+            # of this cropped every design to nothing.
+            with contextlib.suppress(Exception):
+                for run, _closed in flatten_d(el.d, tol=0.6):
+                    pts.extend(run)
+        elif el.x is not None and el.y is not None:
+            pts = [(el.x, el.y)]
+        for x, y in pts:
+            lo_x, hi_x = min(lo_x, x), max(hi_x, x)
+            lo_y, hi_y = min(lo_y, y), max(hi_y, y)
+    if lo_x > hi_x or hi_x - lo_x <= 0 or hi_y - lo_y <= 0:
+        return svg
+    pad = max(hi_x - lo_x, hi_y - lo_y) * 0.04
+    lo_x, lo_y = lo_x - pad, lo_y - pad
+    w, h = (hi_x - lo_x) + pad, (hi_y - lo_y) + pad
+    import re
+    return re.sub(r'viewBox="[^"]*"',
+                  f'viewBox="{lo_x:.2f} {lo_y:.2f} {w:.2f} {h:.2f}"',
+                  svg, count=1)
 
 
 def _kin_filter(q) -> KinFilter:
@@ -583,6 +755,19 @@ def _library(what: str, body: dict) -> dict:
         p = lib.duplicate(body.get("path") or ST.dbpath)
         return {"ok": True, "path": str(p),
                 "message": f"Copied to {p.name}. The original is untouched."}
+    if what == "copy-for":
+        # THE SAME FAMILY, AS SOMEBODY ELSE'S TREE. Asked twice: once with
+        # `preview` to find out what would be left out, so the question can
+        # be put to somebody with real names in it, and once to do it.
+        who = body.get("id") or ""
+        if body.get("preview"):
+            return {"ok": True, **lib.copy_for(ST.dbpath, who, dry_run=True)}
+        out = lib.copy_for(ST.dbpath, who, title=body.get("title", ""),
+                           prune=bool(body.get("prune")))
+        if body.get("open"):
+            _rebind(Path(out["path"]))
+            out["opened"] = True
+        return {"ok": True, **out}
     if what == "reveal":
         ok = lib.reveal(body.get("path") or ST.dbpath)
         return {"ok": ok, "path": body.get("path") or ST.dbpath,
@@ -743,7 +928,6 @@ def _gaps(st: State, q) -> dict:
 # much of a family a single answer opens up.
 _GAP_GROUPS = {
     "parents": "Lines that stop",
-    "in_laws": "Married in, not started",
     "story": "Within living memory",
     "name": "No full name",
     "birth": "No birth date",
@@ -772,6 +956,7 @@ def _inbreeding(st: State, pid: str) -> dict:
             rel = consang.between(st.graph, pid, other)
             if rel.related:
                 mine.append({**rel.to_dict(),
+                             "word": u.word.capitalize(),
                              "name": st.graph.people[other].full_name,
                              "ancestor_names": [
                                  st.graph.people[x].full_name
@@ -840,6 +1025,43 @@ def _dna(st: State, pid: str) -> dict:
     }
 
 
+def _relate(st: State, a: str, b: str) -> dict:
+    """How any two people in the file are related.
+
+    THE PATH IS THE ANSWER. "Second cousins once removed" is a label nobody
+    repeats; "up to William Whitcombe, who was her great-grandfather and his
+    great-great-grandfather" is what gets said at a funeral, and it is the
+    only form somebody can check against their own research.
+
+    Where the two married, their coefficient of inbreeding comes with it —
+    that is what F is a statement about, and the pair who married is the
+    only place it means anything.
+    """
+    from .analysis import consang
+    from .graph.kinship import relate
+    g = st.graph
+    if a not in g.people or b not in g.people:
+        return {"error": "Choose two people who are both in this file.",
+                "ok": False}
+    r = relate(g, a, b)
+    out = r.to_dict()
+    who = lambda p: {"id": p, "name": g.people[p].full_name,
+                     "life": g.people[p].lifespan, "sex": g.people[p].sex}
+    out["people"] = {"a": who(a), "b": who(b)}
+    out["ok"] = True
+    # Married to each other? Then F for any child of theirs is the fact
+    # that matters, and it is the one place the number is not idle.
+    married = any(a in u.partners and b in u.partners
+                  for u in g.unions.values())
+    out["married"] = married
+    if married and r.related:
+        f = consang.inbreeding_of_child(g, a, b)
+        out["inbreeding"] = {"coefficient": round(f, 6), "percent": consang.pct(f)}
+    out["note"] = ("Worked out from what is in this file. A relation Helix "
+                   "cannot see is one nobody has entered yet.")
+    return out
+
+
 def _relatives(st: State) -> dict:
     """Everybody in the file, in tabs, closest first.
 
@@ -853,9 +1075,28 @@ def _relatives(st: State) -> dict:
         "subject_name": (g.people[st.subject].full_name
                          if st.subject in g.people else ""),
         "total": len(g.people),
-        "groups": [dict(grp, people=[_kin_brief(st, p) for p in grp["people"]])
-                   for grp in k.groups()],
+        "groups": [_with_people(st, grp) for grp in k.groups()],
     }
+
+
+# What makes a record LOOK unfinished at a glance. Deliberately short: a
+# red dot beside four hundred names is decoration, so it is only shown for
+# the two things that stop somebody being findable at all -- no full name,
+# and no dates -- plus a line that has simply never been started.
+def _needs_work(g, p) -> str:
+    if not (p.given or "").strip() or not (p.surname or "").strip():
+        return "no full name"
+    if not p.birth.known and not p.death.known:
+        return "no dates"
+    if not g.parents(p.id, primary_only=False):
+        return "no parents recorded"
+    return ""
+
+
+def _with_people(st: State, grp: dict) -> dict:
+    people = [_kin_brief(st, p) for p in grp["people"]]
+    return dict(grp, people=people,
+                needs=sum(1 for x in people if x["needs"]))
 
 
 def _kin_brief(st: State, pid: str) -> dict:
@@ -866,6 +1107,7 @@ def _kin_brief(st: State, pid: str) -> dict:
     return {"id": pid, "name": p.full_name, "life": p.lifespan, "sex": p.sex,
             "relation": kin.label, "steps": kin.steps, "group": kin.group,
             "portrait": port["name"] if port else None,
+            "needs": _needs_work(st.graph, p),
             "is_subject": pid == st.subject}
 
 
@@ -944,7 +1186,7 @@ def _person_detail(st: State, pid: str) -> dict:
         # breaks; `kin` is the same fact with structure on it.
         "kin": kin.to_dict(),
         "counts": household(g, pid),
-        "photos": album.photos_of(st.con, pid),
+        "photos": _photos(st, p),
         "missing": _missing(g, st.con, p),
         "complete": _completeness(g, p),
         # THE THREE THINGS A PROFILE ANSWERS BESIDES "who is this". Where
@@ -956,7 +1198,11 @@ def _person_detail(st: State, pid: str) -> dict:
         "inbreeding": _inbreeding(st, pid),
         "relationship": kin.label if st.subject else "",
         "is_subject": pid == st.subject,
-        "parents": [_brief(g, x) for x in g.parents(pid, False)],
+        # WHICH FAMILY EACH PARENT IS A PARENT THROUGH. Needed so the
+        # panel can offer to take a wrong one off again -- a father hung on
+        # the wrong man is the commonest thing to want back.
+        "parents": [dict(_brief(g, x), union_id=_parent_union(g, pid, x))
+                    for x in g.parents(pid, False)],
         "partners": [_brief(g, x) for x in g.partners(pid)],
         "children": [_brief(g, x) for x in g.children(pid)],
         "siblings": [dict(_brief(g, x), kind=g.sibling_kind(pid, x))
@@ -964,6 +1210,60 @@ def _person_detail(st: State, pid: str) -> dict:
         "families": _families(g, pid),
         "on_thread": pid in thread(g, st.subject).members,
     }
+
+
+def _photos(st: State, p) -> list[dict]:
+    """Somebody's pictures, with what each one says about WHEN.
+
+    A PORTRAIT IS THE ONE THAT LOOKS LIKE THEM NOW; the others are what they
+    looked like before, and a photograph nobody can date is half a
+    photograph. Somebody who knows a face was "about twelve" there has said
+    something worth keeping, so both readings are accepted and the one that
+    can be worked out is worked out.
+    """
+    from .model.gendate import parse as parse_date
+    from .store import album
+    born = p.birth
+    out = []
+    for ph in album.photos_of(st.con, p.id):
+        raw = (ph.get("taken") or "").strip()
+        when, age, year = "", None, None
+        if raw:
+            digits = "".join(c for c in raw if c.isdigit())
+            bare = raw.replace("aged", "").replace("age", "").strip()
+            if bare.isdigit() and len(bare) <= 3 and int(bare) <= 120:
+                # An AGE, which is what somebody usually knows about an old
+                # photograph. The year follows from the birth, if there is one.
+                age = int(bare)
+                if born.known and born.earliest:
+                    year = born.earliest.year + age
+                when = f"aged {age}" + (f", about {year}" if year else "")
+            else:
+                d = parse_date(raw)
+                if d.known and d.earliest:
+                    year = d.earliest.year
+                    if born.known and born.earliest:
+                        age = year - born.earliest.year
+                    when = d.display + (f" · aged about {age}"
+                                        if age is not None and 0 <= age < 120
+                                        else "")
+                else:
+                    when = raw            # kept verbatim, rule five
+        out.append({**ph, "when": when, "age": age, "year": year})
+    # Oldest first among the ones that can be ordered, so a profile reads as
+    # a life rather than as an upload order.
+    out.sort(key=lambda x: (not x["portrait"], x["year"] is None,
+                            x["year"] or 0))
+    return out
+
+
+def _parent_union(g, child: str, parent: str) -> str:
+    """The family that makes this person that person's parent."""
+    for uid in g.people[child].child_of_all:
+        u = g.unions.get(uid)
+        if u and parent in u.partners:
+            return uid
+    return ""
 
 
 def _brief(g, pid: str) -> dict:
@@ -998,6 +1298,15 @@ def _families(g, pid: str) -> list[dict]:
             "union_id": uid,
             "partner": _brief(g, others[0]) if others else None,
             "children": [_brief(g, c) for c in u.children],
+            # WHETHER THEY MARRIED. Two people with a child between them are
+            # a family whether or not they ever married, and every screen
+            # that says "married" of a couple who did not is telling a small
+            # lie about two real people.
+            "kind": u.type or "unknown",
+            "word": u.word,
+            "married": u.married,
+            "date": u.date.display,
+            "place": u.place,
         })
     return out
 

@@ -359,7 +359,9 @@ def timeline(graph, pid: str) -> dict:
         others = [x for x in u.partners if x != pid and x in graph.people]
         who = graph.people[others[0]].full_name if others else "somebody"
         if u.date.known:
-            add(u.date.sort_value, f"Married {who}",
+            # NEVER SAYS "MARRIED" OF PEOPLE WHO DID NOT MARRY. On a
+            # timeline that is the whole line, not a detail of it.
+            add(u.date.sort_value, f"{u.word.capitalize()} {who}",
                 others[0] if others else None, "marriage")
         for kid in u.children:
             k = graph.people.get(kid)
@@ -419,7 +421,8 @@ def family_timeline(graph, *, within=None, kin=None) -> dict:
         names = " and ".join(graph.people[x].full_name for x in pair)
         rows.append({"year": u.date.sort_value, "kind": "marriage",
                      "date": u.date.display, "id": pair[0],
-                     "what": f"{names} married"
+                     "what": (f"{names} married" if u.married else
+                              f"{names} were together")
                              + (f" at {u.place}" if u.place else ""),
                      "relation": ""})
 

@@ -91,6 +91,56 @@ class Person:
         return age_at(self.birth, self.death).display
 
 
+# WHAT KIND OF COUPLE THIS IS, and it matters more than it looks.
+#
+# Two people with a child between them are a family whether or not they ever
+# married, and a program that only knows how to say "married" tells a lie
+# about them on every screen it has — including the printed record, which is
+# the one document in the house somebody will still be quoting in thirty
+# years. So the kind is recorded, and every place that puts it into words
+# asks here rather than assuming.
+#
+# NEVER MARRIED IS NOT DIVORCED. A couple who married and later divorced
+# were married: the marriage is a fact with a date and it stays on the
+# record. A divorce is an EVENT on the union, not a kind of union, which is
+# why there is no entry for it here.
+#
+#   type -> (what to call it, was there a wedding?)
+UNION_KIND: dict[str, tuple[str, bool]] = {
+    "marriage":          ("married", True),
+    "civil_partnership": ("in a civil partnership with", True),
+    "annulled":          ("married, later annulled", True),
+    "unmarried":         ("partner of", False),
+    # Made by "add a partner", which is what somebody means by a marriage.
+    # A couple who never married is said so deliberately; it is not a thing
+    # to be guessed at from silence.
+    "unknown":           ("married", True),
+}
+
+# Offered in the interface, in the order somebody would look for them.
+UNION_CHOICES = [
+    {"key": "marriage", "label": "Married",
+     "hint": "A wedding, whether or not the date is known."},
+    {"key": "unmarried", "label": "Together, never married",
+     "hint": "A couple who never married. The chart marks the tie between "
+             "them, and nothing says they were married."},
+    {"key": "civil_partnership", "label": "Civil partnership"},
+    {"key": "annulled", "label": "Married, later annulled"},
+]
+
+
+def union_word(u) -> str:
+    """What to call this couple, in English. "married", "partner of"."""
+    return UNION_KIND.get(getattr(u, "type", "") or "unknown",
+                          UNION_KIND["unknown"])[0]
+
+
+def is_marriage(u) -> bool:
+    """Was there a wedding? False only where somebody has said so."""
+    return UNION_KIND.get(getattr(u, "type", "") or "unknown",
+                          UNION_KIND["unknown"])[1]
+
+
 @dataclass
 class Union:
     id: str
@@ -99,6 +149,15 @@ class Union:
     type: str = "marriage"
     date: GenDate = field(default_factory=GenDate)
     place: str = ""
+    notes: str = ""
+
+    @property
+    def word(self) -> str:
+        return union_word(self)
+
+    @property
+    def married(self) -> bool:
+        return is_marriage(self)
 
 
 class FamilyGraph:
@@ -134,6 +193,19 @@ class FamilyGraph:
         for u in self.people[pid].unions:
             out.extend(x for x in self.unions[u].partners if x != pid)
         return out
+
+    def union_between(self, a: str, b: str) -> Optional[Union]:
+        """The family these two share, if they have one.
+
+        The chart draws a tie between two names and then has to say what
+        KIND of tie it is, which means going from a pair of people back to
+        the union. Cheap: nobody has many partners.
+        """
+        for uid in self.people.get(a, Union("")).unions if a in self.people else []:
+            u = self.unions.get(uid)
+            if u and b in u.partners:
+                return u
+        return None
 
     def siblings(self, pid: str, full: bool = False) -> list[str]:
         p = self.people[pid]
