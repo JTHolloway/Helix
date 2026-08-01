@@ -443,9 +443,9 @@ class Handler(BaseHTTPRequestHandler):
                 g, ST.con, ids, kin=k, photos_for=photos,
                 title=f"{ST.title} — profiles"))
         if what == "records":
-            # THE BINDER. Every person numbered, every relation
-            # cross-referenced by number, and nothing on it that is
-            # arithmetic over today's file.
+            # THE BINDER. One page per person, oldest first and family by
+            # family, every field present whether or not it is filled in,
+            # and nothing on it that is arithmetic over today's file.
             ids = _print_cast(q)
             return self._html(dossier.record_book(
                 g, ST.con, ids, kin=k, photos_for=photos,

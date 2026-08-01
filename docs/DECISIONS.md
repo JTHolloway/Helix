@@ -442,3 +442,41 @@ rule genuinely differs by sex.
 also the commonest way two families get joined by mistake: two men of the
 same name in the same parish, and the children of the younger hung on the
 father of the elder.
+
+## What an official record is
+
+The record book is the thing that goes in a ring binder and is read by
+somebody in thirty years who never met anybody in it. Four decisions follow
+from that and only from that.
+
+**It is not ordered from the root person.** Closest-first is right for a
+sidebar, where the question is "where is my sister", and wrong for a folder
+that outlives the person who made it: whoever it was centred on stops being
+the obvious place to start the moment somebody else picks it up, and it puts
+a man on page 40 with his own children on pages 3 and 91. So it reads the
+way a printed genealogy has always read — the earliest people first, each
+followed by their husband or wife, then their children, each child followed
+immediately by that child's own descendants. The page after somebody is
+nearly always a page about somebody they knew.
+
+**Every field is present whether or not it is filled in.** A blank on a
+filed record is ambiguous forever: nobody can tell an unknown birthplace
+from one where the person filling it in got bored. "Unknown" is a statement
+about the research, and it is the only thing on the page that says where the
+work still is.
+
+**No bracketed numbers beside names.** They were there so the binder could
+be followed without the program that made it, and they made every page read
+like a database dump — "Reuben Ashworth [2], Winifred Threlfall [3]" is not
+how anybody writes about their family. The contents and the index are where
+numbers belong; a name in a sentence is a name. Each name still carries its
+dates, which is what actually tells two Alice Whitcombes apart.
+
+**And no "your uncle".** Every relation in the program is measured from one
+person, and in thirty years nobody reading the folder is that person. The
+relations that belong on a record are the ones stated outright — Father,
+Mother, Married, Children — and they are all there.
+
+Every entry starts a page, the first one included: it used to run on from
+the bottom of the contents, which put one person on a page that is not
+theirs and made the contents look like the start of the record.

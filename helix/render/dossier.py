@@ -370,9 +370,11 @@ RECORD_CSS = """
    are on the back of it they cannot have it. So every entry starts a
    page — and a life with a great deal written about it runs on to a
    second and a third rather than being cut to fit. */
+/* EVERY entry starts a page, the first one included. It used to run on
+   from the bottom of the contents, which put one person on a page that is
+   not theirs and made the contents look like the start of the record. */
 .entry{page-break-before:always;break-before:page;
        padding-top:2mm;display:flex;flex-direction:column;min-height:238mm}
-.entry:first-of-type{page-break-before:auto;break-before:auto}
 .entry > .grow{flex:1}
 .entry h2{border:0;margin:0 0 1mm;font-size:19pt;display:flex;
           align-items:baseline;gap:3mm;letter-spacing:.01em}
@@ -384,10 +386,25 @@ RECORD_CSS = """
 .entry .txt{flex:1;min-width:0}
 .entry .port{width:42mm;height:53mm;object-fit:cover;
              border:1px solid var(--rule);background:#f6f2ea}
-.rbfacts{display:grid;grid-template-columns:30mm 1fr;gap:1mm 4mm;
-         margin:0 0 3mm;font-size:11pt}
-.rbfacts dt{color:var(--muted);font-size:9.5pt;padding-top:.5mm}
-.rbfacts dd{margin:0}
+/* A record with a face on it is worth more than one without, so the
+   absence is marked rather than left as a gap in the layout. */
+.entry .noport{display:flex;align-items:center;justify-content:center;
+               text-align:center;color:#a8a094;font-size:9pt;
+               font-style:italic;padding:3mm}
+.rbfacts{display:grid;grid-template-columns:34mm 1fr;gap:0 4mm;
+         margin:0 0 2mm;font-size:10.5pt}
+.rbfacts dt{color:var(--muted);font-size:9.5pt;padding:1mm 0 1mm 0;
+            border-bottom:1px solid #efe9dd}
+.rbfacts dd{margin:0;padding:1mm 0;border-bottom:1px solid #efe9dd}
+.rbfacts dt:last-of-type,.rbfacts dd:last-of-type{border-bottom:0}
+/* What is not known is SAID. A blank on a filed record is ambiguous
+   forever -- nobody can tell an unknown birthplace from an unfinished
+   one -- and "Unknown" is also the only thing that says where the work
+   still is. Set in the same size as a fact, greyed, not italic: it is a
+   statement, not an apology. */
+.unk{color:#9a9284}
+.yrs{color:var(--muted);font-size:9pt;white-space:nowrap}
+.rbnote-lead{color:var(--muted);font-size:9.5pt;margin:0 0 3mm}
 .rbsec{font-size:9pt;letter-spacing:.09em;text-transform:uppercase;
        color:var(--muted);margin:5mm 0 1.5mm;border-bottom:1px solid var(--rule);
        padding-bottom:.8mm}
@@ -404,36 +421,131 @@ RECORD_CSS = """
 .rbindex div{break-inside:avoid}
 .newpage{page-break-before:always;break-before:page}
 @media print{.rbcover{padding-top:50mm}}
+/* ON SCREEN there are no pages, so the sheet boundaries have to be drawn or
+   the contents looks like the first entry runs on from it. Printed, these
+   rules do nothing and the real page breaks take over. */
+@media screen{
+  .rb .newpage,.rb .entry{border-top:1px solid var(--rule);
+    margin-top:14mm;padding-top:10mm}
+  .rb .entry{min-height:0}
+}
 """
+
+
+def _rb_order(graph, ids: list[str]) -> list[str]:
+    """The order a family history is read in: oldest first, family by family.
+
+    NOT CLOSEST-TO-YOU. That order is right for a sidebar, where the
+    question is "where is my sister", and wrong for a folder that outlives
+    the person who made it: whoever it was centred on stops being the
+    obvious place to start the moment somebody else picks it up. It is also
+    the order that puts a man on page 40 and his own children on pages 3
+    and 91.
+
+    So the record reads the way a printed genealogy has always read. Start
+    at the earliest people the file knows about; give each of them a page;
+    then their children, each followed immediately by that child's own
+    descendants. A family stays together and a generation runs downwards,
+    which means the page after somebody is nearly always a page about
+    somebody they knew.
+    """
+    want = [p for p in ids if p in graph.people]
+    left = set(want)
+    out: list[str] = []
+
+    def year(pid) -> float:
+        p = graph.people[pid]
+        return (p.birth.sort_value if p.birth.known and p.birth.sort_value
+                else (p.death.sort_value or 0) - 60 or 9e9)
+
+    def walk(pid: str, guard: int = 0) -> None:
+        if pid not in left or guard > 40:
+            return
+        left.discard(pid)
+        out.append(pid)
+        # Husbands and wives come with the person they married, so a couple
+        # is never split across a generation boundary.
+        for uid in graph.people[pid].unions:
+            u = graph.unions.get(uid)
+            if not u:
+                continue
+            for mate in u.partners:
+                if mate in left:
+                    left.discard(mate)
+                    out.append(mate)
+        for uid in graph.people[pid].unions:
+            u = graph.unions.get(uid)
+            if not u:
+                continue
+            for kid in sorted((c for c in u.children if c in left), key=year):
+                walk(kid, guard + 1)
+
+    # The founders: everybody in the cast with no parent who is also in it.
+    roots = [p for p in want
+             if not any(x in left for x in graph.parents(p, primary_only=False))]
+    for pid in sorted(roots, key=year):
+        walk(pid)
+    # Anything the walk could not reach -- a person with no links at all.
+    out.extend(sorted(left, key=lambda p: (graph.people[p].surname or "",
+                                           graph.people[p].given or "")))
+    return out
+
+
+# WHAT IS NOT KNOWN IS SAID, NOT LEFT OUT.
+#
+# A blank line on a filed record is ambiguous forever: in thirty years
+# nobody can tell whether the birthplace was unknown or whether the person
+# filling it in got bored. "Unknown" is a statement about the research, and
+# it is also the only thing that tells somebody where the work still is.
+UNKNOWN = '<span class=unk>Unknown</span>'
+NONE_REC = '<span class=unk>None recorded</span>'
+
+
+def _or_unknown(v, blank: str = UNKNOWN) -> str:
+    v = (v or "").strip() if isinstance(v, str) else v
+    return esc(v) if v else blank
 
 
 def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
                 subtitle="") -> str:
-    """Every person, every relation, as one document you can file.
+    """Every person, everything known about them, as a folder.
 
-    WHAT AN OFFICIAL RECORD IS AND IS NOT. This is the thing that goes in a
-    ring binder and is read by somebody in thirty years: a numbered entry
-    per person, their facts, their family, and their photograph. Every
-    entry cross-references the others by number, so the binder can be
-    followed without the program that made it.
+    WHAT AN OFFICIAL RECORD IS. The thing that goes in a ring binder and is
+    read by somebody in thirty years who never met anybody in it. One page
+    per person, so a page can be taken out and handed over; every field
+    present whether or not it is filled in, because a blank is ambiguous
+    forever and "Unknown" is a statement about the research; and the
+    photograph, because a name with a face beside it is a person.
 
     WHAT IS DELIBERATELY LEFT OUT. The inbreeding coefficient, the DNA
     percentages, the completeness score and the research list. Those are
-    working numbers -- they are arithmetic over the file as it stands
-    today, they change the moment a grandparent is added, and on a filed
-    document they read as findings rather than as the working notes they
-    are. What goes in the binder is what is KNOWN.
+    working numbers -- arithmetic over the file as it stands today, changing
+    the moment a grandparent is added -- and on a filed document they read
+    as findings rather than as the working notes they are. What goes in the
+    binder is what is KNOWN.
     """
-    people = [p for p in ids if p in graph.people]
+    people = _rb_order(graph, list(ids))
     order = {pid: i + 1 for i, pid in enumerate(people)}
+    declared = {q: dict(x.heritage) for q, x in graph.people.items() if x.heritage}
 
-    def ref(pid) -> str:
-        if pid not in order:
-            return esc(graph.people[pid].full_name) if pid in graph.people else ""
-        return f"{esc(graph.people[pid].full_name)} <span class=no>" \
-               f"[{order[pid]}]</span>"
+    def nm(pid) -> str:
+        """A person named in somebody else's entry.
+
+        NO BRACKETED NUMBER AFTER THE NAME. It was there so the binder could
+        be followed without the program that made it, and it made every page
+        read like a database dump -- "Reuben Ashworth [2], Winifred Threlfall
+        [3]" is not how anybody writes about their family. The contents and
+        the index are where numbers belong; a name in a sentence is a name.
+        """
+        if pid not in graph.people:
+            return UNKNOWN
+        p = graph.people[pid]
+        life = p.lifespan
+        return esc(p.full_name) + (f" <span class=yrs>{esc(life)}</span>"
+                                   if life else "")
 
     body = [f"<div class=rb>"]
+
     # ---- the cover
     body.append(
         "<div class=rbcover>"
@@ -443,12 +555,14 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
         f"<p>{esc(subtitle) if subtitle else ''}</p>"
         f"<p>{len(people)} people, "
         f"{len([u for u in graph.unions.values() if any(x in order for x in u.partners)])}"
-        f" marriages</p>"
+        f" families</p>"
         f"<p>Compiled {__import__('datetime').date.today().strftime('%d %B %Y')}"
         "</p></div>")
 
-    # ---- the contents
-    body.append("<div class=newpage><h2>Contents</h2><ol class=rbtoc>")
+    # ---- the contents, on its own page, with nothing else on it
+    body.append("<div class=newpage><h2>Contents</h2>"
+                "<p class=rbnote-lead>One page each, oldest first, family by "
+                "family.</p><ol class=rbtoc>")
     for pid in people:
         p = graph.people[pid]
         body.append(f"<li><span class=n>{order[pid]}</span> {esc(p.full_name)}"
@@ -456,81 +570,126 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
                        if p.lifespan else "") + "</li>")
     body.append("</ol></div>")
 
-    # ---- the entries
-    body.append("<div class=newpage>")
+    # ---- the entries, one page each
     for pid in people:
         p = graph.people[pid]
         pics = [x for x in (photos_for(pid) if photos_for else [])
-                if x.get("kind", "photo") == "photo" and x.get("portrait")]
+                if x.get("kind", "photo") == "photo"]
+        # The portrait if one is chosen, otherwise any photograph there is:
+        # a record with a face on it is worth more than a rule about which
+        # face.
+        port = next((x for x in pics if x.get("portrait")), pics[0] if pics else None)
         papers = [x for x in (photos_for(pid) if photos_for else [])
                   if x.get("kind", "photo") != "photo"]
-        img = (f"<img class=port src='/api/media?name={esc(pics[0]['name'])}' "
-               f"alt=''>") if pics else ""
-        rows = [("Born", p.birth.display), ("Born in", p.birth_place),
-                ("Died", p.death.display), ("Died in", p.death_place),
-                ("Lived", p.age), ("Occupation", p.occupation),
-                ("Education", p.education)]
-        facts = "".join(f"<dt>{esc(k)}</dt><dd>{esc(v)}</dd>"
-                        for k, v in rows if v)
-        fam = []
+        img = (f"<img class=port src='/api/media?name={esc(port['name'])}' "
+               f"alt='{esc(p.full_name)}'>") if port else \
+            "<div class='port noport'>No photograph</div>"
+
+        # ---- the life. EVERY row, filled in or not.
+        life_rows = [
+            ("Born", _or_unknown(p.birth.display)),
+            ("Born in", _or_unknown(p.birth_place)),
+            ("Died", "<span class=unk>Living</span>"
+             if (p.living is True and not p.death.known)
+             else _or_unknown(p.death.display)),
+            ("Died in", _or_unknown(p.death_place)),
+            ("Age", _or_unknown(p.age)),
+            ("Occupation", _or_unknown(p.occupation)),
+            ("Education", _or_unknown(p.education)),
+        ]
+        own = declared.get(pid) or {}
+        life_rows.append(
+            ("Family origin",
+             ", ".join(esc(k) for k in own) if own else UNKNOWN))
+
+        # ---- the family. Parents, brothers and sisters, each marriage.
         pars = [x for x in graph.parents(pid, primary_only=False)
                 if x in graph.people]
-        if pars:
-            fam.append("<b>Parents</b>" + ", ".join(ref(x) for x in pars))
+        fam = [("Father", next((nm(x) for x in pars
+                                if graph.people[x].sex == "M"), UNKNOWN)),
+               ("Mother", next((nm(x) for x in pars
+                                if graph.people[x].sex == "F"), UNKNOWN))]
+        other = [x for x in pars if graph.people[x].sex not in ("M", "F")]
+        if other:
+            fam.append(("Parent", ", ".join(nm(x) for x in other)))
         sibs = [x for x in siblings_of(graph, pid) if x in graph.people]
-        if sibs:
-            fam.append("<b>Brothers and sisters</b>"
-                       + ", ".join(ref(x) for x in sibs))
+        fam.append(("Brothers and sisters",
+                    ", ".join(nm(x) for x in sibs) if sibs else NONE_REC))
+
+        marriages = []
         for uid in p.unions:
             u = graph.unions.get(uid)
             if not u:
                 continue
             others = [x for x in u.partners if x != pid and x in graph.people]
             kids = [x for x in u.children if x in graph.people]
-            # NEVER SAYS "MARRIED" OF PEOPLE WHO DID NOT MARRY. On a filed
-            # record that is not a nicety -- it is the one document in the
-            # house that somebody will quote in thirty years.
             head = union_word(u).capitalize()
-            bit = f"<b>{esc(head)}</b>" + (", ".join(ref(x) for x in others)
-                                           or "somebody not recorded")
-            if u.date.known:
-                bit += f", {esc(u.date.display)}"
-            fam.append(bit)
-            if kids:
-                fam.append("<b>Children</b>"
-                           + ", ".join(ref(x) for x in kids))
-        k = kin.of(pid) if kin else None
-        rel = (f"<b>Relation</b>{esc(k.label)}"
-               if k and k.group != "self" and k.steps < 99 else
-               ("<b>Relation</b>whose records these are"
-                if k and k.group == "self" else ""))
-        if rel:
-            fam.append(rel)
+            rows = [(head, nm(others[0]) if others else UNKNOWN),
+                    ("Date", _or_unknown(u.date.display)),
+                    ("Place", _or_unknown(u.place)),
+                    ("Children", ", ".join(nm(x) for x in kids)
+                     if kids else NONE_REC)]
+            marriages.append(rows)
+        if not marriages:
+            marriages = [[("Married", NONE_REC)]]
+
+        # ---- anything else anybody recorded as an event
+        extra = []
+        for r in con.execute(
+            "SELECT e.type,e.date_json,e.description,pl.name place "
+            "FROM event e JOIN event_role er ON er.event_id=e.id "
+            "LEFT JOIN place pl ON pl.id=e.place_id WHERE er.person_id=? "
+            "ORDER BY e.date_sort", (pid,)
+        ):
+            if r["type"] in ("birth", "death", "occupation", "education"):
+                continue                       # already above, in their own rows
+            from ..model.gendate import GenDate as _GD
+            d = _GD.from_json(r["date_json"])
+            extra.append((r["type"].replace("_", " ").capitalize(),
+                          " · ".join(x for x in (d.display, r["place"] or "",
+                                                 r["description"] or "") if x)
+                          or UNKNOWN))
+
+        def dl(rows, cls="rbfacts"):
+            return (f"<dl class={cls}>" + "".join(
+                f"<dt>{esc(k)}</dt><dd>{v}</dd>" for k, v in rows) + "</dl>")
 
         body.append(
             f"<article class=entry>"
             f"<h2><span class=no>{order[pid]}</span> {esc(p.full_name)}</h2>"
-            f"<p class=sub>{esc(p.lifespan or 'dates not recorded')}</p>"
+            # NO "YOUR UNCLE" ON A FILED RECORD. Every relation in the
+            # program is measured from one person, and in thirty years
+            # nobody reading this folder is that person. The relations that
+            # belong here are the ones stated outright -- father, mother,
+            # married to -- and they are all below.
+            f"<p class=sub>{esc(p.lifespan) if p.lifespan else 'Dates unknown'}"
+            f"</p>"
             f"<div class=hr></div>"
             f"<div class=body>{img}<div class=txt>"
-            + (f"<dl class=rbfacts>{facts}</dl>" if facts
-               else "<p class=none>No dates or places recorded.</p>")
-            + ("<p class=rbsec>Family</p>"
-               + "".join(f"<p class=rbrel>{x}</p>" for x in fam)
-               if fam else "")
-            + (f"<p class=rbsec>What is known about them</p>"
-               f"<div class=rbnote>{esc(p.notes)}</div>" if p.notes else "")
-            + (("<p class=rbsec>Papers on file</p><p class=rbpapers>"
-                + ", ".join(esc(x.get("caption") or x["name"]) for x in papers)
-                + "</p>") if papers else "")
+            + "<p class=rbsec>Life</p>" + dl(life_rows)
+            + "<p class=rbsec>Parents and family</p>" + dl(fam)
+            + "".join("<p class=rbsec>" + ("Marriage" if len(marriages) == 1
+                                           else f"Marriage {i + 1}")
+                      + "</p>" + dl(m)
+                      for i, m in enumerate(marriages))
+            + (("<p class=rbsec>Other records</p>" + dl(extra)) if extra else "")
+            + "<p class=rbsec>What is known about them</p>"
+            + (f"<div class=rbnote>{esc(p.notes)}</div>"
+               if (p.notes or "").strip()
+               else '<p class=rbnote><span class=unk>Nothing written down '
+                    'yet</span></p>')
+            + ("<p class=rbsec>Papers on file</p><p class=rbpapers>"
+               + ", ".join(esc(x.get("caption") or x["name"]) for x in papers)
+               + "</p>" if papers else "")
             + "</div></div><div class=grow></div>"
             f"<div class=rbfoot><span>{esc(title or 'Family Records')}</span>"
-            f"<span>{esc(p.full_name)} &middot; no. {order[pid]}</span>"
-            f"</div></article>")
-    body.append("</div>")
+            f"<span>{esc(p.full_name)} &middot; page {order[pid]} of "
+            f"{len(people)}</span></div></article>")
 
     # ---- the index, by surname
-    body.append("<div class=newpage><h2>Index of names</h2><div class=rbindex>")
+    body.append("<div class=newpage><h2>Index of names</h2>"
+                "<p class=rbnote-lead>The number is the page.</p>"
+                "<div class=rbindex>")
     by_sur: dict = {}
     for pid in people:
         p = graph.people[pid]

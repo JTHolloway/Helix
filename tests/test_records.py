@@ -528,3 +528,112 @@ def test_the_new_photograph_becomes_the_one_shown_and_the_old_one_stays(app):
     c.post("undo", {})
     shown = [p for p in c.get("person", id=me)["photos"] if p["portrait"]]
     assert shown[0]["media_id"] == ids[2]
+
+
+# ══════════════════════ the record book ═══════════════════════════════════
+#
+# The thing that goes in a ring binder and is read by somebody in thirty
+# years who never met anybody in it.
+def _book(app, **kw):
+    import urllib.request
+    q = "&".join(f"{k}={v}" for k, v in kw.items())
+    with urllib.request.urlopen(f"{app.base}/print/records"
+                                + (f"?{q}" if q else "")) as r:
+        return r.read().decode()
+
+
+def test_the_record_book_says_what_is_not_known(app):
+    """A BLANK ON A FILED RECORD IS AMBIGUOUS FOREVER. Nobody can tell an
+    unknown birthplace from one somebody got bored before filling in, and
+    "Unknown" is also the only thing that says where the work still is."""
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1928", sex="M")
+    c.post("subject", {"id": me})
+    html = _book(c)
+    assert "Born in" in html and "Unknown" in html
+    for field in ("Born", "Born in", "Died", "Died in", "Age",
+                  "Occupation", "Education", "Father", "Mother"):
+        assert f"<dt>{field}</dt>" in html, f"{field} is not on the record"
+
+
+def test_the_record_book_carries_the_notes_and_the_facts(app):
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1928", death="2009", sex="M")
+    c.post("subject", {"id": me})
+    c.post("person", {"id": me, "occupation": "Foundry pattern maker",
+                      "education": "Left school at 14",
+                      "birth_place": "Frome, Somerset",
+                      "notes": "Everyone called him Tick."})
+    wife = add(c, "Ada", "Boyce", me, "partner", birth="1931", sex="F")
+    add(c, "Robert", "Whitcombe", me, "child", birth="1958", sex="M")
+    html = _book(c)
+    for want in ("Foundry pattern maker", "Left school at 14",
+                 "Frome, Somerset", "Everyone called him Tick.",
+                 "Ada Boyce", "Robert Whitcombe"):
+        assert want in html, f"the record book left out {want!r}"
+
+
+def test_the_record_book_has_no_bracketed_numbers_beside_names(app):
+    """They were there so the binder could be followed without the program
+    that made it, and they made every page read like a database dump.
+    "Reuben Ashworth [2], Winifred Threlfall [3]" is not how anybody writes
+    about their family."""
+    import re
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1928", sex="M")
+    c.post("subject", {"id": me})
+    add(c, "Ada", "Boyce", me, "partner", birth="1931", sex="F")
+    add(c, "Robert", "Whitcombe", me, "child", birth="1958", sex="M")
+    assert not re.search(r"\[\d+\]", _book(c))
+
+
+def test_every_record_starts_its_own_page(app):
+    """A binder is filed, added to and pulled apart: somebody wants the page
+    for their grandmother, and if two other people are on the back of it
+    they cannot have it. The FIRST one included -- it used to run on from
+    the bottom of the contents."""
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1928", sex="M")
+    c.post("subject", {"id": me})
+    add(c, "Ada", "Boyce", me, "partner", birth="1931", sex="F")
+    html = _book(c)
+    entries = html.count("<article class=entry>")
+    assert entries == 2
+    # the rule is on `.entry` itself, with no exception for the first
+    assert "page-break-before:always" in html
+    assert ".entry:first-of-type{page-break-before:auto" not in html
+
+
+def test_the_record_book_is_ordered_oldest_first_not_from_the_root(app):
+    """That order is right for a sidebar, where the question is "where is my
+    sister", and wrong for a folder that outlives the person who made it."""
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    add(c, "Elias", "Whitcombe", dad, "father", birth="1928", sex="M")
+    html = _book(c)
+    order = [html.index(f"</span> {n}</h2>") for n in
+             ("Elias Whitcombe", "Peter Whitcombe", "James Whitcombe")]
+    assert order == sorted(order), \
+        "the record must read from the oldest known person downwards"
+
+
+def test_the_record_book_never_says_your_uncle(app):
+    """Every relation in the program is measured from one person, and in
+    thirty years nobody reading this folder is that person."""
+    c = app
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    add(c, "Robert", "Whitcombe", dad, "sibling", birth="1958", sex="M")
+    html = _book(c)
+    assert "your uncle" not in html and "your father" not in html
+    assert "<dt>Father</dt>" in html, "it states the relation outright instead"
+
+
+def test_a_record_with_no_photograph_says_so(app):
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1928", sex="M")
+    c.post("subject", {"id": me})
+    assert "No photograph" in _book(c)
