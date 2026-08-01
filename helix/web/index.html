@@ -96,6 +96,19 @@
       <p class="hint">Closest first. Open a tab and click a name.</p>
       <input id="kinFind" type="search" placeholder="Filter these names…"
         autocomplete="off">
+      <!-- CHOOSING SEVERAL. A census page gives forty people the same
+           parish, and one at a time is forty dialogues and forty undo
+           steps. Filter to a surname, tick what the filter found, set the
+           place once — and one Ctrl-Z takes all of it back. -->
+      <div class="pickbar">
+        <button id="pickMode" class="link">Choose several</button>
+        <span id="pickInfo" hidden></span>
+      </div>
+      <div id="pickTools" class="pickrow" hidden>
+        <button id="pickAll" class="ghost">Tick everyone shown</button>
+        <button id="pickNone" class="ghost">Untick all</button>
+        <button id="pickGo" class="primary" disabled>Change them…</button>
+      </div>
       <div id="kinList" class="kinlist"></div>
     </section>
 
@@ -460,9 +473,13 @@
   <div class="exports">
     <button data-pr="records" class="primary">The record book — every
       person, one page each, with a contents and an index</button>
+    <!-- How much paper, BEFORE the button. Four hundred people is four
+         hundred sheets and most of a cartridge. -->
+    <p class="sheets" id="shOn"></p>
     <button data-pr="profiles">Every profile, one per page</button>
     <button data-pr="records-all">The record book for everyone in the
       file, not only those on the chart</button>
+    <p class="sheets" id="shAll"></p>
     <button data-pr="profiles-all">Every profile for everyone in the file</button>
   </div>
 

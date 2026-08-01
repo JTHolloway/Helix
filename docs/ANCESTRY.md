@@ -413,10 +413,26 @@ tests/test_ancestry.py     all of it over real HTTP
 | `GET /api/media?name=` | a stored photograph |
 | `POST /api/person/photo` | add one, as a `data:` URL |
 | `POST /api/person/photo/remove` | take it off a person; the file stays |
+| `POST /api/person/photo/crop` | which part of it is the face, as `x,y,w,h` in fractions; empty puts the whole picture back |
 | `POST /api/person` | edit anything about them, from the profile |
+| `POST /api/person/bulk` | one field on several people, in ONE undoable step |
 | `POST /api/person/heritage` | where their family came from, as a whole list |
+| `GET /api/history/list` | everything done to this file, newest first |
+| `GET /api/history/what?batch=` | who and what one of those changes touched |
+| `GET /api/sheets` | how many sheets a record book will be, at least |
 | `GET /api/gaps` | where more research is needed, ranked |
-| `GET /print/profile\|profiles\|outline` | pages meant for paper |
+| `GET /print/profile\|profiles\|outline\|record\|records\|chart` | pages meant for paper |
+
+**Cropping is never re-encoding.** The crop is four fractions on the `media`
+row and the photograph itself is untouched — the one picture of somebody's
+grandmother is usually a group at a wedding. Four places show it (the
+profile frame, the sidebar avatar, the printed profile, the record book) and
+all four build the same background style from the same numbers.
+
+**`/api/person/bulk` refuses more than it accepts.** `records.BULK_FIELDS`
+is the list, and anything else gets an error naming what can be set instead:
+a surname, a place, an occupation, a confidence, a tag. A birth date is a
+fact about one person.
 
 `/api/person` also carries `heritage` (declared and inherited), `dna` (the
 share and the bloodline seats) and `gaps` (the five worth doing about that

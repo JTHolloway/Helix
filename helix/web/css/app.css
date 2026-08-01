@@ -308,8 +308,12 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
   padding:5px 16px}
 .kinperson:hover{background:var(--paper)}
 .kinperson.on{background:var(--accent-soft)}
+/* A SPAN WITH A BACKGROUND, not an <img>, so the chosen crop shows here
+   too — `object-fit` cannot slide and scale to an arbitrary rectangle.
+   `background-color` and not the `background` shorthand: the shorthand
+   would reset the image the inline style sets. */
 .kinperson .av{width:30px;height:30px;border-radius:50%;flex:0 0 auto;
-  object-fit:cover;background:var(--paper);border:1px solid var(--rule)}
+  display:block;background-color:var(--paper);border:1px solid var(--rule)}
 .kinperson .av.blank{display:flex;align-items:center;justify-content:center;
   font-size:11px;color:var(--muted);letter-spacing:.02em}
 .kinperson .who{min-width:0;display:flex;flex-direction:column;line-height:1.25}
@@ -317,6 +321,41 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
   text-overflow:ellipsis;white-space:nowrap}
 .kinperson .who small{color:var(--muted);font-size:11.5px;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap}
+/* Choosing several. The tick has to be as unmissable as the mode is
+   modal: a list that looks the same but behaves differently is how
+   somebody clicks a name expecting to open it and edits forty instead. */
+.pickbar{display:flex;align-items:baseline;gap:10px;padding:4px 0 2px;
+  font-size:12px}
+.pickbar #pickInfo{color:var(--muted)}
+.pickrow{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 6px}
+.pickrow button{font-size:12px;padding:4px 9px}
+.kinlist.picking .kinperson{cursor:copy}
+.kinlist.picking .kinperson .av{opacity:.55}
+.kinperson .tick{width:15px;height:15px;flex:0 0 auto;border-radius:4px;
+  border:1.5px solid var(--rule);background:var(--bg)}
+.kinperson.picked{background:var(--accent-soft)}
+.kinperson.picked .tick{background:var(--accent);border-color:var(--accent);
+  position:relative}
+.kinperson.picked .tick::after{content:"";position:absolute;left:4px;top:1px;
+  width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;
+  transform:rotate(42deg)}
+.kinperson.picked .av{opacity:1}
+
+/* What one change actually did. */
+.whatlist{list-style:none;margin:6px 0 12px;padding:0;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px}
+.whatlist button{width:100%;text-align:left;border:1px solid var(--rule);
+  background:var(--paper);border-radius:5px;padding:5px 9px;font:inherit;
+  color:inherit;cursor:pointer;line-height:1.25}
+.whatlist button:hover{border-color:var(--accent)}
+.whatlist b{display:block;font-size:13px;font-weight:600}
+.whatlist span{font-size:11.5px;color:var(--muted)}
+.whatlist.loose button{border-left:3px solid var(--accent)}
+.surnames{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 12px}
+.surnames span{background:var(--paper);border:1px solid var(--rule);
+  border-radius:11px;padding:2px 9px;font-size:12px}
+.surnames i{color:var(--muted);font-style:normal;margin-left:3px}
+
 .groups{margin-top:10px}
 .groups > summary{cursor:pointer;font-size:13px;color:var(--muted);
   padding:4px 0}
@@ -329,6 +368,11 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
   border:1px solid var(--rule);background:var(--paper);cursor:pointer;
   display:block;position:relative}
 .drop img{width:100%;height:100%;object-fit:cover;display:block}
+/* The frame shows a RECTANGLE OF the photograph, chosen by the person, and
+   the photograph itself is untouched — see `cropStyle` in profile.js. A
+   background rather than an <img> because a background can be scaled and
+   slid to any rectangle, which `object-fit` cannot. */
+.drop .framed{display:block;width:100%;height:100%}
 .drop .ph{display:flex;flex-direction:column;align-items:center;
   justify-content:center;height:100%;color:var(--muted);font-size:20px;gap:4px}
 .drop .ph em{font-size:9.5px;font-style:normal;text-align:center;padding:0 4px}
@@ -534,6 +578,12 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 .figs .f b{display:block;font-size:26px;font-weight:600}
 .figs .f span{font-size:12px;color:var(--muted)}
 .figs .f small{display:block;font-size:10.5px;color:var(--muted);opacity:.8}
+/* The compare and what-changed screens write plain divs. Same box, so the
+   two do not drift into looking like different parts of the program. */
+.figs > div:not(.f){background:var(--paper);border:1px solid var(--rule);
+  border-radius:6px;padding:10px 12px;line-height:1.25}
+.figs > div:not(.f) b{display:block;font-size:26px;font-weight:600}
+.figs > div:not(.f) span{font-size:12px;color:var(--muted)}
 /* One record per row: what it is, the number, who it was, and any
    qualifier. A marriage names both partners, each of them clickable. */
 .records{list-style:none;margin:0;padding:0;display:grid;
@@ -1094,3 +1144,30 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 .bklist b{font-size:13.5px;display:block}
 .bklist span{font-size:11.5px;color:var(--muted)}
 .bklist button{font-size:12.5px;padding:5px 10px}
+
+/* Whose tree is this? Asked after an import into an empty file, because
+   with nobody at the centre there is nothing to draw and the screen used
+   to say nothing about why. */
+.rootask{border:1px solid var(--accent);border-radius:7px;padding:11px 13px;
+  margin:10px 0 14px;background:var(--accent-soft)}
+.rootask h4{margin:0 0 4px}
+.rootask select{width:100%;margin:6px 0 8px}
+
+/* How much paper a printout will be, said before the button rather than by
+   the printer starting. */
+.sheets{margin:-2px 0 6px;font-size:11.5px;color:var(--muted);
+  padding-left:2px;min-height:1em}
+
+/* Choosing which part of a photograph is the face. Nothing is cut: the
+   square is four fractions on the row and the picture stays whole. */
+.cropDlg{max-width:min(92vw,540px)}
+.cropwrap{position:relative;display:flex;justify-content:center;
+  background:#2a2724;border-radius:6px;overflow:hidden;margin:6px 0}
+.cropwrap img{max-width:100%;max-height:52vh;display:block;
+  touch-action:none;cursor:crosshair;user-select:none;-webkit-user-drag:none}
+.cropbox{position:absolute;border:2px solid #fff;border-radius:3px;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none}
+.progal figure .crop{position:absolute;left:4px;bottom:4px;font-size:10.5px;
+  padding:1px 6px;border-radius:10px;border:1px solid var(--rule);
+  background:rgba(255,255,255,.88);cursor:pointer;color:inherit}
+.progal figure .crop:hover{border-color:var(--accent);color:var(--accent)}

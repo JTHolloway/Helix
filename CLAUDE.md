@@ -2,7 +2,7 @@
 
 A genealogy program that renders family trees as laser-cuttable charts, and
 keeps everything you know about the people on them. Python 3.11+, **zero
-required dependencies**, 589 tests.
+required dependencies**, 620 tests.
 
 ## Read this before anything else
 
@@ -95,7 +95,7 @@ Then read, in this order:
 ## Verify constantly
 
 ```bash
-python3 -m pytest tests -q      # 589 tests, must stay green
+python3 -m pytest tests -q      # 620 tests, must stay green
 python3 bootstrap.py            # must still print Ready
 ```
 

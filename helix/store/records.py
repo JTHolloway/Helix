@@ -65,6 +65,12 @@ KEYS: dict[str, tuple[str, ...]] = {
     # would be turning cited research into hearsay.
     "source": ("id",),
     "citation": ("id",),
+    # Tags. Absent until bulk edit needed them, which meant a tag was the
+    # one thing in the file that could be added and not taken back --
+    # writing them outside `Edit` left no `change_log` row, so Ctrl-Z
+    # skipped over the tag and undid whatever came before it.
+    "tag": ("id",),
+    "person_tag": ("person_id", "tag_id"),
 }
 
 ATTACHMENTS = ("father", "mother", "partner", "child", "sibling")
@@ -494,6 +500,117 @@ def history_list(con, limit: int = 200) -> list[dict]:
     return out
 
 
+def what_changed(con, batch: str, *, limit: int = 400) -> dict:
+    """Who and what a single batch actually touched.
+
+    "IMPORTED 463 PEOPLE" IS NOT A REPORT. It is a number, and the question
+    anybody has after an import is which of them are already in the file
+    under a different spelling, which surnames arrived, and whether the
+    thing they meant to bring in came. Four hundred and sixty-three could
+    equally be the wrong file.
+
+    Read back out of `change_log` rather than counted a second time on the
+    way in. The record system is already the only thing that writes, so
+    this cannot drift from what happened -- and a batch that Ctrl-Z can
+    take back whole is exactly the unit worth showing.
+    """
+    rows = con.execute(
+        "SELECT op, tbl, row_id FROM change_log WHERE batch=? ORDER BY id",
+        (batch,)).fetchall()
+    if not rows:
+        raise ValueError(
+            "There is nothing recorded under that change. It may have been "
+            "made before this file kept a history.")
+    head = con.execute(
+        "SELECT label, MIN(ts) ts, COUNT(*) n FROM change_log WHERE batch=?",
+        (batch,)).fetchone()
+
+    tables: dict = {}
+    for r in rows:
+        tables[r["tbl"]] = tables.get(r["tbl"], 0) + 1
+
+    # WHICH PERSON DOES THIS ROW BELONG TO. Counting `person` rows alone
+    # would have said "0 people" for correcting forty birthplaces, because
+    # a birthplace is an `event` and rule 4 means there is no birth column
+    # on `person` to touch. Every table that can be traced back to somebody
+    # is traced; a `place` or a `source` row belongs to no one and is left
+    # out of the count rather than guessed at.
+    made: list[str] = []                # order kept: an import reads in file order
+    touched: set[str] = set()
+
+    def note(pid, is_new):
+        if not pid:
+            return
+        if is_new:
+            made.append(pid)
+        else:
+            touched.add(pid)
+
+    for r in rows:
+        try:
+            key = json.loads(r["row_id"])
+        except Exception:
+            continue
+        tbl, new_row = r["tbl"], r["op"] == "insert"
+        if tbl == "person":
+            note(key.get("id"), new_row)
+        elif tbl in ("person_name", "person_tag", "person_heritage",
+                     "media_link", "union_partner", "union_child",
+                     "event_role"):
+            note(key.get("person_id"), False)
+        elif tbl == "event":
+            # An event's own row does not say whose it is. `event_role` does,
+            # and one event can belong to two people -- a marriage.
+            for x in con.execute("SELECT person_id FROM event_role WHERE "
+                                 "event_id=? AND person_id IS NOT NULL",
+                                 (key.get("id"),)):
+                note(x["person_id"], False)
+
+    new = set(made)
+    edited = touched - new
+
+    from ..graph import build as gbuild
+    g = gbuild.load(con)
+
+    def who(pid):
+        p = g.people.get(pid)
+        return {"id": pid,
+                "name": p.full_name if p else "(no longer on the chart)",
+                "life": p.lifespan if p else "",
+                "surname": p.surname if p else "",
+                "parents": len(g.parents(pid)) if p else 0}
+
+    added_ids = list(dict.fromkeys(made))
+    people = [who(p) for p in added_ids[:limit]]
+    changed = [who(p) for p in sorted(
+        edited, key=lambda x: g.people[x].sort_key
+        if x in g.people else "~")][:limit]
+
+    surnames: dict = {}
+    years = []
+    for x in people:
+        if x["surname"]:
+            surnames[x["surname"]] = surnames.get(x["surname"], 0) + 1
+        p = g.people.get(x["id"])
+        if p and p.birth_year:
+            years.append(p.birth_year)
+    # THE ONES WITH NOBODY ABOVE THEM. After an import these are where the
+    # two trees have to be joined by hand, and they are the only part of a
+    # four-hundred-person import that needs a decision.
+    loose = [x for x in people if not x["parents"]]
+
+    return {
+        "batch": batch, "label": head["label"], "at": head["ts"],
+        "rows": head["n"], "tables": tables,
+        "added": len(added_ids), "edited": len(edited),
+        "people": people, "truncated": len(added_ids) > len(people),
+        "changed": changed,
+        "surnames": sorted(surnames.items(), key=lambda kv: (-kv[1], kv[0])),
+        "years": [min(years), max(years)] if years else None,
+        "loose": loose[:40], "loose_total": len(loose),
+    }
+
+
 def revert_to(con, batch: str) -> dict:
     """Undo everything back to just after that batch.
 
@@ -570,6 +687,152 @@ def update_person(con, body: dict) -> dict:
         if changes:
             e.update("person", {"id": pid}, changes)
     return {"ok": True, "id": pid, "warnings": warnings_for(con, pid)}
+
+
+#: What can sensibly be set on many people at once. Deliberately short.
+#: A birth date is a fact about one person and setting it on forty is
+#: always wrong; a surname spelling, a place, a confidence level or a tag
+#: is a correction that genuinely applies to a whole branch at once.
+BULK_FIELDS = [
+    ("surname", "Surname"),
+    ("birth_place", "Born in"),
+    ("death_place", "Died in"),
+    ("occupation", "Occupation"),
+    ("sex", "Recorded as"),
+    ("confidence", "How sure you are"),
+    ("living", "Living or dead"),
+    ("tag", "Tag"),
+]
+
+#: How each one reads back once it is done. "Born in set on 5 people" is what
+#: a template gets you and it is not English.
+_BULK_SAID = {
+    "surname": "Surname changed on",
+    "birth_place": "Birthplace set on",
+    "death_place": "Place of death set on",
+    "occupation": "Occupation set on",
+    "sex": "Recorded-as set on",
+    "confidence": "Confidence set on",
+    "living": "Living or dead set on",
+    "tag": "Tagged",
+}
+
+
+def bulk_edit(con, body: dict) -> dict:
+    """POST /api/person/bulk. One field, several people, one Ctrl-Z.
+
+    WHY THIS EXISTS. A census page gives forty people the same parish and a
+    transcription gives a whole branch the same misspelt surname, and doing
+    either one person at a time is forty dialogues and forty undo steps. It
+    is also the point at which somebody gives up and edits the database.
+
+    ONE `Edit`, so the whole thing is one entry in the history and one
+    Ctrl-Z takes all of it back -- not forty presses, thirty-nine of which
+    leave the file half corrected.
+
+    It refuses rather than guesses. An unknown field, an empty list of
+    people, or a field that only makes sense on one person is an error that
+    says what to do instead.
+    """
+    field = (body.get("field") or "").strip()
+    ids = [x for x in (body.get("ids") or []) if x]
+    value = body.get("value")
+    known = dict(BULK_FIELDS)
+    if field not in known:
+        raise ValueError(
+            f"'{field}' cannot be set on several people at once. These can: "
+            + ", ".join(f"{lab.lower()} ({k})" for k, lab in BULK_FIELDS)
+            + ". Anything else is a fact about one person — open them and "
+              "edit it there.")
+    if not ids:
+        raise ValueError("Nobody was chosen. Tick the people to change first.")
+    if value is None:
+        raise ValueError(f"No value was given for {known[field].lower()}.")
+
+    live = {r["id"] for r in con.execute(
+        "SELECT id FROM person WHERE id IN (%s)"
+        % ",".join("?" * len(ids)), ids)}
+    missing = [x for x in ids if x not in live]
+    ids = [x for x in ids if x in live]
+    if not ids:
+        raise ValueError("None of those people are in this file any more.")
+
+    said = _BULK_SAID.get(field, f"{known[field]} set on")
+    label = f"{said} {len(ids)} {'person' if len(ids) == 1 else 'people'}"
+    done, skipped = [], []
+    with Edit(con, label) as e:
+        for pid in ids:
+            if field == "surname":
+                r = con.execute("SELECT id,given FROM person_name WHERE "
+                                "person_id=? AND is_primary=1 LIMIT 1",
+                                (pid,)).fetchone()
+                sur = str(value).strip()
+                if r:
+                    e.update("person_name", {"id": r["id"]},
+                             {"surname": sur,
+                              "sort_key": f"{sur.upper()}, {r['given'] or ''}"})
+                else:
+                    e.insert("person_name",
+                             {"id": new_id(), "person_id": pid, "type": "birth",
+                              "is_primary": 1, "given": "", "surname": sur,
+                              "sort_key": f"{sur.upper()}, "})
+            elif field in ("birth_place", "death_place"):
+                # The date is NOT passed, so `set_event` leaves whatever is
+                # recorded alone. Sending "" here wiped the birth date beside
+                # the place once already; rule 10 is not a style preference.
+                set_event(e, pid, field.split("_")[0], None, str(value).strip())
+            elif field == "occupation":
+                set_event(e, pid, "occupation", "", desc=str(value).strip())
+            elif field == "sex":
+                if value not in ("M", "F", "X", "U"):
+                    raise ValueError(
+                        "Recorded as must be M, F, X or U (U is 'not "
+                        "recorded').")
+                e.update("person", {"id": pid}, {"sex": value})
+            elif field == "confidence":
+                try:
+                    n = int(value)
+                except (TypeError, ValueError):
+                    n = -1
+                if not 0 <= n <= 3:
+                    raise ValueError(
+                        "How sure you are runs from 0 (a guess) to 3 (seen "
+                        "the record).")
+                e.update("person", {"id": pid}, {"confidence": n})
+            elif field == "living":
+                e.update("person", {"id": pid},
+                         {"living": 1 if value in (True, 1, "1", "yes") else 0})
+            elif field == "tag":
+                name = str(value).strip()
+                if not name:
+                    raise ValueError("A tag needs a word.")
+                t = con.execute("SELECT id FROM tag WHERE name=? LIMIT 1",
+                                (name,)).fetchone()
+                tid = t["id"] if t else new_id()
+                if not t:
+                    e.insert("tag", {"id": tid, "name": name})
+                if con.execute("SELECT 1 FROM person_tag WHERE person_id=? "
+                               "AND tag_id=?", (pid, tid)).fetchone():
+                    skipped.append(pid)
+                    continue
+                e.insert("person_tag", {"person_id": pid, "tag_id": tid})
+            done.append(pid)
+
+    if done:
+        msg = (f"{said} {len(done)} "
+               f"{'person' if len(done) == 1 else 'people'}. "
+               f"Ctrl-Z takes the whole change back.")
+    else:
+        # NOTHING HAPPENED, so do not promise an undo that has nothing to
+        # take back. The commonest way here is running the same tag twice.
+        msg = "Nothing to change — they all had that already."
+    if skipped and done:
+        msg += f" {len(skipped)} already had it."
+    if missing:
+        msg += (f" {len(missing)} could not be found and "
+                f"{'was' if len(missing) == 1 else 'were'} left alone.")
+    return {"ok": True, "changed": len(done), "skipped": len(skipped),
+            "missing": len(missing), "message": msg}
 
 
 def set_heritage(con, body: dict) -> dict:

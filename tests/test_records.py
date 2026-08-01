@@ -62,6 +62,17 @@ class Client:
             urllib.request.urlopen(req)
         return json.loads(e.value.read())
 
+    def get_expecting_failure(self, path: str):
+        """A GET that should be refused, and told what to do instead.
+
+        Rule 8 applies to reads as much as to writes: asking for a change
+        that is not in the file has to say so rather than return an empty
+        report that looks like "nothing happened".
+        """
+        with pytest.raises(urllib.error.HTTPError) as e:
+            urllib.request.urlopen(f"{self.base}/api/{path}")
+        return json.loads(e.value.read())
+
 
 @pytest.fixture
 def app(tmp_path):
@@ -1023,3 +1034,217 @@ def test_the_same_record_twice_is_only_listed_once(documented):
     html = _page(c, f"record?id={ids['elias']}")
     trail = html[html.index("Places and dates"):]
     assert trail.count("22 Mar 1812") == 1
+
+
+# ================================================== several people at once ====
+#
+# The point at which somebody gives up and edits the database. A census page
+# gives forty people the same parish and a transcription gives a whole branch
+# the same misspelt surname; one at a time is forty dialogues and forty undo
+# steps, thirty-nine of which leave the file half corrected.
+def test_one_field_on_several_people_is_one_undo(app):
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1812", sex="M")
+    c.post("subject", {"id": me})
+    kids = [add(c, n, "Whitcombe", me, "child", birth=str(1840 + i))
+            for i, n in enumerate(("Ann", "Mary", "Thomas", "Sarah"))]
+
+    r = c.post("person/bulk", {"field": "birth_place", "ids": kids,
+                               "value": "Nunney, Somerset"})
+    assert r["changed"] == 4
+    for k in kids:
+        assert c.get(f"person?id={k}")["birth_place"] == "Nunney, Somerset"
+
+    # ONE Ctrl-Z, not four. The whole change is one entry in the history.
+    c.post("undo", {})
+    for k in kids:
+        assert not c.get(f"person?id={k}").get("birth_place")
+
+
+def test_setting_a_place_on_several_people_keeps_their_dates(app):
+    """Rule 10, on the path that writes to forty people at once. An absent
+    key means "leave this alone"; sending "" for the date wiped the birth
+    date beside the place the first time this was written for ONE person."""
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1812", sex="M")
+    c.post("subject", {"id": me})
+    kids = [add(c, n, "Whitcombe", me, "child", birth=y)
+            for n, y in (("Ann", "3 Mar 1840"), ("Mary", "1842"))]
+    c.post("person/bulk", {"field": "birth_place", "ids": kids, "value": "Frome"})
+    assert c.get(f"person?id={kids[0]}")["birth"] == "3 Mar 1840"
+    assert c.get(f"person?id={kids[1]}")["birth"] == "1842"
+
+
+def test_a_field_that_belongs_to_one_person_is_refused_with_the_list(app):
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1812")
+    r = c.post_expecting_failure(
+        "person/bulk", {"field": "birth", "ids": [me], "value": "1812"})
+    assert "cannot be set on several people" in r["error"]
+    assert "birth_place" in r["error"], "says what CAN be, rule 8"
+
+
+def test_bulk_edit_refuses_an_empty_choice(app):
+    c = app
+    add(c, "Elias", "Whitcombe")
+    r = c.post_expecting_failure(
+        "person/bulk", {"field": "birth_place", "ids": [], "value": "x"})
+    assert "Nobody was chosen" in r["error"]
+
+
+def test_a_tag_can_be_taken_back(app):
+    """Everything that can be added can be removed. Tags were written
+    outside `Edit`, so they left no change_log row and Ctrl-Z stepped over
+    them and undid whatever came before instead."""
+    c = app
+    me = add(c, "Elias", "Whitcombe")
+    c.post("subject", {"id": me})
+    who = add(c, "Ann", "Whitcombe", me, "child")
+    r = c.post("person/bulk", {"field": "tag", "ids": [who],
+                               "value": "1841 census"})
+    assert r["changed"] == 1
+    again = c.post("person/bulk", {"field": "tag", "ids": [who],
+                                   "value": "1841 census"})
+    assert again["changed"] == 0
+    assert "Ctrl-Z" not in again["message"], \
+        "nothing happened, so do not promise an undo with nothing to take back"
+    c.post("undo", {})
+    # The person is still there; only the tag went.
+    assert c.get(f"person?id={who}")["name"] == "Ann Whitcombe"
+
+
+# ================================================ what a change actually did ==
+def test_what_changed_names_the_people_not_just_a_count(app):
+    """"Imported 463 people" is a number, and it could equally be the wrong
+    file. Read back out of change_log so it cannot drift from what
+    happened."""
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1812")
+    c.post("subject", {"id": me})
+    kids = [add(c, n, "Whitcombe", me, "child") for n in ("Ann", "Mary")]
+    c.post("person/bulk", {"field": "birth_place", "ids": kids, "value": "Frome"})
+
+    batch = c.get("history/list")["changes"][0]["batch"]
+    w = c.get(f"history/what?batch={batch}")
+    assert w["added"] == 0, "nobody was created"
+    assert w["edited"] == 2, "both children were touched"
+    # A BIRTHPLACE IS AN EVENT, never a column on person (rule 4), so
+    # counting person rows alone reported "0 people" for this change.
+    assert {p["name"] for p in w["changed"]} == {"Ann Whitcombe", "Mary Whitcombe"}
+
+
+def test_what_changed_reports_who_an_import_brought_in(app, tmp_path):
+    c = app
+    me = add(c, "Elias", "Whitcombe", birth="1812")
+    c.post("subject", {"id": me})
+    add(c, "Ann", "Whitcombe", me, "child", birth="1840")
+
+    # The newest batch is the one that added her. The label names the
+    # RELATIONSHIP -- "Add a child for Elias Whitcombe" -- because that is
+    # what the person did; who arrived is what this screen is for.
+    batch = c.get("history/list")["changes"][0]["batch"]
+    w = c.get(f"history/what?batch={batch}")
+    assert w["added"] == 1
+    assert w["people"][0]["name"] == "Ann Whitcombe"
+    assert w["surnames"] == [["Whitcombe", 1]]
+    assert w["loose_total"] == 0, "she has a parent"
+
+
+def test_what_changed_on_a_batch_that_is_not_there_says_what_to_do(app):
+    c = app
+    add(c, "Elias", "Whitcombe")
+    r = c.get_expecting_failure("history/what?batch=nope")
+    assert "nothing recorded" in r["error"].lower()
+
+
+# ======================================================= cropping a face ======
+def _png(w=4, h=2, shade=120) -> str:
+    """A tiny picture as a data URL, which is what a browser sends."""
+    import base64
+    import struct
+    import zlib
+
+    def chunk(tag, data):
+        c = tag + data
+        return (struct.pack(">I", len(data)) + c + struct.pack(">I", zlib.crc32(c)))
+    raw = b"".join(b"\x00" + bytes([shade]) * (w * 3) for _ in range(h))
+    png = (b"\x89PNG\r\n\x1a\n"
+           + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
+           + chunk(b"IDAT", zlib.compress(raw))
+           + chunk(b"IEND", b""))
+    return "data:image/png;base64," + base64.b64encode(png).decode()
+
+
+def test_a_crop_is_a_rectangle_and_never_new_pixels(app, tmp_path):
+    """The one photograph of somebody's grandmother is usually a group at a
+    wedding. Cropping to her face by re-encoding destroys the only copy of
+    everybody else at it, and nothing undoes that — the bytes are gone."""
+    c = app
+    me = add(c, "Harriet", "Whitcombe", birth="1952", sex="F")
+    mid = c.post("person/photo", {"id": me, "data": _png(40, 20),
+                                  "filename": "group.png"})["media_id"]
+    stored = next(p for p in c.get("person", id=me)["photos"])
+    before = (tmp_path / "mine-media" / stored["name"]).read_bytes()
+
+    c.post("person/photo/crop", {"id": me, "media_id": mid,
+                                 "crop": "0.7,0.1,0.2,0.4"})
+    after = (tmp_path / "mine-media" / stored["name"]).read_bytes()
+    assert after == before, "the photograph itself must not be touched"
+    assert c.get("person", id=me)["photos"][0]["crop"].startswith("0.7000,")
+
+
+def test_taking_the_crop_off_puts_the_whole_picture_back(app):
+    c = app
+    me = add(c, "Harriet", "Whitcombe")
+    mid = c.post("person/photo", {"id": me, "data": _png(),
+                                  "filename": "g.png"})["media_id"]
+    c.post("person/photo/crop", {"id": me, "media_id": mid,
+                                 "crop": "0.1,0.1,0.5,0.5"})
+    assert c.get("person", id=me)["photos"][0]["crop"]
+    c.post("person/photo/crop", {"id": me, "media_id": mid, "crop": ""})
+    assert not c.get("person", id=me)["photos"][0]["crop"]
+
+
+def test_a_crop_undoes_like_everything_else(app):
+    """Rule: anything that can be added can be taken back."""
+    c = app
+    me = add(c, "Harriet", "Whitcombe")
+    mid = c.post("person/photo", {"id": me, "data": _png(),
+                                  "filename": "g.png"})["media_id"]
+    c.post("person/photo/crop", {"id": me, "media_id": mid,
+                                 "crop": "0.2,0.2,0.3,0.3"})
+    c.post("undo", {})
+    assert not c.get("person", id=me)["photos"][0]["crop"]
+    c.post("redo", {})
+    assert c.get("person", id=me)["photos"][0]["crop"].startswith("0.2000,")
+
+
+def test_a_crop_outside_the_picture_is_refused_with_what_to_do(app):
+    c = app
+    me = add(c, "Harriet", "Whitcombe")
+    mid = c.post("person/photo", {"id": me, "data": _png(),
+                                  "filename": "g.png"})["media_id"]
+    r = c.post_expecting_failure(
+        "person/photo/crop", {"id": me, "media_id": mid, "crop": "0.9,0,0.5,0.5"})
+    assert "outside the picture" in r["error"]
+    r = c.post_expecting_failure(
+        "person/photo/crop", {"id": me, "media_id": mid, "crop": "left a bit"})
+    assert "four numbers" in r["error"]
+
+
+def test_the_frame_and_the_printed_sheet_agree_about_the_face(app):
+    """Two places build the style that shows the crop — `cropStyle` in
+    profile.js and `crop_style` here — and if they ever disagree the sidebar
+    shows a wedding group where the record shows a face. This pins the one
+    that can be tested; `tests/test_web.py` parses the other."""
+    from helix.render.dossier import crop_style
+    whole = crop_style({"name": "x.png", "crop": ""})
+    assert "background-size:cover" in whole
+    part = crop_style({"name": "x.png", "crop": "0.7,0.1,0.2,0.4"})
+    # width 0.2 of the picture means the picture is scaled to 500%, and the
+    # left edge sits 0.7/(1-0.2) = 87.5% of the way along the overflow.
+    assert "background-size:500.000% 250.000%" in part
+    assert "background-position:87.50% 16.67%" in part
+    # Junk is shown whole rather than throwing: a record with a face on it
+    # is worth more than an error page.
+    assert "cover" in crop_style({"name": "x.png", "crop": "nonsense"})

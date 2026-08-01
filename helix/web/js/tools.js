@@ -116,7 +116,8 @@ async function contactScreen(host, { onSelect, onToast }) {
 }
 
 // ─────────────────────────────────────────────────────────── history ──────
-async function historyScreen(host, { onChanged, onToast }) {
+async function historyScreen(host, hooks) {
+  const { onChanged, onToast, onSelect } = hooks;
   const { changes } = await get('history/list');
   host.innerHTML = `
     <p class="hint">Everything that has been done to this file, newest
@@ -127,10 +128,13 @@ async function historyScreen(host, { onChanged, onToast }) {
       <b>${esc(c.label)}</b>
       <span>${esc((c.at || '').replace('T', ' '))} · ${c.rows} ${
         c.rows === 1 ? 'row' : 'rows'}${c.undone ? ' · taken back' : ''}</span>
+      <button class="link" data-what="${esc(c.batch)}">who it changed</button>
       ${c.undone ? '' : `<button class="link" data-back="${esc(c.batch)}"
         >take everything back to here</button>`}
     </li>`).join('')}</ol>`
       : '<p class="none">Nothing has been changed yet.</p>'}`;
+  host.querySelectorAll('[data-what]').forEach(b =>
+    b.addEventListener('click', () => whatScreen(host, b.dataset.what, hooks)));
   host.querySelectorAll('[data-back]').forEach(b =>
     b.addEventListener('click', async () => {
       if (!confirm('Take back every change made since then?\n\n'
@@ -139,9 +143,105 @@ async function historyScreen(host, { onChanged, onToast }) {
         const r = await post('history/revert', { batch: b.dataset.back });
         onToast(r.message);
         onChanged();
-        historyScreen(host, { onChanged, onToast });
+        historyScreen(host, hooks);
       } catch (e) { onToast(e.message); }
     }));
+}
+
+// ─────────────────────────────────────────────────── what changed ─────────
+//
+// "IMPORTED 463 PEOPLE" IS NOT A REPORT. It is a number, and it could
+// equally be the wrong file. What somebody wants to know afterwards is
+// which surnames arrived, what years they cover, and — the only part that
+// needs a decision — which of them have nobody above them, because those
+// are where the two trees have to be joined by hand.
+//
+// Read back out of the change log, so it says what happened rather than
+// what the importer thought it was doing.
+export async function whatScreen(host, batch, hooks, opts = {}) {
+  const { onSelect, onToast, onChanged } = hooks;
+  host.innerHTML = '<p class="hint">…</p>';
+  let d;
+  try { d = await get('history/what', { batch }); }
+  catch (e) { host.innerHTML = `<p class="warn">${esc(e.message)}</p>`; return; }
+
+  const list = (people, cls) => `<ul class="whatlist ${cls}">${people.map(p =>
+    `<li><button data-go="${esc(p.id)}"><b>${esc(p.name)}</b>
+      <span>${esc(p.life || 'dates unknown')}</span></button></li>`).join('')}</ul>`;
+
+  // IMPORTING 139 PEOPLE INTO AN EMPTY FILE DREW AN EMPTY CHART. Every
+  // relation in this program is measured from one person, so with nobody at
+  // the centre there is no tree to draw — and the screen said nothing about
+  // why. Asked here rather than guessed at: who the root is is not a
+  // preference, it is which document this is.
+  const rootAsk = opts.needRoot && d.people.length ? `
+    <div class="rootask">
+      <h4>Whose tree is this?</h4>
+      <p class="hint">Every relation on the chart is measured from one
+        person — “my grandmother”, “my second cousin”. Nothing is drawn
+        until you say who that is. You can change it later, and doing so
+        does not alter anything you have recorded.</p>
+      <select id="whRoot">${[...d.people]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(p => `<option value="${esc(p.id)}">${esc(p.name)}${
+          p.life ? ' · ' + esc(p.life) : ''}</option>`).join('')}</select>
+      <button class="primary" id="whRootGo">This is the person</button>
+    </div>` : '';
+
+  host.innerHTML = `
+    <p class="cmphead"><b>${esc(d.label)}</b>
+      <span>${esc((d.at || '').replace('T', ' '))}</span></p>
+    ${rootAsk}
+    <div class="figs">
+      <div><b>${d.added}</b><span>added</span></div>
+      <div><b>${d.edited}</b><span>changed</span></div>
+      <div><b>${d.loose_total}</b><span>with no parents yet</span></div>
+      <div><b>${d.rows}</b><span>rows written</span></div>
+    </div>
+    ${d.years ? `<p class="hint">Born between <b>${d.years[0]}</b> and
+      <b>${d.years[1]}</b>.</p>` : ''}
+    ${d.surnames.length ? `<h4>Surnames</h4><p class="surnames">${
+      d.surnames.slice(0, 14).map(([n, c]) =>
+        `<span>${esc(n)} <i>${c}</i></span>`).join('')}</p>` : ''}
+    ${d.loose.length ? `<h4>Nobody above them yet</h4>
+      <p class="hint">These are where your tree and theirs have to be
+        joined. Open one, find who their parents should be, and use
+        <b>Link to somebody already here</b>.</p>${list(d.loose, 'loose')}`
+      : ''}
+    ${d.people.length ? `<h4>Everybody added</h4>${list(d.people, '')}
+      ${d.truncated ? `<p class="hint">First ${d.people.length} of
+        ${d.added}.</p>` : ''}` : ''}
+    ${d.changed && d.changed.length ? `<h4>Already in your file, changed</h4>
+      ${list(d.changed, '')}` : ''}
+    <div class="row">
+      <button class="ghost" id="whBack">Back to the history</button>
+      <button class="ghost" id="whUndo">Take this change back</button>
+    </div>`;
+  host.querySelectorAll('[data-go]').forEach(b =>
+    b.addEventListener('click', () => onSelect(b.dataset.go)));
+  const rootGo = host.querySelector('#whRootGo');
+  if (rootGo) rootGo.addEventListener('click', async () => {
+    const id = host.querySelector('#whRoot').value;
+    try {
+      await post('subject', { id });
+      onToast('The chart is now drawn from them. Everything on it is a '
+            + 'relation to that person.');
+      onChanged();
+      whatScreen(host, batch, hooks, {});
+    } catch (e) { onToast(e.message); }
+  });
+  host.querySelector('#whBack').addEventListener('click',
+    () => historyScreen(host, hooks));
+  host.querySelector('#whUndo').addEventListener('click', async () => {
+    if (!confirm(`Take back "${d.label}"?\n\n`
+               + 'Nothing is deleted — Ctrl-Y walks it forward again.')) return;
+    try {
+      const r = await post('history/revert', { batch });
+      onToast(r.message);
+      onChanged();
+      historyScreen(host, hooks);
+    } catch (e) { onToast(e.message); }
+  });
 }
 
 // ──────────────────────────────────────────────────────────── compare ─────

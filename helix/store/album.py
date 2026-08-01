@@ -235,6 +235,35 @@ def set_taken(con, media_id: str, text: str) -> None:
                  {"taken": (text or "").strip() or None})
 
 
+def set_crop(con, media_id: str, crop: str) -> None:
+    """Which part of a photograph is the face.
+
+    "x,y,w,h" in fractions of the image, or empty to go back to the whole
+    picture. NOTHING IS RE-ENCODED: the family photograph is very often the
+    only copy of a group at a wedding, and cropping it to one face by
+    writing new pixels would destroy everybody else in it. The frame shows
+    the rectangle; the file still holds the wedding; and it undoes like
+    every other edit because it goes through `Edit`.
+    """
+    from . import records
+    crop = (crop or "").strip()
+    if crop:
+        try:
+            x, y, w, h = (float(v) for v in crop.split(","))
+        except ValueError:
+            raise ValueError(
+                "A crop is four numbers — across, down, wide, tall — each a "
+                "fraction of the picture between 0 and 1.")
+        if not (0 <= x < 1 and 0 <= y < 1 and 0 < w <= 1 and 0 < h <= 1
+                and x + w <= 1.0001 and y + h <= 1.0001):
+            raise ValueError(
+                "That crop falls outside the picture. Drag the frame back "
+                "inside it and try again.")
+        crop = f"{x:.4f},{y:.4f},{w:.4f},{h:.4f}"
+    with records.Edit(con, "Crop a photograph") as e:
+        e.update("media", {"id": media_id}, {"crop": crop or None})
+
+
 def detach(con, pid: str, media_id: str) -> None:
     """Take a picture off a person. The FILE stays in the album: another
     person may be in it, and a photograph is not something to delete because
@@ -262,9 +291,13 @@ def photos_of(con, pid: str) -> list[dict]:
              # here.
              "taken": r["taken"] or "",
              "portrait": bool(r["is_portrait"]),
+             # WHICH PART OF IT IS THE FACE. Four fractions, not new pixels
+             # -- see the v5 migration. Absent means "all of it", which is
+             # what every photograph in every file made before this said.
+             "crop": r["crop"] or "",
              "kind": kind_of(r["path"])}
             for r in con.execute(
-                "SELECT m.id, m.path, m.type, m.caption, m.taken, "
+                "SELECT m.id, m.path, m.type, m.caption, m.taken, m.crop, "
                 "l.is_portrait "
                 "FROM media m JOIN media_link l ON l.media_id = m.id "
                 "WHERE l.person_id = ? "

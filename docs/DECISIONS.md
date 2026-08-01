@@ -608,3 +608,105 @@ itself is the fact, it is stated, and three rows of "Unknown" beneath it say
 nothing except that the page is padded. Where the date IS known it carries
 how old they were, which is the first thing anybody checks a marriage record
 against.
+
+## One field, several people
+
+The point at which somebody stops using the program and opens the database.
+A census page gives forty people the same parish; a transcription gives a
+whole branch the same misspelt surname. One at a time that is forty
+dialogues and forty undo steps, thirty-nine of which leave the file half
+corrected.
+
+`records.bulk_edit` is one `Edit`, so the whole change is one entry in the
+history and **one Ctrl-Z takes all of it back**. The list of fields it
+accepts is deliberately short and refuses everything else by name: a
+surname, a place, an occupation, a confidence, a tag — the things that can
+sensibly be true of a whole branch at once. A birth date is a fact about one
+person and setting it on forty is always wrong, so asking for it gets an
+error that lists what CAN be set instead.
+
+It lives in the list of names, not in a menu of its own, because the useful
+sequence is already there: filter to "whitcombe", tick what the filter
+found, set the place once. Only what the filter is SHOWING can be ticked in
+one press — somebody in a closed tab being changed invisibly is how a bulk
+edit becomes a thing people are afraid of.
+
+Tags needed adding to `KEYS` to make this work, and finding that out was the
+point. A tag was the one thing in the program that could be added and not
+taken back: written outside `Edit` it left no `change_log` row, so Ctrl-Z
+stepped over it and undid whatever came before instead.
+
+## "Imported 463 people" is not a report
+
+It is a number, and it is the one thing nobody can check. Four hundred and
+sixty-three could equally be the wrong file. What somebody wants to know
+after an import is which surnames arrived, what years they cover, and — the
+only part that needs a decision — which of the new people have nobody above
+them, because those are where the two trees have to be joined by hand.
+
+`records.what_changed` reads it back out of `change_log` rather than
+counting a second time on the way in. The record system is already the only
+thing that writes, so the report cannot drift from what happened, and a
+batch is exactly the unit one Ctrl-Z takes back.
+
+Counting `person` rows alone was wrong and looked right. A birthplace is an
+event — rule 4, there is no `birth_place` column on `person` — so correcting
+forty birthplaces reported "0 people changed". Every table that can be
+traced back to somebody is traced, and `event` is traced through
+`event_role`, which is also how one marriage correctly reports as two
+people.
+
+**Importing into an empty file drew an empty chart.** Every relation is
+measured from one person, so with nobody at the centre there is nothing to
+draw — and the screen said nothing about why. The report now asks who the
+root is, from the list of people that have just arrived. Asked, not guessed:
+which document this is is not a preference.
+
+## How much paper, before the button
+
+"Print the record book" on a four-hundred-person file is four hundred sheets
+and most of a cartridge, and the only warning was the printer starting.
+
+**A floor, and it says it is one.** Where a paragraph breaks depends on the
+browser, the font the machine has and the paper chosen in the print
+dialogue. Measuring the page on screen does not help either: `@media screen`
+lays it out at a different width with different padding, and the count came
+out ten per cent wrong — which, presented as a number, is worse than no
+number at all. What IS certain is structural, and it is the part that
+matters: `.entry{page-break-before:always}` means one sheet per person
+whatever else happens.
+
+Measuring it turned up a real defect. A perfectly ordinary entry — nothing
+unusual recorded — came out 283mm against a 265mm page and took two sheets,
+the second nearly empty; sixty people printed as 120 sheets. Seven section
+headings at 5mm above and 1.5mm below is 87mm of a page spent on labels and
+the air around them, and a millimetre above and below each of two dozen fact
+rows is another forty. Tightened to 3.5mm and 0.55mm, an entry is 249mm and
+"one page per person" is true again for anybody without a great deal
+recorded: sixty people is now 74 sheets, and the ones that run on are the
+ones that should.
+
+## Cropping a photograph without cropping it
+
+The one photograph of somebody's grandmother is usually a group at a
+wedding. Cropping it to her face by writing new pixels destroys the only
+copy of everybody else at it, and nothing undoes that — the bytes are gone.
+It would also mean an image library, which the program does not have.
+
+So a crop is four fractions on the `media` row, and the frame shows that
+rectangle: `background-size:100/w` and `background-position:x/(1-w)`, which
+is the one identity that slides and scales an image to an arbitrary
+rectangle. `object-fit` cannot do it, which is why the portrait is a div and
+not an `<img>` in all four places it appears.
+
+Those four places have to agree. The frame in the profile, the avatar in the
+sidebar, the printed profile and the record book all build the same style
+from the same fractions, and the two implementations — `cropStyle` in
+`profile.js` and `crop_style` in `dossier.py` — are pinned to each other by
+a test. They disagreed once already: the JavaScript used double quotes
+inside `url()` and the HTML attribute they were interpolated into closed on
+the first one, so the interface frame was blank while the printed sheet was
+right. A difference nobody would think to check.
+
+`print-color-adjust:exact` is what stops a browser dropping the background
+as decoration and taking the face off every sheet in the binder.

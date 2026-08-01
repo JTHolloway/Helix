@@ -48,8 +48,18 @@ _RECORD_ROUTES = {
     "/api/person/photo/caption": lambda con, b: _caption(con, b),
     "/api/person/photo/portrait": lambda con, b: _set_portrait(con, b),
     "/api/person/photo/taken": lambda con, b: _taken(con, b),
+    # WHICH PART OF THE PICTURE IS THE FACE. A rectangle on the row, not
+    # new pixels: the one photograph of somebody's grandmother is usually a
+    # group at a wedding, and re-encoding it to her face destroys the only
+    # copy of everybody else at it.
+    "/api/person/photo/crop": lambda con, b: _crop_photo(con, b),
     "/api/person/heritage": lambda con, b: records.set_heritage(con, b),
     "/api/person/merge":  lambda con, b: records.merge(con, b),
+    # One field, several people, ONE Ctrl-Z. A census page gives forty
+    # people the same parish and doing that one at a time is forty
+    # dialogues and forty undo steps, thirty-nine of which leave the file
+    # half corrected.
+    "/api/person/bulk":   lambda con, b: records.bulk_edit(con, b),
     # ANY fact, with a date, a place, a note and a confidence -- and where
     # it came from. The schema has carried `source` and `citation` from the
     # first commit and only the GEDCOM importer ever wrote to them, so the
@@ -102,6 +112,27 @@ def _taken(con, b: dict) -> dict:
     """
     from .store import album
     album.set_taken(con, b["media_id"], b.get("taken", ""))
+    return {"ok": True, "id": b.get("id")}
+
+
+def _crop_photo(con, b: dict) -> dict:
+    """Which part of a photograph to show in the frame.
+
+    Nothing is re-encoded and nothing is lost: the crop is four fractions on
+    the row, an empty one puts the whole picture back, and Ctrl-Z undoes it
+    like anything else.
+    """
+    from .store import album
+    row = con.execute("SELECT path FROM media WHERE id=?",
+                      (b["media_id"],)).fetchone()
+    if not row:
+        raise ValueError("That picture is not in this file any more.")
+    if album.kind_of(row["path"]) != "photo":
+        raise ValueError(
+            "Only a photograph can be cropped. A scanned certificate is "
+            "kept whole, because the part somebody needs from it is the "
+            "part you did not think to keep.")
+    album.set_crop(con, b["media_id"], b.get("crop", ""))
     return {"ok": True, "id": b.get("id")}
 
 
@@ -290,6 +321,10 @@ class Handler(BaseHTTPRequestHandler):
                                for k, t in records.FACT_KINDS],
                 "confidence": [{"level": n, "label": t}
                                for n, t in records.CONFIDENCE],
+                # What can be set on several people at once. Short on
+                # purpose: a birth date is a fact about one person.
+                "bulk_fields": [{"key": k, "label": t}
+                                for k, t in records.BULK_FIELDS],
                 "people": [{"id": p.id, "name": p.full_name,
                             "life": p.lifespan, "sex": p.sex}
                            for p in sorted(g.people.values(),
@@ -426,8 +461,22 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"people": find.address_book(ST.graph, ST.con),
                                "kinds": [{"key": k, "label": v}
                                          for k, v in find.CONTACT_KINDS]})
+        if route == "sheets":
+            # HOW MUCH PAPER, before the button. "Print the record book" on
+            # a four-hundred-person file is four hundred sheets, and the
+            # only warning used to be the printer starting.
+            from .render import dossier
+            ids = _print_cast(q)
+            n = dossier.sheets_for(ST.graph, ids)
+            return self._json({**n, "note": dossier.sheet_note(n)})
         if route == "history/list":
             return self._json({"changes": records.history_list(ST.con)})
+        if route == "history/what":
+            # WHO an import or an edit actually touched, not how many. Read
+            # back out of `change_log`, so it cannot drift from what
+            # happened -- and a batch is exactly what one Ctrl-Z undoes.
+            return self._json(records.what_changed(
+                ST.con, q.get("batch") or ""))
         if route == "backups":
             # RESTORING ONE was finding the file yourself, in a folder the
             # program had told you about once.
@@ -1064,6 +1113,11 @@ def _dupe_brief(st: State, pid: str) -> dict:
         "notes": (p.notes or "")[:200],
         "relation": st.kin.label(pid),
         "portrait": port["name"] if port else None,
+        # WHICH PART OF IT IS THE FACE, so the little round avatar shows
+        # what the profile frame shows. Without it the sidebar had the
+        # wedding group and the profile had the face, which reads as two
+        # different photographs of two different people.
+        "crop": (port or {}).get("crop", ""),
         "parents": [g.people[x].full_name for x in g.parents(pid, False)
                     if x in g.people],
         "partners": [g.people[x].full_name for x in g.partners(pid)
@@ -1301,6 +1355,7 @@ def _kin_brief(st: State, pid: str) -> dict:
     return {"id": pid, "name": p.full_name, "life": p.lifespan, "sex": p.sex,
             "relation": kin.label, "steps": kin.steps, "group": kin.group,
             "portrait": port["name"] if port else None,
+            "crop": (port or {}).get("crop", ""),
             "needs": _needs_work(st.graph, p),
             "is_subject": pid == st.subject}
 

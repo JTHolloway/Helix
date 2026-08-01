@@ -37,7 +37,7 @@ export async function show(host, pid, hooks) {
       <div class="prohead">
         <label class="drop" id="dropZone" title="Add a photograph, a scan or a recording">
           ${port
-            ? `<img src="/api/media?name=${encodeURIComponent(port.name)}" alt="">`
+            ? `<span class="framed" style="${cropStyle(port)}"></span>`
             : `<span class="ph">${esc(initials(d.name))}<em>add a photo or a scan</em></span>`}
           <input type="file" id="photoIn" accept="image/*" hidden>
         </label>
@@ -210,6 +210,12 @@ stories, who remembers what, why a date is uncertain.">${esc(d.notes)}</textarea
             + 'Ctrl-Z puts it back.');
       show(host, pid, hooks);
       onChanged && onChanged();
+    }));
+  host.querySelectorAll('[data-crop]').forEach(b =>
+    b.addEventListener('click', () => {
+      const p = (d.photos || []).find(x => x.media_id === b.dataset.crop);
+      if (p) cropDialog(p, pid, { onToast, onChanged,
+                                  onDone: () => show(host, pid, hooks) });
     }));
   // WHEN IT WAS TAKEN, or how old they were. Both, because both are things
   // a family knows about a photograph and neither is worth refusing.
@@ -595,6 +601,9 @@ function filesBlock(d) {
           : `<button class="mkport" data-port="${esc(p.media_id)}"
                title="Show this one instead. The one it replaces is kept."
                >show this one</button>`}
+        <button class="crop" data-crop="${esc(p.media_id)}"
+          title="Choose which part of this picture goes in the frame. The
+picture itself is not changed.">crop</button>
         <button class="x" data-drop="${esc(p.media_id)}"
           title="Take this off this person">×</button>
         <figcaption>
@@ -604,10 +613,14 @@ function filesBlock(d) {
         </figcaption>
       </figure>`;
   return `<h4>Pictures and papers</h4>
-    ${pics.length > 1 ? `
-      <p class="hint">The one marked <b>shown now</b> is the one on the chart
-        and on printed records. The others are how they looked before —
-        put a year or an age under each.</p>
+    ${pics.length ? `
+      ${pics.length > 1 ? `<p class="hint">The one marked <b>shown now</b> is
+        the one on the chart and on printed records. The others are how they
+        looked before — put a year or an age under each.</p>` : ''}
+      <!-- SHOWN FOR ONE PICTURE TOO. It used to appear only when there were
+           two or more, which meant somebody with a single photograph could
+           not date it and could not crop it — and one photograph is what
+           most people have. -->
       <div class="progal">${pics.filter(p => p.portrait).map(pic).join('')}
         ${earlier.map(pic).join('')}</div>` : ''}
     ${papers.length ? `<ul class="papers">${papers.map(p => `<li>
@@ -633,6 +646,119 @@ function middleOf(given) {
   return String(given || '').trim().split(/\s+/).slice(1).join(' ');
 }
 
+// ────────────────────────────────────────────────────── cropping a face ───
+//
+// WHAT THIS DOES NOT DO. It does not make a new picture. A family
+// photograph is very often the only copy of a group at a wedding, and
+// cropping to one face by re-encoding destroys everybody else in it — a
+// loss nothing undoes, because the bytes are gone. Four fractions are
+// stored on the row instead: the frame shows the face, the file still
+// holds the wedding, and taking the crop off puts the whole picture back.
+//
+// It also means no image library, which the program does not have and is
+// not going to grow for this.
+function cropDialog(photo, pid, { onToast, onChanged, onDone }) {
+  const dlg = document.createElement('dialog');
+  dlg.className = 'addDlg cropDlg';
+  dlg.innerHTML = `
+    <h2>Which part is the face?</h2>
+    <p class="hint">Drag a square over the picture. Nothing is cut — the
+      whole photograph stays in your album, and “the whole picture” puts it
+      back.</p>
+    <div class="cropwrap" id="cw">
+      <img id="ci" src="/api/media?name=${encodeURIComponent(photo.name)}" alt="">
+      <div class="cropbox" id="cb" hidden></div>
+    </div>
+    <p class="hint" id="cnote">Drag across the picture to choose.</p>
+    <div class="row">
+      <button class="primary" id="cgo" disabled>Use this square</button>
+      <button class="ghost" id="cwhole">The whole picture</button>
+      <button class="ghost" id="cno">Cancel</button>
+    </div>`;
+  document.body.appendChild(dlg);
+  dlg.showModal();
+  const q = s => dlg.querySelector(s);
+  const wrap = q('#cw'), box = q('#cb'), img = q('#ci');
+  let sq = null;                       // {x,y,w,h} in fractions
+
+  // A SQUARE, because the frame it goes into is one. Dragging a rectangle
+  // into a round frame means the program picks which half to throw away,
+  // and it will pick wrong.
+  const draw = () => {
+    if (!sq) { box.hidden = true; q('#cgo').disabled = true; return; }
+    const r = img.getBoundingClientRect(), w = wrap.getBoundingClientRect();
+    box.hidden = false;
+    box.style.left = (r.left - w.left + sq.x * r.width) + 'px';
+    box.style.top = (r.top - w.top + sq.y * r.height) + 'px';
+    box.style.width = (sq.w * r.width) + 'px';
+    box.style.height = (sq.h * r.height) + 'px';
+    q('#cgo').disabled = false;
+    q('#cnote').textContent =
+      `A square ${Math.round(sq.w * 100)}% of the width across. Drag again to
+       change it.`;
+  };
+
+  let from = null;
+  const at = ev => {
+    const r = img.getBoundingClientRect();
+    return { x: (ev.clientX - r.left) / r.width,
+             y: (ev.clientY - r.top) / r.height, r };
+  };
+  img.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    img.setPointerCapture(ev.pointerId);
+    from = at(ev);
+  });
+  img.addEventListener('pointermove', ev => {
+    if (!from) return;
+    const to = at(ev), r = from.r;
+    // The drag sets the side in PIXELS and it is turned into fractions of
+    // each axis separately — the image is not square, so one fraction
+    // cannot mean the same distance both ways.
+    const side = Math.max(Math.abs(to.x - from.x) * r.width,
+                          Math.abs(to.y - from.y) * r.height);
+    const w = Math.min(side / r.width, 1), h = Math.min(side / r.height, 1);
+    const x = Math.min(Math.max(to.x < from.x ? from.x - w : from.x, 0), 1 - w);
+    const y = Math.min(Math.max(to.y < from.y ? from.y - h : from.y, 0), 1 - h);
+    sq = { x, y, w, h };
+    draw();
+  });
+  const stop = () => { from = null; };
+  img.addEventListener('pointerup', stop);
+  img.addEventListener('pointercancel', stop);
+  img.addEventListener('load', draw);
+  window.addEventListener('resize', draw);
+
+  // What is already set, so opening this shows the crop rather than
+  // starting from nothing every time.
+  const had = (photo.crop || '').split(',').map(Number);
+  if (had.length === 4 && had.every(n => isFinite(n)) && had[2] > 0) {
+    sq = { x: had[0], y: had[1], w: had[2], h: had[3] };
+    if (img.complete) draw();
+  }
+
+  const close = () => { dlg.close(); dlg.remove(); };
+  const save = async crop => {
+    try {
+      await post('person/photo/crop',
+                 { id: pid, media_id: photo.media_id, crop });
+      close();
+      onToast(crop ? 'Cropped. The whole photograph is still in your album, '
+                   + 'and Ctrl-Z puts the frame back.'
+                   : 'Showing the whole picture again.');
+      onDone && onDone();
+      onChanged && onChanged();
+    } catch (e) { onToast(e.message); }
+  };
+  q('#cgo').addEventListener('click', e => {
+    e.preventDefault();
+    if (sq) save(`${sq.x},${sq.y},${sq.w},${sq.h}`);
+  });
+  q('#cwhole').addEventListener('click', e => { e.preventDefault(); save(''); });
+  q('#cno').addEventListener('click', e => { e.preventDefault(); close(); });
+  dlg.addEventListener('cancel', () => dlg.remove());
+}
+
 function firstName(name) {
   return (name || 'their').split(/\s+/)[0];
 }
@@ -640,6 +766,39 @@ function firstName(name) {
 function initials(name) {
   return (name || '?').split(/\s+/).filter(Boolean)
     .map(w => w[0]).slice(0, 2).join('').toUpperCase();
+}
+
+/** Show a rectangle of a photograph in a fixed frame, without touching it.
+ *
+ *  NOTHING IS RE-ENCODED. The one photograph of somebody's grandmother is
+ *  usually a group at a wedding, and cropping it to her face by writing new
+ *  pixels destroys the only copy of everybody else at it. The crop is four
+ *  fractions stored on the row; this turns them into a background so the
+ *  frame shows the face and the file still holds the wedding.
+ *
+ *  The two percentages are the standard background-position identity: to
+ *  show the rectangle starting at x with width w, the image is scaled by
+ *  1/w and slid to x/(1-w) of the overflow. Zero width is guarded because
+ *  x/(1-w) divides by nothing when w is 1.
+ */
+export function cropStyle(p) {
+  // SINGLE QUOTES INSIDE THE url(). This is interpolated into a
+  // style="..." attribute, and a double quote closed it — the browser read
+  // `background-image:url(` and stopped, so the frame came out blank while
+  // the printed sheet, which builds the same style with single quotes, was
+  // right. The two disagreeing about somebody's face is exactly the kind of
+  // difference nobody thinks to check.
+  const url = `/api/media?name=${encodeURIComponent(p.name)}`;
+  const bg = `background-image:url('${url}');background-repeat:no-repeat;`;
+  const c = (p.crop || '').split(',').map(Number);
+  if (c.length !== 4 || c.some(n => !isFinite(n)) || c[2] <= 0 || c[3] <= 0) {
+    return bg + 'background-size:cover;background-position:center';
+  }
+  const [x, y, w, h] = c;
+  const px = w >= 1 ? 50 : (x / (1 - w)) * 100;
+  const py = h >= 1 ? 50 : (y / (1 - h)) * 100;
+  return bg + `background-size:${(100 / w).toFixed(3)}% ${(100 / h).toFixed(3)}%;`
+            + `background-position:${px.toFixed(2)}% ${py.toFixed(2)}%`;
 }
 
 function esc(s) {

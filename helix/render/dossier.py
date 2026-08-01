@@ -43,8 +43,14 @@ h3{font-size:11pt;margin:5mm 0 1mm;font-weight:600}
      padding:.5mm 2mm;font-size:9.5pt;color:#5a4632}
 .who{display:flex;gap:6mm;align-items:flex-start;margin-bottom:4mm}
 .who .txt{flex:1}
-.portrait{width:34mm;height:44mm;object-fit:cover;border:1px solid var(--rule);
-          background:#f6f2ea}
+/* A DIV WITH A BACKGROUND, not an <img>, so the crop somebody chose is
+   what prints. `object-fit` cannot slide and scale to an arbitrary
+   rectangle; a background can. `print-color-adjust` is what stops a
+   browser dropping background images from the printed page as decoration
+   -- which would take the face off every record. */
+.portrait{width:34mm;height:44mm;border:1px solid var(--rule);
+          background-color:#f6f2ea;background-repeat:no-repeat;
+          print-color-adjust:exact;-webkit-print-color-adjust:exact}
 dl{display:grid;grid-template-columns:34mm 1fr;gap:1mm 4mm;margin:0}
 dt{color:var(--muted);font-size:9.5pt}
 dd{margin:0}
@@ -103,11 +109,55 @@ BAR = """<div class="bar">
   <button class="go" onclick="print()">Print</button>
   <button onclick="history.back()">Back</button>
   <span style="color:#6b6b6b">%s</span>
+  <!-- Filled in by the record book, which measures itself. Four hundred
+       people is four hundred sheets and most of a cartridge, and that is
+       worth knowing before the Print button rather than after it. -->
+  <span id="sheetcount" style="color:#6b6b6b;margin-left:auto"></span>
 </div>"""
 
 
 def esc(s) -> str:
     return html.escape(str(s or ""))
+
+
+def crop_style(port) -> str:
+    """Show only the chosen rectangle of a photograph, on paper too.
+
+    A record with a face on it is worth more than one without, and a record
+    with a face lost in a wedding group is worth less than either. The
+    program never re-encodes the picture -- the family photograph is often
+    the only copy of that group -- so the crop is four fractions and this
+    turns them into the two background values that show it.
+
+    The same identity as `cropStyle` in `profile.js`, and it has to stay the
+    same: the frame in the interface and the frame on the printed sheet
+    disagreeing about which part of the picture is somebody's face is the
+    kind of difference nobody would think to check.
+    """
+    url = f"/api/media?name={esc((port or {}).get('name', ''))}"
+    bg = f"background-image:url('{url}');background-repeat:no-repeat;"
+    bits = str((port or {}).get("crop") or "").split(",")
+    try:
+        x, y, w, h = (float(v) for v in bits)
+    except (ValueError, TypeError):
+        return bg + "background-size:cover;background-position:center"
+    if w <= 0 or h <= 0:
+        return bg + "background-size:cover;background-position:center"
+    px = 50.0 if w >= 1 else (x / (1 - w)) * 100
+    py = 50.0 if h >= 1 else (y / (1 - h)) * 100
+    return (bg + f"background-size:{100 / w:.3f}% {100 / h:.3f}%;"
+                 f"background-position:{px:.2f}% {py:.2f}%")
+
+
+def _js(s) -> str:
+    """A Python string as a JavaScript literal, safely.
+
+    `json.dumps` escapes the quotes and the backslashes; `</` is split so a
+    name containing one cannot close the script element early. A family
+    file is somebody's own typing, but a GEDCOM from a cousin is not.
+    """
+    import json
+    return json.dumps(str(s or "")).replace("</", "<\\/")
 
 
 def page(title: str, body: str, note: str = "", extra_css: str = "") -> str:
@@ -251,8 +301,10 @@ def profile(graph, con, pid: str, *, kin: Optional[Kinship] = None,
     elif k:
         rel = "<span class=rel>whose chart this is</span>"
 
-    img = (f"<img class=portrait src='/api/media?name={esc(port['name'])}' "
-           f"alt='{esc(p.full_name)}'>") if port else ""
+    # A DIV AND NOT AN IMG, so the chosen crop can be shown. `object-fit`
+    # cannot slide and scale to an arbitrary rectangle; a background can.
+    img = (f"<div class=portrait style=\"{crop_style(port)}\" "
+           f"title='{esc(p.full_name)}'></div>") if port else ""
 
     fams = []
     for uid in p.unions:
@@ -392,21 +444,30 @@ RECORD_CSS = """
 .entry h2 .no{color:var(--muted);font-size:11pt;font-weight:400;
               min-width:9mm}
 .entry .sub{font-size:11pt}
-.entry .hr{height:1px;background:var(--rule);margin:3mm 0 4mm}
+.entry .hr{height:1px;background:var(--rule);margin:2mm 0 3mm}
 .entry .body{display:flex;gap:7mm;align-items:flex-start}
 .entry .txt{flex:1;min-width:0}
-.entry .port{width:42mm;height:53mm;object-fit:cover;
-             border:1px solid var(--rule);background:#f6f2ea}
+/* The same as `.portrait`, and for the same reason: a background so the
+   crop prints, and `print-color-adjust` so the browser does not drop it as
+   decoration and take the face off every sheet in the binder. */
+.entry .port{width:42mm;height:53mm;flex:0 0 auto;
+             border:1px solid var(--rule);background-color:#f6f2ea;
+             background-repeat:no-repeat;
+             print-color-adjust:exact;-webkit-print-color-adjust:exact}
 /* A record with a face on it is worth more than one without, so the
    absence is marked rather than left as a gap in the layout. */
 .entry .noport{display:flex;align-items:center;justify-content:center;
                text-align:center;color:#a8a094;font-size:9pt;
                font-style:italic;padding:3mm}
 .rbfacts{display:grid;grid-template-columns:34mm 1fr;gap:0 4mm;
-         margin:0 0 2mm;font-size:10.5pt}
-.rbfacts dt{color:var(--muted);font-size:9.5pt;padding:1mm 0 1mm 0;
+         margin:0 0 1.5mm;font-size:10.5pt}
+/* A millimetre above and below each of about two dozen rows is another
+   forty millimetres of a sheet, which is what tipped anybody with a few
+   places recorded onto a second page. The rule between rows is what
+   separates them; the padding was belt and braces. */
+.rbfacts dt{color:var(--muted);font-size:9.5pt;padding:.55mm 0;
             border-bottom:1px solid #efe9dd}
-.rbfacts dd{margin:0;padding:1mm 0;border-bottom:1px solid #efe9dd}
+.rbfacts dd{margin:0;padding:.55mm 0;border-bottom:1px solid #efe9dd}
 .rbfacts dt:last-of-type,.rbfacts dd:last-of-type{border-bottom:0}
 /* What is not known is SAID. A blank on a filed record is ambiguous
    forever -- nobody can tell an unknown birthplace from an unfinished
@@ -418,7 +479,7 @@ RECORD_CSS = """
 .rbnote-lead{color:var(--muted);font-size:9.5pt;margin:0 0 3mm}
 /* Where they were, and when. A trail down the page, so a researcher can
    read the movement of a family off it without reassembling anything. */
-.rbplaces{width:100%;border-collapse:collapse;font-size:10.5pt;margin:0 0 2mm}
+.rbplaces{width:100%;border-collapse:collapse;font-size:10.5pt;margin:0 0 1.5mm}
 .rbplaces td{padding:1mm 3mm 1mm 0;vertical-align:top;
              border-bottom:1px solid #efe9dd}
 .rbplaces tr:last-child td{border-bottom:0}
@@ -437,9 +498,18 @@ RECORD_CSS = """
 .srcbit{color:var(--muted);font-size:9.5pt}
 .srcbit::before{content:"· "}
 .srcurl{color:var(--muted);font-size:8.5pt;word-break:break-all}
+/* THE AIR ROUND THESE WAS COSTING A SHEET PER PERSON. Seven section
+   headings at 5mm above and 1.5mm below is 87mm of a 265mm page spent on
+   labels and the space around them, and a perfectly ordinary entry -- one
+   with nothing unusual written about it -- came out 283mm and took two
+   sheets, the second of them nearly empty. Measured, not guessed: an entry
+   is now 261mm and "one page per person" is true again for anybody without
+   a great deal recorded. The first heading needs no gap above it; it sits
+   directly under the rule. */
 .rbsec{font-size:9pt;letter-spacing:.09em;text-transform:uppercase;
-       color:var(--muted);margin:5mm 0 1.5mm;border-bottom:1px solid var(--rule);
-       padding-bottom:.8mm}
+       color:var(--muted);margin:3.5mm 0 1.2mm;
+       border-bottom:1px solid var(--rule);padding-bottom:.8mm}
+.entry .txt > .rbsec:first-child{margin-top:0}
 .rbrel{font-size:10.5pt;margin:1.5mm 0 0}
 .rbrel b{color:var(--muted);font-weight:400;font-size:9.5pt;
          display:block;letter-spacing:.04em}
@@ -448,7 +518,7 @@ RECORD_CSS = """
 /* The foot of the sheet, so a page that has come loose can be put back. */
 .rbfoot{display:flex;justify-content:space-between;font-size:8.5pt;
         color:var(--muted);border-top:1px solid var(--rule);
-        padding-top:1.5mm;margin-top:5mm}
+        padding-top:1.5mm;margin-top:3mm}
 .rbindex{font-size:9.5pt;columns:2;column-gap:10mm}
 .rbindex div{break-inside:avoid}
 .newpage{page-break-before:always;break-before:page}
@@ -801,8 +871,8 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
         port = next((x for x in pics if x.get("portrait")), pics[0] if pics else None)
         papers = [x for x in (photos_for(pid) if photos_for else [])
                   if x.get("kind", "photo") != "photo"]
-        img = (f"<img class=port src='/api/media?name={esc(port['name'])}' "
-               f"alt='{esc(p.full_name)}'>") if port else \
+        img = (f"<div class=port style=\"{crop_style(port)}\" "
+               f"title='{esc(p.full_name)}'></div>") if port else \
             "<div class='port noport'>No photograph</div>"
 
         # ---- the life. EVERY row, filled in or not.
@@ -975,8 +1045,46 @@ def record_book(graph, con, ids, *, kin=None, photos_for=None, title="",
             f"<span class=sub>{order[x]}</span>" for x in entries) + "</div>")
     body.append("</div></div></div>")
 
+    # HOW MUCH PAPER THIS IS, on the bar beside the Print button. Four
+    # hundred people is four hundred sheets and most of a cartridge, and
+    # that is worth reading before pressing it rather than after.
+    note = sheet_note({"people": len(people), "front": 2 if covers else 0,
+                       "back": 1 if covers else 0,
+                       "least": len(people) + (3 if covers else 0)})
+    body.append(f"<script>document.getElementById('sheetcount')"
+                f".textContent={_js(note)}</script>")
+
     return page(title or "Family Records", "".join(body),
                 note=title, extra_css=RECORD_CSS)
+
+
+def sheet_note(count: dict) -> str:
+    """What to tell somebody standing in front of the Print button.
+
+    A FLOOR AND NOT A GUESS, and it says which it is. The exact number
+    depends on where a particular browser at a particular paper size breaks
+    a paragraph, and nothing on this side of the print dialogue knows that.
+    Measuring the page on screen does not help either: `@media screen` lays
+    it out at a different width with different padding, and the count came
+    out ten per cent wrong -- which, presented as a number, is worse than no
+    number at all.
+
+    What IS certain is the structure, and it is the part that matters: four
+    hundred people is at least four hundred sheets, and knowing that before
+    the printer starts is the whole point.
+    """
+    n = count["least"]
+    made = []
+    if count["front"]:
+        made.append("a cover and a contents")
+    made.append(f"{count['people']} "
+                f"{'record' if count['people'] == 1 else 'records'}, one "
+                f"page each")
+    if count["back"]:
+        made.append("an index")
+    return (f"{n} {'sheet' if n == 1 else 'sheets'} at least — "
+            + ", ".join(made)
+            + ". Anyone with a great deal recorded runs on to a second.")
 
 
 CHART_CSS = """
@@ -1020,6 +1128,30 @@ def chart(svg: str, *, title: str = "", people: int = 0, span: str = "",
                 note=note or title,
                 extra_css=CHART_CSS.replace(
                     "__PAGE__", "A4 landscape" if landscape else "A4"))
+
+
+def sheets_for(graph, ids, *, covers=True) -> dict:
+    """The FLOOR: how many sheets a record book cannot be fewer than.
+
+    NOT AN ESTIMATE, and deliberately not one. Where a paragraph breaks
+    depends on the font the machine has, the paper chosen in the print
+    dialogue and the browser's own widow handling; every server-side model
+    of that produces a number somebody would trust and it would be wrong.
+    What IS certain is structural: `.entry{page-break-before:always}` means
+    one sheet per person whatever else happens, and the cover, the contents
+    and the index are one sheet each.
+
+    The exact number is measured by the page itself once it is open — see
+    `SHEETS_JS`. This is the figure that can be given before it is built,
+    so that "print everybody" on a four-hundred-person file says four
+    hundred sheets rather than finding out at the printer.
+    """
+    people = _rb_order(graph, list(ids))
+    covers = covers and len(people) > 1
+    front = 2 if covers else 0            # cover, contents
+    back = 1 if covers else 0             # index
+    return {"people": len(people), "front": front, "back": back,
+            "least": len(people) + front + back}
 
 
 def one(graph, con, pid: str, *, kin=None, photos=None, title="") -> str:

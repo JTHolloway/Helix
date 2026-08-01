@@ -84,6 +84,18 @@ function refresh() {
   return new Promise(res => { TIMER = setTimeout(() => res(_refresh()), 120); });
 }
 
+/** Redraw the chart, THEN the sidebar. In that order, and not both at once.
+ *
+ *  `Promise.all([refresh(), loadRelatives()])` looks like the tidy version
+ *  and races: the sidebar's "N of M people on the chart" is read off `PLAN`,
+ *  so drawing it alongside the thing that SETS `PLAN` read the old one --
+ *  after importing 139 people the sidebar said "0 of 139 on the chart"
+ *  beside a chart with 34 people on it. */
+async function redrawAll() {
+  await refresh();
+  await loadRelatives();
+}
+
 async function _refresh() {
   // An empty file has nobody to stand on, so there is nothing to click and
   // no chart to draw. Offer the one thing that can happen next.
@@ -431,6 +443,7 @@ function drawRelatives() {
   relatives.draw($('#kinList'), {
     selected: SEL,
     onSelect: pid => { setMode('explore'); select(pid); },
+    onPick: pickCount,
     onScope: (total, shown) => {
       const on = PLAN ? PLAN.meta.people : shown;
       const el = PLAN?.meta?.extra?.elided;
@@ -441,6 +454,120 @@ function drawRelatives() {
              ${el.marriages} ${el.marriages === 1 ? 'family' : 'families'}</span>`
           : '');
     },
+  });
+}
+
+// ──────────────────────────────────── choosing several, changing them ────
+//
+// The one screen where the program stops being about one person at a time.
+// A census page gives forty people the same parish and a transcription
+// gives a whole branch the same misspelt surname; doing either one at a
+// time is forty dialogues and forty undo steps, and it is the point at
+// which somebody gives up and opens the database in something else.
+//
+// ONE `Edit` on the server, so all of it is one entry in the history and
+// ONE Ctrl-Z takes the lot back — not forty presses, thirty-nine of which
+// leave the file half corrected.
+function pickCount(n) {
+  const info = $('#pickInfo');
+  info.hidden = !relatives.picking();
+  info.textContent = n
+    ? `${n} chosen`
+    : `nobody chosen yet — click a name to tick it`;
+  $('#pickGo').disabled = !n;
+}
+
+function wirePicking() {
+  $('#pickMode').addEventListener('click', () => {
+    const on = relatives.setPick(!relatives.picking());
+    $('#pickMode').textContent = on ? 'Done choosing' : 'Choose several';
+    $('#pickTools').hidden = !on;
+    $('#pickInfo').hidden = !on;
+    drawRelatives();
+    pickCount(relatives.picked().length);
+  });
+  $('#pickAll').addEventListener('click', () => {
+    pickCount(relatives.pickShown()); drawRelatives();
+  });
+  $('#pickNone').addEventListener('click', () => {
+    pickCount(relatives.pickNone()); drawRelatives();
+  });
+  $('#pickGo').addEventListener('click', () => bulkDialog(relatives.picked()));
+}
+
+/** What each field wants typed into it. */
+const BULK_INPUT = {
+  sex: `<select id="bkVal">
+          <option value="M">a man</option><option value="F">a woman</option>
+          <option value="X">neither</option>
+          <option value="U" selected>not recorded</option></select>`,
+  confidence: `<select id="bkVal">
+          <option value="0">0 — a guess</option>
+          <option value="1">1 — somebody said so</option>
+          <option value="2" selected>2 — good evidence</option>
+          <option value="3">3 — seen the record</option></select>`,
+  living: `<select id="bkVal">
+          <option value="yes">living</option>
+          <option value="no" selected>dead</option></select>`,
+};
+
+async function bulkDialog(ids) {
+  if (!ids.length) return;
+  const fields = META.bulk_fields || [];
+  const dlg = document.createElement('dialog');
+  dlg.className = 'addDlg';
+  dlg.innerHTML = `
+    <h2>Change ${ids.length} ${ids.length === 1 ? 'person' : 'people'}</h2>
+    <label>What to set
+      <select id="bkField">${fields.map(f =>
+        `<option value="${escAttr(f.key)}">${escAttr(f.label)}</option>`).join('')}
+      </select></label>
+    <label>To <span id="bkSlot"><input id="bkVal" autocomplete="off"></span></label>
+    <p class="hint">Only the things that can sensibly be true of a whole
+      branch at once are here. A birth date is a fact about one person —
+      open them and put it in there.</p>
+    <p class="hint">One change, one entry in the history: <kbd>Ctrl</kbd>+<kbd>Z</kbd>
+      takes all ${ids.length} back together.</p>
+    <div class="row">
+      <button class="primary" id="bkGo">Change them</button>
+      <button class="ghost" id="bkNo">Cancel</button>
+    </div>
+    <div id="bkOut"></div>`;
+  document.body.appendChild(dlg);
+  dlg.showModal();
+  const q = s => dlg.querySelector(s);
+
+  const slot = () => {
+    q('#bkSlot').innerHTML =
+      BULK_INPUT[q('#bkField').value] || '<input id="bkVal" autocomplete="off">';
+    q('#bkVal').focus();
+  };
+  q('#bkField').addEventListener('change', slot);
+  slot();
+
+  const close = () => { dlg.close(); dlg.remove(); };
+  q('#bkNo').addEventListener('click', e => { e.preventDefault(); close(); });
+  dlg.addEventListener('cancel', () => dlg.remove());
+  q('#bkGo').addEventListener('click', async e => {
+    e.preventDefault();
+    q('#bkGo').disabled = true;
+    try {
+      const r = await post('person/bulk', {
+        field: q('#bkField').value, ids, value: q('#bkVal').value,
+      });
+      close();
+      toast(r.message);
+      relatives.setPick(false);
+      $('#pickMode').textContent = 'Choose several';
+      $('#pickTools').hidden = true;
+      $('#pickInfo').hidden = true;
+      META = await get('meta');
+      await redrawAll();
+      undoLabels();
+    } catch (err) {
+      q('#bkOut').innerHTML = `<p class="warn">${escAttr(err.message)}</p>`;
+      q('#bkGo').disabled = false;
+    }
   });
 }
 
@@ -573,8 +700,14 @@ function wireImport() {
       dlg.close();
       toast(`Added ${r.people} people. Press Ctrl-Z if that was not what you wanted.`);
       META = await get('meta');
-      await Promise.all([refresh(), loadRelatives()]);
+      await redrawAll();
       undoLabels();
+      // WHAT IT ACTUALLY DID, not how many. A count is the one thing
+      // somebody cannot check: 463 people could equally be the wrong file.
+      // The newest batch IS the import — one Edit, so one Ctrl-Z — and it
+      // is read back out of the change log rather than reported by the
+      // importer about itself.
+      await showWhatChanged();
       // THE MOMENT DUPLICATES MATTER. Four hundred people just arrived in
       // one step and nothing was checked against what was already there.
       const dup = await get('duplicates', { limit: 40 });
@@ -638,7 +771,7 @@ async function reviewDuplicates() {
       onToast: toast,
       onChanged: async () => {
         META = await get('meta');
-        await Promise.all([refresh(), loadRelatives()]);
+        await redrawAll();
         undoLabels();
       },
     });
@@ -665,7 +798,7 @@ function wireLibrary() {
         $('#right').hidden = true;
         META = await get('meta');
         $('#proj').textContent = META.title || '';
-        await Promise.all([refresh(), loadRelatives()]);
+        await redrawAll();
         view.fit();
         status();
         undoLabels();
@@ -692,6 +825,7 @@ function wireScope() {
   $('#kinFind').addEventListener('input', () => {
     relatives.filter($('#kinFind').value); drawRelatives();
   });
+  wirePicking();
   get('groups').then(gs => {
     const box = $('#kinGroups');
     box.innerHTML = gs.filter(g => g.key !== 'self').map(g =>
@@ -734,7 +868,27 @@ function wirePrint() {
     $('#prPerson').hidden = !who;
     if (who) $('#prWho').textContent = who.name;
     dlg.showModal();
+    howMuchPaper();
   });
+
+  // HOW MUCH PAPER, before the button and not after. "The record book" on
+  // a four-hundred-person file is four hundred sheets and most of a
+  // cartridge, and the only warning was the printer starting.
+  //
+  // A FLOOR, said to be one. Where a paragraph breaks depends on the
+  // browser, the font and the paper chosen in the print dialogue; a number
+  // that looks exact and is ten per cent out is worse than an honest
+  // "at least".
+  async function howMuchPaper() {
+    for (const [sel, q] of [['#shOn', { focus: S.focus, kin: JSON.stringify(S.kin) }],
+                            ['#shAll', { all: 1 }]]) {
+      const el = $(sel);
+      if (!el) continue;
+      el.textContent = '';
+      try { el.textContent = (await get('sheets', q)).note; }
+      catch { /* the buttons still work without the figure */ }
+    }
+  }
   dlg.querySelectorAll('[data-pr]').forEach(b =>
     b.addEventListener('click', () => {
       const q = new URLSearchParams({ focus: S.focus, kin: JSON.stringify(S.kin) });
@@ -772,8 +926,43 @@ function wireSources() {
   });
 }
 
+/** Open the tools dialogue on "what changed" for the newest batch.
+ *
+ *  Resolves when it is CLOSED, not when it is opened. `showModal` returns
+ *  immediately, so the duplicate review that follows an import opened on
+ *  top of this one and the report was never seen. */
+async function showWhatChanged() {
+  try {
+    const { changes } = await get('history/list');
+    if (!changes.length) return;
+    const { whatScreen } = await import('./tools.js');
+    const dlg = $('#toolDlg');
+    $('#toolTitle').textContent = 'What changed';
+    $('#toolTabs').innerHTML = '';
+    dlg.showModal();
+    await whatScreen($('#toolBody'), changes[0].batch, toolHooks(dlg),
+                     { needRoot: !META.subject });
+    if (dlg.open) await new Promise(done =>
+      dlg.addEventListener('close', done, { once: true }));
+  } catch { /* the import worked; a report that will not open is not a reason
+                to tell somebody it failed */ }
+}
+
 // FIND, HOUSEHOLDS, CONTACTS, HISTORY, COMPARE — one dialogue, five tabs.
 let TOOLTAB = 'find';
+
+function toolHooks(dlg) {
+  return {
+    onSelect: pid => { dlg.close(); setMode('explore'); select(pid); },
+    onToast: toast,
+    onChanged: async () => {
+      META = await get('meta');
+      await redrawAll();
+      undoLabels();
+    },
+  };
+}
+
 function wireTools() {
   const dlg = $('#toolDlg');
   const open = async (which) => {
@@ -786,15 +975,7 @@ function wireTools() {
       (tools.TABS.find(t => t[0] === TOOLTAB) || [])[1] || 'Find';
     $('#toolTabs').querySelectorAll('[data-tab]').forEach(b =>
       b.addEventListener('click', () => open(b.dataset.tab)));
-    await tools.show($('#toolBody'), TOOLTAB, {
-      onSelect: pid => { dlg.close(); setMode('explore'); select(pid); },
-      onToast: toast,
-      onChanged: async () => {
-        META = await get('meta');
-        await Promise.all([refresh(), loadRelatives()]);
-        undoLabels();
-      },
-    });
+    await tools.show($('#toolBody'), TOOLTAB, toolHooks(dlg));
   };
   $('#toolBtn').addEventListener('click', () => { dlg.showModal(); open(); });
 }

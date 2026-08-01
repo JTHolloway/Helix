@@ -131,7 +131,12 @@ CREATE INDEX IF NOT EXISTS ix_cite_event  ON citation(event_id);
 
 CREATE TABLE IF NOT EXISTS media (
   id TEXT PRIMARY KEY, path TEXT NOT NULL, type TEXT,
-  caption TEXT, taken TEXT, sha256 TEXT
+  caption TEXT, taken TEXT, sha256 TEXT,
+  -- Which part of the picture is the face, as "x,y,w,h" in fractions of the
+  -- image. A rectangle and not new pixels: the one photograph of somebody's
+  -- grandmother is usually a group at a wedding, and cropping to her face by
+  -- re-encoding destroys the only copy of everybody else at it.
+  crop TEXT
 );
 CREATE TABLE IF NOT EXISTS media_link (
   media_id TEXT NOT NULL REFERENCES media(id) ON DELETE CASCADE,

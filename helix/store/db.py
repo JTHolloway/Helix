@@ -24,7 +24,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 _SCHEMA = Path(__file__).with_name("schema.sql")
 
 
@@ -70,6 +70,22 @@ MIGRATIONS: dict[int, list[str]] = {
              PRIMARY KEY (person_id, label)
            )""",
         "CREATE INDEX IF NOT EXISTS ix_herit_person ON person_heritage(person_id)",
+    ],
+    4: [
+        # v5 says which PART of a photograph is the face.
+        #
+        # A RECTANGLE AND NOT NEW PIXELS. Cropping by re-encoding would mean
+        # an image library -- the program has no dependencies and will not
+        # grow one for this -- and, far worse, it would throw away the rest
+        # of the photograph. The one picture of somebody's grandmother is
+        # usually a group at a wedding, and cropping to her face destroys
+        # the only copy of everybody else at it. Four numbers on the row
+        # instead: the frame shows the face, the file still holds the
+        # wedding, and changing your mind costs nothing.
+        #
+        # Stored as "x,y,w,h" in fractions of the image, so it survives the
+        # picture being re-scanned at a different size.
+        "ALTER TABLE media ADD COLUMN crop TEXT",
     ],
 }
 
