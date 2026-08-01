@@ -327,7 +327,6 @@ def copy_for(path: str | Path, person_id: str, *, title: str = "",
     from ..graph.build import load
     from ..graph.kinship import Kinship
     from ..store.db import connect, set_setting
-    from ..store.records import Edit
     from ..store.archive import _copy_consistent
 
     src = Path(path)
@@ -434,22 +433,44 @@ def copy_for(path: str | Path, person_id: str, *, title: str = "",
     set_setting(out, "subject_person_id", person_id)
     removed = 0
     if prune and strangers:
-        # ONE undoable step, so the whole pruning goes back together. Retire
-        # and not delete: rule seven, and the reason somebody can hand this
-        # file to a relative without holding their breath.
-        with Edit(out, f"Leave out {len(strangers)} people no relation "
-                       f"to {who.short_name}") as e:
-            for pid in strangers:
-                e.update("person", {"id": pid}, {"active": 0})
-                for r in out.execute("SELECT union_id FROM union_partner "
-                                     "WHERE person_id=?", (pid,)).fetchall():
-                    e.delete("union_partner",
-                             {"union_id": r["union_id"], "person_id": pid})
-                for r in out.execute("SELECT union_id FROM union_child "
-                                     "WHERE person_id=?", (pid,)).fetchall():
-                    e.delete("union_child",
-                             {"union_id": r["union_id"], "person_id": pid})
-                removed += 1
+        # GONE FROM THE COPY, not marked inactive in it.
+        #
+        # Rule seven says never SQL-DELETE a person, and the reason for it is
+        # that a wrong ancestor removed at midnight has to still be there in
+        # the morning. That reason does not reach here: the ORIGINAL FILE IS
+        # UNTOUCHED and still holds every one of these people with everything
+        # ever known about them. Nothing is at risk, and a new document that
+        # quietly carries a hundred hidden rows for a family it was
+        # deliberately not about is not a clean file -- it is the same file
+        # with a flag set, and it would export them, count them and offer
+        # them back on the first Ctrl-Z.
+        #
+        # `person` is the target of ON DELETE CASCADE from every link table,
+        # so one delete takes the names, events, photographs, tags and
+        # heritage with it.
+        out.execute("PRAGMA foreign_keys = ON")
+        for pid in strangers:
+            out.execute("DELETE FROM person WHERE id=?", (pid,))
+            removed += 1
+        # A family with nobody left in it is not a family. These are the
+        # marriages of the people who have just gone.
+        out.execute(
+            "DELETE FROM union_ WHERE id NOT IN "
+            "(SELECT union_id FROM union_partner) AND id NOT IN "
+            "(SELECT union_id FROM union_child)")
+        # And the events nobody is a party to any more.
+        out.execute(
+            "DELETE FROM event WHERE id NOT IN "
+            "(SELECT event_id FROM event_role WHERE event_id IS NOT NULL)")
+        out.execute(
+            "DELETE FROM media WHERE id NOT IN "
+            "(SELECT media_id FROM media_link)")
+
+    # A NEW DOCUMENT STARTS WITH NO HISTORY. The copy inherits the original's
+    # change log, so without this the first Ctrl-Z in Alice's file undoes
+    # something her uncle did in his -- and the pruning above would be the
+    # first thing offered back.
+    out.execute("DELETE FROM change_log")
     out.commit()
     out.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     out.close()
@@ -458,8 +479,8 @@ def copy_for(path: str | Path, person_id: str, *, title: str = "",
             "message": (f"{plan['title']} is a file of its own, with "
                         f"{who.short_name} at the centre."
                         + (f" {removed} people who are no relation to "
-                           f"{who.short_name} were left out — open it and "
-                           f"press Ctrl-Z to bring them back."
+                           f"{who.short_name} are not in it. Your own file "
+                           f"still has every one of them."
                            if removed else ""))}
 
 

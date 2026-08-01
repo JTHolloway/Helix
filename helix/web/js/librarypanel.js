@@ -229,8 +229,9 @@ export async function makeFor({ onOpened, onToast }) {
             b.count > b.names.length ? '…' : ''}</small></li>`).join('')}</ul>
         <label class="check"><input type="checkbox" id="forPrune" checked>
           Leave these ${plan.unrelated} out of the new file</label>
-        <p class="hint">Nothing is deleted. They stay in your file, and one
-          Ctrl-Z in the new one brings them back.</p>`
+        <p class="hint">They will not be in the new file at all. <b>Your own
+          file is not touched</b> — every one of them is still in it, with
+          everything you know about them.</p>`
         : `<p class="hint">Everybody in this file is related to
            ${esc(firstName(plan.root.name))} one way or another, so the new
            tree gets all ${plan.people} of them.</p>`}

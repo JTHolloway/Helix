@@ -480,3 +480,42 @@ Mother, Married, Children — and they are all there.
 Every entry starts a page, the first one included: it used to run on from
 the bottom of the contents, which put one person on a page that is not
 theirs and made the contents look like the start of the record.
+
+## A pruned branch is gone from the copy, not hidden in it
+
+Rule seven says never SQL-DELETE a person, and its reason is that a wrong
+ancestor removed at midnight has to still be there in the morning. That
+reason does not reach `copy_for`: the ORIGINAL FILE IS UNTOUCHED and still
+holds every one of those people with everything ever known about them.
+Nothing is at risk.
+
+What is at risk the other way is the new file. A document that quietly
+carries a hundred inactive rows for a family it was deliberately not about
+is not a clean file — it is the same file with a flag set. It would export
+them to GEDCOM, count them in a status line, and offer them all back on the
+first Ctrl-Z somebody pressed. `person` is the target of ON DELETE CASCADE
+from every link table, so one delete takes the names, events, photographs,
+tags and heritage with it; families and events left with nobody in them go
+after.
+
+The copy's `change_log` is cleared for the same reason. Inherited, the first
+Ctrl-Z in Alice's file would undo something her uncle did in his.
+
+## A whole date, typed the way it is written
+
+Somebody copying off a birth certificate types what is printed on it, and
+what is printed on it is "Friday, 1st March 1900" or "March 12, 1880" — not
+"1900-03-01". Refused, they shrug and type the year, and a day and a month
+that somebody had in front of them are lost for good.
+
+So the phrase is tidied before any pattern is tried: weekday names, ordinal
+suffixes, "of", commas, and a month or year written first. Nothing is
+INTERPRETED there — no guessing at ambiguous numbers, no inventing a month.
+It removes the wording a person puts round a date and leaves the date.
+
+`c. 1834` is how it is written in every parish transcript there is, and the
+full stop alone was enough to make it unparseable.
+
+Double dating keeps its day: "24 Feb 1723/24" is February 1723 by the old
+English year, which began on 25 March, and 1724 by ours. It used to display
+as "1723/24", throwing away the most precise thing anybody had written down.

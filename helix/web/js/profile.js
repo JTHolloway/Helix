@@ -80,9 +80,9 @@ export async function show(host, pid, hooks) {
             }).join('')}
           </select>
         </label>
-        ${field('fBirth', 'Born', d.birth, '1834, abt 1834, 12 Mar 1841…')}
+        ${field('fBirth', 'Born', d.birth, '12 March 1841 — or just 1841')}
         ${field('fBPlace', 'Born in', d.birth_place)}
-        ${field('fDeath', 'Died', d.death)}
+        ${field('fDeath', 'Died', d.death, '3 Feb 1900 — or just 1900')}
         ${field('fOcc', 'Occupation', d.occupation)}
         ${field('fEdu', 'Education', d.education)}
         <label class="wide">What you know about them

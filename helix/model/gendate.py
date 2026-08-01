@@ -112,8 +112,15 @@ class GenDate:
             return f"{self.earliest.year}s"
         prefix = {"about": "abt ", "estimated": "est ", "calculated": "calc "}.get(self.kind, "")
         if self.calendar == "dual" and self.earliest:
+            # "24 Feb 1723/24", not "1723/24". Dropping the day threw away
+            # the most precise thing anybody had written down.
             y = self.earliest.year
-            return f"{y-1}/{str(y)[-2:]}"
+            dual = f"{y - 1}/{str(y)[-2:]}"
+            if self.precision == "day":
+                return self.earliest.strftime("%d %b ").lstrip("0") + dual
+            if self.precision == "month":
+                return self.earliest.strftime("%b ") + dual
+            return dual
         if self.kind in ("about", "estimated", "calculated"):
             # show the CENTRE of the widened window, not its edge
             return f"{prefix}{self.year}"
@@ -197,7 +204,10 @@ def _fmt(d: Optional[date], precision: Precision) -> str:
 # ============================================================== the parser ===
 _RE_ISO = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 _RE_DMY = re.compile(r"^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$")
-_RE_DUAL = re.compile(r"^(?:(\d{1,2})\s+([a-z]+)\s+)?(\d{4})/(\d{1,2,4}|\d{1,4})$", re.I)
+# Double dating: "24 Feb 1723/24" is February 1723 by the old English year,
+# which began on 25 March, and 1724 by ours. The second half may be written
+# with one, two or four digits.
+_RE_DUAL = re.compile(r"^(?:(\d{1,2})\s+([a-z]+)\.?\s+)?(\d{4})/(\d{1,4})$", re.I)
 _RE_QTR = re.compile(r"^q([1-4])\s+(\d{4})$", re.I)
 _RE_QTR2 = re.compile(r"^(\d{4})\s+q([1-4])$", re.I)
 _RE_DMONY = re.compile(r"^(\d{1,2})\s+([a-z]+)\.?\s+(\d{4})$", re.I)
@@ -216,6 +226,40 @@ _PREFIXES = [
 ]
 
 
+# HOW A FULL DATE ACTUALLY GETS TYPED.
+#
+# Somebody copying off a birth certificate types what is printed on it, and
+# what is printed on it is "Friday, 1st March 1900" or "March 12, 1880" --
+# not "1900-03-01". Refused, they shrug and type the year, and a day and a
+# month that somebody had in front of them are lost for good.
+#
+# So the phrase is tidied into the shape the patterns below expect before
+# any of them is tried. Nothing is INTERPRETED here -- no guessing at
+# ambiguous numbers, no inventing a month -- it only removes the wording a
+# person puts round a date and leaves the date.
+_RE_WEEKDAY = re.compile(
+    r"^(mon|tues?|wed(nes)?|thur?s?|fri|sat(ur)?|sun)(day)?\.?,?\s+", re.I)
+_RE_ORDINAL = re.compile(r"\b(\d{1,2})(st|nd|rd|th)\b", re.I)
+_RE_MONTH_FIRST = re.compile(r"^([a-z]{3,9})\.?\s+(\d{1,2})\s+(\d{4})$", re.I)
+_RE_YEAR_FIRST = re.compile(r"^(\d{4})\s+([a-z]{3,9})\.?\s+(\d{1,2})$", re.I)
+
+
+def _tidy(s: str) -> str:
+    s = _RE_WEEKDAY.sub("", s)                   # "friday 12 march 1880"
+    s = s.replace(",", " ")                      # "march 12, 1880"
+    s = _RE_ORDINAL.sub(r"\1", s)                # "1st", "22nd", "12th"
+    s = re.sub(r"\bof\b", " ", s)               # "3 of feb 1900"
+    s = re.sub(r"\s+", " ", s).strip()
+    # A month name in front of the day, or a year in front of both. Only
+    # where the word is unmistakably a month -- otherwise it is left alone
+    # and falls through to be reported as unparseable, which is honest.
+    if (m := _RE_MONTH_FIRST.match(s)) and m.group(1)[:3].lower() in _MONTHS:
+        s = f"{m.group(2)} {m.group(1)} {m.group(3)}"
+    elif (m := _RE_YEAR_FIRST.match(s)) and m.group(2)[:3].lower() in _MONTHS:
+        s = f"{m.group(3)} {m.group(2)} {m.group(1)}"
+    return s
+
+
 def parse(text: Optional[str], *, day_first: bool = True, confidence: int = 2) -> GenDate:
     """Parse a date phrase. NEVER raises: unparseable input becomes kind='unknown'
     with `original` preserved, so the user's typing is never destroyed."""
@@ -224,6 +268,7 @@ def parse(text: Optional[str], *, day_first: bool = True, confidence: int = 2) -
         return GenDate(original="")
     s = raw.lower().strip().rstrip(".")
     s = re.sub(r"\s+", " ", s)
+    s = _tidy(s)
 
     # explicit ranges -------------------------------------------------------
     m = _RE_BETWEEN.match(s) or _RE_RANGE.match(s)
@@ -235,6 +280,9 @@ def parse(text: Optional[str], *, day_first: bool = True, confidence: int = 2) -
 
     # prefixes --------------------------------------------------------------
     kind: Kind = "exact"
+    # "c. 1834" is how it is written in every parish transcript there is,
+    # and the full stop was enough to make it unparseable.
+    s = re.sub(r"^([a-z]{1,5})\.\s*", r"\1 ", s)
     for words, k in _PREFIXES:
         for w in words:
             if s.startswith(w + " ") or (len(w) <= 2 and s.startswith(w) and s[len(w):len(w)+1].isdigit()):
@@ -288,7 +336,7 @@ def _parse_core(s: str, *, day_first: bool):
         return dd, dd, "day", "gregorian"
 
     # dual dating: 1723/24, 24 feb 1723/24  -> historically 1724
-    if "/" in s and (m := re.match(r"^(?:(\d{1,2})\s+([a-z]+)\s+)?(\d{4})/(\d{1,2})$", s)):
+    if "/" in s and (m := _RE_DUAL.match(s)):
         dd, mon, y1, y2s = m.groups()
         y = int(y1) + 1
         if dd and mon and mon[:3] in _MONTHS:

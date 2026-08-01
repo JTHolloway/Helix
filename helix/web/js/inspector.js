@@ -31,8 +31,9 @@ export async function show(host, pid, hooks) {
       <label>Given names <input id="fGiven" value="${esc(d.given)}"></label>
       <label>Surname <input id="fSur" value="${esc(d.surname)}"></label>
       <label>Born <input id="fBirth" value="${esc(d.birth)}"
-        placeholder="1834, abt 1834, 12 Mar 1841…"><small class="echo" id="eB"></small></label>
-      <label>Died <input id="fDeath" value="${esc(d.death)}"><small class="echo" id="eD"></small></label>
+        placeholder="12 March 1841 — or just 1841"><small class="echo" id="eB"></small></label>
+      <label>Died <input id="fDeath" value="${esc(d.death)}"
+        placeholder="3 Feb 1900 — or just 1900"><small class="echo" id="eD"></small></label>
       <label>Born in <input id="fPlace" value="${esc(d.birth_place)}"></label>
       <button class="primary wide" id="saveBtn">Save</button>
     </form>

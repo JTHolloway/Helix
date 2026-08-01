@@ -637,3 +637,143 @@ def test_a_record_with_no_photograph_says_so(app):
     me = add(c, "Elias", "Whitcombe", birth="1928", sex="M")
     c.post("subject", {"id": me})
     assert "No photograph" in _book(c)
+
+
+# ══════════════════ the same family, as somebody else's tree ══════════════
+def _whitcombes(c):
+    """A family with a whole in-law family hanging off one marriage."""
+    me = add(c, "James", "Whitcombe", birth="1990", sex="M")
+    c.post("subject", {"id": me})
+    dad = add(c, "Peter", "Whitcombe", me, "father", birth="1960", sex="M")
+    sis = add(c, "Alice", "Whitcombe", me, "sibling", birth="1993", sex="F")
+    unc = add(c, "Robert", "Whitcombe", dad, "sibling", birth="1958", sex="M")
+    mich = add(c, "Michaela", "Denton", unc, "partner", birth="1959", sex="F")
+    add(c, "Gordon", "Denton", mich, "father", birth="1930", sex="M")
+    add(c, "Ivy", "Marsh", mich, "mother", birth="1932", sex="F")
+    add(c, "Colin", "Denton", mich, "sibling", birth="1962", sex="M")
+    return {"me": me, "sis": sis, "unc": unc, "mich": mich}
+
+
+def _rows(path, sql):
+    import sqlite3
+    con = sqlite3.connect(path)
+    try:
+        return con.execute(sql).fetchone()[0]
+    finally:
+        con.close()
+
+
+def test_a_pruned_branch_is_gone_from_the_copy_not_hidden_in_it(app):
+    """Rule seven says never SQL-DELETE a person, and its reason is that a
+    wrong ancestor removed at midnight has to still be there in the morning.
+    That reason does not reach here: the ORIGINAL is untouched and holds
+    every one of them. A new document carrying hidden rows for a family it
+    was deliberately not about is the same file with a flag set -- it would
+    export them, count them, and offer them back on the first Ctrl-Z."""
+    c = app
+    ids = _whitcombes(c)
+    r = c.post("library/copy-for", {"id": ids["sis"], "prune": True,
+                                    "title": "Alice's family"})
+    assert r["removed"] == 3, "Michaela's own parents and brother"
+    path = r["path"]
+    assert _rows(path, "SELECT COUNT(*) FROM person") == 5, \
+        "the rows are deleted, not marked inactive"
+    assert _rows(path, "SELECT COUNT(*) FROM person_name "
+                       "WHERE surname='Marsh'") == 0
+    # no family left with nobody in it, and no orphaned events
+    assert _rows(path, "SELECT COUNT(*) FROM union_ WHERE id NOT IN "
+                       "(SELECT union_id FROM union_partner) AND id NOT IN "
+                       "(SELECT union_id FROM union_child)") == 0
+    assert _rows(path, "SELECT COUNT(*) FROM event WHERE id NOT IN "
+                       "(SELECT event_id FROM event_role "
+                       "WHERE event_id IS NOT NULL)") == 0
+
+
+def test_the_copy_does_not_touch_the_original(app, tmp_path):
+    c = app
+    ids = _whitcombes(c)
+    before = c.get("meta")
+    c.post("library/copy-for", {"id": ids["sis"], "prune": True,
+                                "title": "Alice's family"})
+    after = c.get("meta")
+    assert after["stats"]["people"] == before["stats"]["people"] == 8
+    assert after["subject"] == ids["me"], "and it is still your tree"
+    assert {p["name"] for p in after["people"]} == \
+           {p["name"] for p in before["people"]}
+
+
+def test_the_copy_starts_with_no_history_of_its_own(app):
+    """Without this the first Ctrl-Z in Alice's file undoes something her
+    uncle did in his -- and the pruning would be the first thing offered
+    back."""
+    c = app
+    ids = _whitcombes(c)
+    r = c.post("library/copy-for", {"id": ids["sis"], "prune": True,
+                                    "title": "Alice's family"})
+    assert _rows(r["path"], "SELECT COUNT(*) FROM change_log") == 0
+
+
+def test_the_person_who_married_in_stays(app):
+    """Michaela married Alice's uncle: she is at every family gathering.
+    What goes is her OWN family, who are no relation to Alice at all."""
+    c = app
+    ids = _whitcombes(c)
+    r = c.post("library/copy-for", {"id": ids["sis"], "prune": True})
+    assert _rows(r["path"], "SELECT COUNT(*) FROM person_name "
+                            "WHERE given='Michaela'") == 1
+    assert _rows(r["path"], "SELECT COUNT(*) FROM person_name "
+                            "WHERE given='Colin'") == 0
+
+
+def test_nothing_is_left_out_unless_it_is_asked_for(app):
+    c = app
+    ids = _whitcombes(c)
+    r = c.post("library/copy-for", {"id": ids["sis"], "title": "All of them"})
+    assert r["removed"] == 0
+    assert _rows(r["path"], "SELECT COUNT(*) FROM person") == 8
+
+
+# ══════════════════════ a whole date, not only a year ═════════════════════
+#
+# Somebody copying off a birth certificate types what is printed on it, and
+# what is printed on it is "Friday, 1st March 1900" -- not "1900-03-01".
+# Refused, they shrug and type the year, and a day and a month somebody had
+# in front of them are lost for good.
+@pytest.mark.parametrize("typed,shown", [
+    ("12 March 1841", "12 Mar 1841"),
+    ("1st March 1900", "1 Mar 1900"),
+    ("22nd Jan 1888", "22 Jan 1888"),
+    ("12th of March 1880", "12 Mar 1880"),
+    ("Friday 12 March 1880", "12 Mar 1880"),
+    ("March 12, 1880", "12 Mar 1880"),
+    ("Sep 12 1880", "12 Sep 1880"),
+    ("12/03/1841", "12 Mar 1841"),
+    ("2014-03-12", "12 Mar 2014"),
+    ("c. 1834", "abt 1834"),
+    ("24 Feb 1723/24", "24 Feb 1723/24"),
+    ("1841", "1841"),                     # and a bare year still means a year
+    ("Mar 1841", "Mar 1841"),
+])
+def test_a_whole_date_can_be_typed_the_way_it_is_written(app, typed, shown):
+    c = app
+    pid = add(c, "Harriet", "Whitcombe", birth=typed)
+    assert c.get("person", id=pid)["birth"] == shown
+    # and the echo under the box agrees before it is saved
+    assert c.get("date", q=typed)["text"]
+
+
+def test_a_full_date_survives_being_saved_from_the_profile(app):
+    c = app
+    pid = add(c, "Harriet", "Whitcombe", birth="1841")
+    c.post("person", {"id": pid, "birth": "12 March 1841",
+                      "death": "3 Feb 1900"})
+    d = c.get("person", id=pid)
+    assert (d["birth"], d["death"]) == ("12 Mar 1841", "3 Feb 1900")
+    assert d["age"] == "58", f"and the age is worked out to the day: {d['age']}"
+
+
+def test_a_date_helix_cannot_read_is_still_kept(app):
+    """Rule five. Unparseable is stored with the original string intact."""
+    c = app
+    pid = add(c, "Harriet", "Whitcombe", birth="the spring after the flood")
+    assert c.get("person", id=pid)["birth"] == "the spring after the flood"

@@ -39,17 +39,20 @@ export function addPerson(ctx, onDone) {
     <label>Surname <input id="aSur" autocomplete="off" value="${esc(guess)}"></label>
     <div id="dupe" class="dupe" hidden></div>
     <label>Born <input id="aBirth" autocomplete="off"
-      placeholder="1834, abt 1834, 12 Mar 1841…"><small id="eBirth" class="echo"></small></label>
-    <label>Died <input id="aDeath" autocomplete="off"><small id="eDeath" class="echo"></small></label>
+      placeholder="12 March 1841 — or just 1841"><small id="eBirth" class="echo"></small></label>
+    <label>Died <input id="aDeath" autocomplete="off"
+      placeholder="3 Feb 1900 — or just 1900"><small id="eDeath" class="echo"></small></label>
     <label>Born in <input id="aPlace" autocomplete="off"></label>
     <fieldset class="sexes">
       <label><input type="radio" name="sex" value="M"> Man</label>
       <label><input type="radio" name="sex" value="F"> Woman</label>
       <label><input type="radio" name="sex" value="U" checked> Not recorded</label>
     </fieldset>
-    <p class="hint">Only a name is needed. Everything else can wait, and dates
-      can be vague — <b>abt 1834</b>, <b>bef 1900</b>, <b>bet 1820 and 1825</b>,
-      <b>Q3 1871</b> all work.</p>
+    <p class="hint">Only a name is needed. Put the whole date in if you have
+      it — <b>12 March 1841</b>, <b>1st Mar 1841</b>, <b>12/03/1841</b> are all
+      read the same way. Where only part is known, say only that much:
+      <b>Mar 1841</b>, <b>abt 1834</b>, <b>bef 1900</b>,
+      <b>bet 1820 and 1825</b>, <b>Q3 1871</b>.</p>
     <div class="row">
       <button class="primary" id="aAdd">Add</button>
       <button class="ghost" id="aAgain">Add and add another</button>
