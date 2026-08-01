@@ -69,6 +69,7 @@ async function init() {
   wireLibrary();
   wireRelate();
   wireSources();
+  wireTools();
   narrow.wire({ onClose: () => view.refit() });
   undoLabels();
   await Promise.all([refresh(), loadRelatives(), loadGaps()]);
@@ -770,6 +771,33 @@ function wireSources() {
   });
 }
 
+// FIND, HOUSEHOLDS, CONTACTS, HISTORY, COMPARE — one dialogue, five tabs.
+let TOOLTAB = 'find';
+function wireTools() {
+  const dlg = $('#toolDlg');
+  const open = async (which) => {
+    TOOLTAB = which || TOOLTAB;
+    const tools = await import('./tools.js');
+    $('#toolTabs').innerHTML = tools.TABS.map(([k, label]) =>
+      `<button class="tab${k === TOOLTAB ? ' on' : ''}" data-tab="${k}"
+        >${label}</button>`).join('');
+    $('#toolTitle').textContent =
+      (tools.TABS.find(t => t[0] === TOOLTAB) || [])[1] || 'Find';
+    $('#toolTabs').querySelectorAll('[data-tab]').forEach(b =>
+      b.addEventListener('click', () => open(b.dataset.tab)));
+    await tools.show($('#toolBody'), TOOLTAB, {
+      onSelect: pid => { dlg.close(); setMode('explore'); select(pid); },
+      onToast: toast,
+      onChanged: async () => {
+        META = await get('meta');
+        await Promise.all([refresh(), loadRelatives()]);
+        undoLabels();
+      },
+    });
+  };
+  $('#toolBtn').addEventListener('click', () => { dlg.showModal(); open(); });
+}
+
 function escAttr(s) {
   return String(s ?? '').replace(/[&<>"]/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -931,9 +959,9 @@ function wireKeys() {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
     const k = e.key.toLowerCase();
     if (k === '/') { e.preventDefault(); $('#search').focus(); }
-    if (k === 'f') view.fit();
     if (k === 't') { $('#threadOn').click(); }
     if (k === 'c') { $('#whatif').click(); }
+    if (k === 'z' && !e.ctrlKey && !e.metaKey) view.fit();
     if (k === 'escape') {
       if (document.querySelector('dialog[open]')) return;   // the dialog first
       clearWhatIf(); clearHalo();
@@ -952,6 +980,7 @@ function wireKeys() {
     if (k === 'i') { e.preventDefault(); $('#importBtn').click(); }
     if (k === 'r') { e.preventDefault(); $('#relateBtn').click(); }
     if (k === 's') { e.preventDefault(); $('#srcBtn').click(); }
+    if (k === 'f') { e.preventDefault(); $('#toolBtn').click(); }
   });
 
   // Undo and redo work while typing too, which is where mistakes happen.

@@ -205,6 +205,52 @@ class Handler(BaseHTTPRequestHandler):
                                    "path": str(archive(ST.dbpath))})
             if u.path.startswith("/api/library"):
                 return self._json(_library(u.path[len("/api/library"):], body))
+            if u.path == "/api/history/revert":
+                out = records.revert_to(ST.con, body["batch"])
+                ST.reload()
+                out["history"] = records.history(ST.con)
+                return self._json(out)
+            if u.path == "/api/restore":
+                # PUTTING A BACKUP BACK, from inside the program. The current
+                # file is backed up first and by name, so "restore" can never
+                # be the thing that loses the work.
+                from .store.db import backup, checkpoint
+                src = Path(body["path"])
+                if not src.exists():
+                    raise ValueError(
+                        f"There is no backup at {src}. The ones Helix can see "
+                        f"are listed above.")
+                checkpoint(ST.con)
+                keep = backup(ST.dbpath)
+                cur = Path(ST.dbpath)
+                with contextlib.suppress(Exception):
+                    ST.con.close()
+                import shutil
+                shutil.copy2(src, cur)
+                for suffix in ("-wal", "-shm"):
+                    p2 = Path(str(cur) + suffix)
+                    if p2.exists():
+                        p2.unlink()
+                _rebind(cur)
+                return self._json({
+                    "ok": True, "opened": True,
+                    "message": (f"Put back {src.name}. What was open before "
+                                f"is saved as {Path(keep).name}, so nothing "
+                                f"is lost either way.")})
+            if u.path == "/api/compare":
+                # TWO FILES OF THE SAME FAMILY, fact by fact. Reads both and
+                # changes neither: a merge that happens as a side effect of
+                # looking is how somebody loses ten years of work.
+                from .io import compare as cmp
+                import base64
+                import tempfile
+                raw = base64.b64decode(body["data"].partition(",")[2])
+                name = body.get("filename", "theirs.ged")
+                with tempfile.TemporaryDirectory() as d:
+                    f = Path(d) / (name or "theirs.ged")
+                    f.write_bytes(raw)
+                    return self._json(cmp.compare_files(
+                        ST.dbpath, f, theirs_name=name))
             if u.path == "/api/import":
                 out = _import(body)
                 if not body.get("dry_run"):
@@ -363,6 +409,35 @@ class Handler(BaseHTTPRequestHandler):
                               "detail": f.detail, "fix": f.fix}
                              for f in findings],
             })
+        if route == "find":
+            # SEARCH THAT UNDERSTANDS A FAMILY. The filters existed, spread
+            # over four screens; one box that takes them together did not.
+            from .analysis import find
+            return self._json(find.search(ST.graph, ST.con, q.get("q", ""),
+                                          kin=ST.kin))
+        if route == "households":
+            # "Who was living in this house in 1861" is how the records are
+            # organised and is not a shape this program can draw.
+            from .analysis import find
+            return self._json({"households": find.households(
+                ST.graph, ST.con, window=int(q.get("window", 5)))})
+        if route == "contacts":
+            from .analysis import find
+            return self._json({"people": find.address_book(ST.graph, ST.con),
+                               "kinds": [{"key": k, "label": v}
+                                         for k, v in find.CONTACT_KINDS]})
+        if route == "history/list":
+            return self._json({"changes": records.history_list(ST.con)})
+        if route == "backups":
+            # RESTORING ONE was finding the file yourself, in a folder the
+            # program had told you about once.
+            from .store.db import backups_for
+            return self._json({"backups": [
+                {"name": b.name, "path": str(b),
+                 "size_kb": round(b.stat().st_size / 1024),
+                 "when": __import__("datetime").datetime.fromtimestamp(
+                     b.stat().st_mtime).isoformat(timespec="minutes")}
+                for b in reversed(backups_for(ST.dbpath))]})
         if route == "network":
             # THE ADDRESS TO TYPE INTO A PHONE, and a square to point a
             # camera at. A QR code is 25 lines of arithmetic and saves

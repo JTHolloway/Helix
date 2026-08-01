@@ -1012,3 +1012,72 @@ table.people td { padding: .16rem .4rem .16rem 0; font-size: .87rem;
 .report .matnote{border:0;color:var(--muted);font-size:12px;margin-top:8px;
   padding-top:6px;border-top:1px solid var(--rule)}
 .report i{font-style:normal;color:var(--accent)}
+
+/* ═══════ the screens that read the whole file ═══════════════════════════ */
+.tabbar{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin:10px 0 12px;
+  flex-wrap:wrap}
+.tab{border:0;background:none;padding:7px 12px;font:inherit;font-size:13.5px;
+  color:var(--muted);border-bottom:2px solid transparent;border-radius:0;cursor:pointer}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+#toolBody{max-height:62vh;overflow:auto}
+/* --- find --- */
+#fdQ{width:100%;padding:9px 11px;border:1px solid var(--rule);border-radius:var(--r);
+  background:var(--paper);color:var(--ink);font:inherit;font-size:15px}
+#fdQ:focus{outline:2px solid var(--accent);outline-offset:1px}
+.fdlist{list-style:none;margin:6px 0 0;padding:0}
+.fdlist li{border-bottom:1px solid var(--rule);padding:5px 0}
+.fdlist button{display:block;width:100%;text-align:left;border:0;background:none;
+  padding:2px 0;font:inherit;cursor:pointer;color:var(--ink)}
+.fdlist button:hover b{color:var(--accent);text-decoration:underline}
+.fdlist b{font-size:14px}.fdlist span{color:var(--muted);font-size:12.5px;margin-left:8px}
+.fdlist em{display:block;font-size:11.5px;color:var(--accent);font-style:normal}
+.fdhelp{margin-top:14px;font-size:13px;color:var(--muted)}
+.fdhelp summary{cursor:pointer}
+.fdtable{width:100%;border-collapse:collapse;margin-top:6px;font-size:12.5px}
+.fdtable td{padding:2px 8px 2px 0;vertical-align:top}
+.fdtable code{background:var(--paper);border:1px solid var(--rule);border-radius:4px;
+  padding:1px 5px;font-size:12px;white-space:nowrap}
+/* --- households --- */
+.hhold{border:1px solid var(--rule);border-radius:var(--r);padding:10px 12px;
+  margin:0 0 10px;background:var(--paper)}
+.hhold h4{margin:0;font-size:14px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.hhold h4 span{color:var(--accent);font-weight:400;font-size:12.5px;margin-left:8px}
+/* --- contacts --- */
+.cbook{list-style:none;margin:0;padding:0}
+.cbook li{border-bottom:1px solid var(--rule);padding:8px 0}
+.cbook button{border:0;background:none;padding:0;font:inherit;cursor:pointer;
+  text-align:left;color:var(--ink)}
+.cbook b{font-size:14px}.cbook span{color:var(--muted);font-size:12.5px;margin-left:8px}
+.cways{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:3px;font-size:13px}
+.cways i{font-style:normal;color:var(--muted);font-size:11.5px;margin-right:4px}
+.cbook em{font-size:12px;color:var(--muted);font-style:normal}
+/* --- history --- */
+.hist{list-style:none;margin:0;padding:0;counter-reset:h}
+.hist li{border-bottom:1px solid var(--rule);padding:7px 0}
+.hist li.undone{opacity:.5}
+.hist b{font-size:13.5px;display:block}
+.hist span{font-size:11.5px;color:var(--muted)}
+.hist .link{margin-left:8px}
+/* --- compare --- */
+.cmphead{font-size:14px;margin:10px 0}
+.cmpcols{display:grid;grid-template-columns:70px 1fr 1fr;font-size:11px;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:6px}
+.cmpcols span:first-child{grid-column:2}
+.cmpp{border:1px solid var(--rule);border-radius:6px;padding:8px 10px;margin:0 0 7px;
+  background:var(--paper)}
+.cmpp b{font-size:13.5px}.cmpp span{color:var(--muted);font-size:12px;margin-left:6px}
+.cmprows{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px}
+.cmprows td{padding:2px 6px 2px 0;vertical-align:top;width:44%}
+.cmprows .lab{width:70px;color:var(--muted);font-size:11.5px}
+.cmprows .was{color:var(--muted)}
+.cmpnew{list-style:none;margin:0;padding:0;max-height:30vh;overflow:auto}
+.cmpnew li{padding:3px 0;border-bottom:1px solid var(--rule);font-size:13px}
+.cmpnew span{color:var(--muted);font-size:12px;margin-left:6px}
+/* --- putting a backup back ---------------------------------------------- */
+.bklist{list-style:none;margin:0;padding:0}
+.bklist li{display:flex;gap:10px;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--rule);padding:7px 0}
+.bklist b{font-size:13.5px;display:block}
+.bklist span{font-size:11.5px;color:var(--muted)}
+.bklist button{font-size:12.5px;padding:5px 10px}

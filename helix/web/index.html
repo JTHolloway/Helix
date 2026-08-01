@@ -38,6 +38,7 @@
     <button id="timelineBtn" class="ghost" title="Every birth, marriage and death in order (T)">Timeline</button>
     <button id="relateBtn" class="ghost" title="How are these two related? (R)">Relate</button>
     <button id="srcBtn" class="ghost" title="Every source your research rests on (S)">Sources</button>
+    <button id="toolBtn" class="ghost" title="Find people, households, contacts, history, compare (F)">Find</button>
     <button id="libBtn" class="ghost" title="Which family is open, and where your files are kept (O)">Family</button>
     <button id="printBtn" class="ghost" title="Print profiles or an outline (P)">Print</button>
     <button id="peopleBtn" class="ghost" title="Every person as a list (L)">People</button>
@@ -426,6 +427,16 @@
      schema from the first commit and only the GEDCOM importer ever wrote to
      them — so the record book could ask "where did this come from?" and the
      program had no way of being told. -->
+<!-- THE SCREENS THAT READ THE WHOLE FILE and are not about one person.
+     Five in one dialogue with a tab bar, because five more buttons in the
+     header is how a toolbar becomes a wall. -->
+<dialog id="toolDlg">
+  <h2 id="toolTitle">Find</h2>
+  <div class="tabbar" id="toolTabs"></div>
+  <div id="toolBody"></div>
+  <form method="dialog"><button class="ghost">Close</button></form>
+</dialog>
+
 <dialog id="srcDlg">
   <h2>Sources</h2>
   <div id="srcBody"></div>

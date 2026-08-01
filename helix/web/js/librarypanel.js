@@ -87,6 +87,9 @@ export async function show(host, { onOpened, onToast }) {
       </dl>
       <p class="hint">Every change is saved the moment you make it.</p>
 
+      <h4>Backups</h4>
+      <div id="libBk" class="libbk">Looking…</div>
+
       <h4>On a phone</h4>
       <div id="libNet" class="libnet">Looking…</div>
 
@@ -132,6 +135,33 @@ export async function show(host, { onOpened, onToast }) {
   // pixels and none of that was any use while the server only listened on
   // 127.0.0.1. A square to point a camera at saves typing an IP address on
   // a keyboard that covers half the screen.
+  // PUTTING ONE BACK, from inside the program. Backups have been taken
+  // automatically from the beginning and restoring one meant finding the
+  // file yourself, in a folder Helix had mentioned once. The file that is
+  // open is backed up first and by name, so "restore" can never be the
+  // thing that loses the work.
+  get('backups').then(({ backups }) => {
+    const box = host.querySelector('#libBk');
+    if (!box) return;
+    box.innerHTML = backups.length
+      ? `<ul class="bklist">${backups.slice(0, 12).map(b => `<li>
+          <div><b>${esc(b.when.replace('T', ' '))}</b>
+            <span>${b.size_kb} kB · ${esc(b.name)}</span></div>
+          <button class="ghost" data-restore="${esc(b.path)}">Put this back</button>
+        </li>`).join('')}</ul>
+        <p class="hint">${backups.length} kept, newest first. Restoring backs
+          up what is open now first, so nothing is lost either way.</p>`
+      : '<p class="none">No backups yet. One is taken every time you open a '
+        + 'family, and you can take one now from Export.</p>';
+    box.querySelectorAll('[data-restore]').forEach(b =>
+      b.addEventListener('click', async () => {
+        if (!confirm('Put this backup back?\n\nWhat is open now is saved '
+                   + 'as a backup of its own first, so you can change your '
+                   + 'mind.')) return;
+        await act('restore', { path: b.dataset.restore });
+      }));
+  }).catch(() => {});
+
   get('network').then(n => {
     const box = host.querySelector('#libNet');
     if (!box) return;

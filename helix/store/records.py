@@ -470,6 +470,55 @@ def cite_op(con, body: dict) -> dict:
     return {"ok": True, "citation_id": cid}
 
 
+def history_list(con, limit: int = 200) -> list[dict]:
+    """What has been done to this file, newest first.
+
+    NOT JUST CTRL-Z. `change_log` has held every edit from the beginning and
+    the only way to see it was one step at a time. "What did I change last
+    Tuesday" is a question anybody asks of ten years of research, and the
+    answer was in the file all along.
+
+    Grouped by batch, because one batch is one thing a person did: adding a
+    father is six rows and one action, and a list of six rows is a list of
+    the program's business rather than theirs.
+    """
+    out = []
+    for r in con.execute(
+        "SELECT batch, label, MAX(undone) undone, MAX(id) hi, "
+        "       COUNT(*) n, MAX(ts) ts "
+        "FROM change_log GROUP BY batch ORDER BY hi DESC LIMIT ?", (limit,)
+    ):
+        out.append({"batch": r["batch"], "label": r["label"],
+                    "undone": bool(r["undone"]), "rows": r["n"],
+                    "at": r["ts"]})
+    return out
+
+
+def revert_to(con, batch: str) -> dict:
+    """Undo everything back to just after that batch.
+
+    ONE STEP AT A TIME, through `undo`, so every guarantee it makes still
+    holds -- rather than a second reverting path that has to be kept in step
+    with the first and will not be.
+    """
+    order = [r["batch"] for r in con.execute(
+        "SELECT batch, MAX(id) hi FROM change_log WHERE undone=0 "
+        "GROUP BY batch ORDER BY hi DESC")]
+    if batch not in order:
+        raise ValueError("That change has already been taken back.")
+    steps = order.index(batch) + 1
+    done = []
+    for _ in range(steps):
+        r = undo(con)
+        if not r.get("ok"):
+            break
+        done.append(r.get("label") or r.get("message", ""))
+    return {"ok": True, "steps": len(done), "undone": done,
+            "message": (f"Took back {len(done)} "
+                        f"{'change' if len(done) == 1 else 'changes'}. "
+                        f"Ctrl-Y puts them back one at a time.")}
+
+
 def update_person(con, body: dict) -> dict:
     """POST /api/person. Edit somebody already in the file.
 

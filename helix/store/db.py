@@ -167,6 +167,20 @@ def backup(path: str | Path, keep: int = 30) -> Path:
     return dest
 
 
+def backups_for(path: str | Path) -> list[Path]:
+    """Every backup of this family file, oldest first.
+
+    Backups have been taken automatically from the beginning and the only
+    way to put one back was to find the file yourself, in a folder the
+    program had mentioned once. This is what the Family screen lists.
+    """
+    path = Path(path)
+    d = path.parent / "backups"
+    if not d.is_dir():
+        return []
+    return sorted(d.glob(f"{path.stem}-*{path.suffix}"))
+
+
 def get_setting(con, key: str, default=None):
     r = con.execute("SELECT v FROM settings WHERE k=?", (key,)).fetchone()
     return r["v"] if r else default
